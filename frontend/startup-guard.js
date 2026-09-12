@@ -16,7 +16,7 @@ window.start=async function(){
   }
 
   try{
-    const rr=await fetch(base.replace(/\/$/,'')+'/api/readiness',{headers:{'Cache-Control':'no-cache'}});
+    const rr=await fetch(base.replace(/\/$/,'')+'/api/readiness',{cache:'no-store'});
     const readiness=await rr.json();
     if(!readiness.ready){
       const missing=(readiness.missing_tables||[]).map(x=>`<code>${esc(x)}</code>`).join(' ');
