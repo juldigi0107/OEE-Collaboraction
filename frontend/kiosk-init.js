@@ -1,0 +1,1 @@
+(()=>{const p=new URLSearchParams(location.search);if(p.get('kiosk')!=='hmi')return;document.body.classList.add('kiosk-mode');view='shopfloor';const machine=(p.get('machine')||'').trim();if(machine)hmiMachine=machine;window.OEE_KIOSK={enabled:true,machine,display:'7-inch'};})();
