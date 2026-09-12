@@ -1,0 +1,45 @@
+{
+  "worker_url":"https://YOUR-WORKER.workers.dev",
+  "poll_ms":2000,
+  "snapshot_ms":60000,
+  "machines":[
+    {
+      "enabled":false,
+      "code":"OFFSET-5",
+      "name":"Offset 5",
+      "protocol":"opcua",
+      "endpoint":"opc.tcp://192.168.0.10:4840",
+      "tags":{"running":"ns=2;s=Machine.Running","counter":"ns=2;s=Machine.Counter","speed":"ns=2;s=Machine.Speed","alarm":"ns=2;s=Machine.Alarm"},
+      "state_map":{"running_true":"RUNNING","running_false":"IDLE","alarm_true":"UPDT"}
+    },
+    {
+      "enabled":false,
+      "code":"OFFSET-6",
+      "name":"Offset 6",
+      "protocol":"modbus-tcp",
+      "host":"192.168.0.11",
+      "port":502,
+      "unit_id":1,
+      "tags":{"running":{"type":"coil","address":0},"counter":{"type":"holding","address":100,"length":2,"format":"uint32"},"speed":{"type":"holding","address":110,"length":1,"format":"uint16"},"alarm":{"type":"coil","address":5}},
+      "state_map":{"running_true":"RUNNING","running_false":"IDLE","alarm_true":"UPDT"}
+    }
+  ],
+  "internal_systems":[
+    {
+      "enabled":false,
+      "system":"ODIN",
+      "target":"maintenance",
+      "url":"http://odin.local/export.json",
+      "interval_ms":300000,
+      "mapping":{"id":"id","machine":"machine","date":"date","notification":"notification","category":"category","minutes":"minutes","action":"action"}
+    },
+    {
+      "enabled":false,
+      "system":"SAP",
+      "target":"planning",
+      "url":"http://sap-gateway.local/planning.json",
+      "interval_ms":300000,
+      "mapping":{"id":"id","pro":"pro","material":"material","machine":"machine","date":"date","shift":"shift","group":"group","target":"target"}
+    }
+  ]
+}
