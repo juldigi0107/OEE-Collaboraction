@@ -1,1 +1,1 @@
-window.OEE_CONFIG = { apiBase: "https://oee.offsetbmj.workers.dev" };
+window.OEE_CONFIG = { apiBase: "https://oee-collaboraction.offsetbmj.workers.dev" };
