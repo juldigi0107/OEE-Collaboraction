@@ -37,9 +37,11 @@ export default {async fetch(req,env){
   const url=new URL(req.url),path=url.pathname,method=req.method;const db=env.DB;
   const one=(sql,...args)=>db.prepare(sql).bind(...args).first();const all=async(sql,...args)=>(await db.prepare(sql).bind(...args).all()).results;
   const run=(sql,...args)=>db.prepare(sql).bind(...args).run();
+  const archiveCTE=`WITH combined AS (\n SELECT json_extract(j.value,'$.id') AS id,c.sheet_id,c.department,CAST(json_extract(j.value,'$.row_num') AS INTEGER) AS row_num,json_extract(j.value,'$.payload') AS payload,COALESCE(CAST(json_extract(j.value,'$.version') AS INTEGER),1) AS version,COALESCE(CAST(json_extract(j.value,'$.deleted') AS INTEGER),0) AS deleted\n FROM record_chunks c,json_each(c.payload) j WHERE c.sheet_id=? AND NOT EXISTS(SELECT 1 FROM records o WHERE o.id=json_extract(j.value,'$.id'))\n UNION ALL SELECT id,sheet_id,department,row_num,payload,version,deleted FROM records WHERE sheet_id=?\n)`;
+  const archiveOne=async id=>{const overlay=await one('SELECT * FROM records WHERE id=?',id);if(overlay)return overlay;return one(`SELECT json_extract(j.value,'$.id') AS id,c.sheet_id,c.department,CAST(json_extract(j.value,'$.row_num') AS INTEGER) AS row_num,json_extract(j.value,'$.payload') AS payload,COALESCE(CAST(json_extract(j.value,'$.version') AS INTEGER),1) AS version,COALESCE(CAST(json_extract(j.value,'$.deleted') AS INTEGER),0) AS deleted FROM record_chunks c,json_each(c.payload) j WHERE json_extract(j.value,'$.id')=? LIMIT 1`,id);};
   const body=async()=>{if(Number(req.headers.get('Content-Length')||0)>2000000)fail(413,'Data terlalu besar');const raw=await req.text();if(raw.length>2000000)fail(413,'Data terlalu besar');try{return JSON.parse(raw);}catch{fail(400,'JSON tidak valid');}};
   const audit=(u,a,id,b,c)=>db.prepare('INSERT INTO audit(id,user_id,action,entity_id,before_json,after_json) VALUES(?,?,?,?,?,?)').bind(uid(),u.id,a,id,b?JSON.stringify(b):null,c?JSON.stringify(c):null);
-  if(path==='/api/health')return json({ok:true,service:'OEE Collaboraction'});
+  if(path==='/api/health')return json({ok:true,service:'OEE Collaboraction',storage:'D1-only'});
   if(path==='/api/bootstrap'&&method==='POST'){
    const b=await body();if(!env.BOOTSTRAP_TOKEN||b.token!==env.BOOTSTRAP_TOKEN)fail(403,'Token penyiapan tidak valid');
    if(await one("SELECT id FROM users WHERE role='superadmin'"))fail(409,'Superadmin sudah disiapkan');
@@ -69,24 +71,24 @@ export default {async fetch(req,env){
   if(path==='/api/catalog')return json({sources:await all('SELECT * FROM sources ORDER BY department,name'),sheets:await all('SELECT * FROM sheets ORDER BY department,source_id,name'),settings:await all('SELECT * FROM settings')});
   if(path==='/api/dashboard'){
    const names=['OEE Printing (2)','OEE AP','OEE FG'];let series=[];
-   for(const name of names){const s=await one("SELECT * FROM sheets WHERE department='PROD' AND name=?",name);if(!s)continue;const rows=await all('SELECT row_num,payload FROM records WHERE sheet_id=? AND deleted=0 ORDER BY row_num',s.id);series.push({name,sheet_id:s.id,rows:rows.map(r=>({row:r.row_num,cells:JSON.parse(r.payload)}))});}
+   for(const name of names){const s=await one("SELECT * FROM sheets WHERE department='PROD' AND name=?",name);if(!s)continue;const rows=await all(archiveCTE+' SELECT row_num,payload FROM combined WHERE deleted=0 ORDER BY row_num',s.id,s.id);series.push({name,sheet_id:s.id,rows:rows.map(r=>({row:r.row_num,cells:JSON.parse(r.payload)}))});}
    const stats=await one("SELECT count(*) sheets,sum(rows) rows,sum(json_extract(meta,'$.errors')) errors,sum(json_extract(meta,'$.missing_cache')) missing_cache FROM sheets");
    return json({series,stats});
   }
   if(path==='/api/records'&&method==='GET'){
-   const sheet=url.searchParams.get('sheet'),q=url.searchParams.get('q')||'',page=Math.max(0,Number(url.searchParams.get('page'))||0),limit=50;
-   const where='sheet_id=? AND deleted=0 AND (?=\'\' OR payload LIKE ?)';const args=[sheet,q,'%'+q+'%'];
-   return json({rows:await all('SELECT * FROM records WHERE '+where+' ORDER BY row_num LIMIT ? OFFSET ?',...args,limit,page*limit),total:(await one('SELECT count(*) n FROM records WHERE '+where,...args)).n,page});
+   const sheet=url.searchParams.get('sheet'),q=(url.searchParams.get('q')||'').slice(0,46),page=Math.max(0,Number(url.searchParams.get('page'))||0),limit=50,like='%'+q+'%';
+   if(!sheet)fail(400,'Sheet wajib dipilih');const filter=' WHERE deleted=0 AND (?=\'\' OR payload LIKE ?)';
+   const rows=await all(archiveCTE+' SELECT * FROM combined'+filter+' ORDER BY row_num LIMIT ? OFFSET ?',sheet,sheet,q,like,limit,page*limit);const total=(await one(archiveCTE+' SELECT count(*) n FROM combined'+filter,sheet,sheet,q,like)).n;
+   return json({rows,total,page});
   }
   if(path.startsWith('/api/records/')&&['PUT','DELETE'].includes(method)){
-   const id=decodeURIComponent(path.slice(13)),old=await one('SELECT * FROM records WHERE id=? AND deleted=0',id);if(!old)fail(404,'Baris tidak ditemukan');requireAllow(u,old.department,method==='DELETE'?'delete':'update');const b=await body();if(b.version!==old.version)fail(409,'Data telah berubah. Muat ulang dahulu.');
-   if(method==='DELETE')await db.batch([db.prepare('UPDATE records SET deleted=1,version=version+1 WHERE id=? AND version=?').bind(id,b.version),audit(u,'archive.delete',id,old,null)]);
-   else {const p=b.payload;if(!p||Array.isArray(p)||typeof p!=='object')fail(400,'Payload tidak valid');for(const [k,v]of Object.entries(p)){if(!/^[A-Z]{1,3}$/.test(k)||!v||typeof v!=='object'||!('v'in v))fail(400,'Struktur kolom tidak valid');}
-    await db.batch([db.prepare('UPDATE records SET payload=?,version=version+1 WHERE id=? AND version=?').bind(JSON.stringify(p),id,b.version),audit(u,'archive.update',id,old,p)]);}
-   return json({ok:true,warning:'Snapshot formula sumber tidak dihitung ulang otomatis; gunakan modul transaksi untuk kalkulasi baru.'});
+   const id=decodeURIComponent(path.slice(13)),old=await archiveOne(id);if(!old||old.deleted)fail(404,'Baris tidak ditemukan');requireAllow(u,old.department,method==='DELETE'?'delete':'update');const b=await body();if(Number(b.version)!==Number(old.version))fail(409,'Data telah berubah. Muat ulang dahulu.');
+   let payload=old.payload,deleted=method==='DELETE'?1:0,after=null;if(method==='PUT'){const p=b.payload;if(!p||Array.isArray(p)||typeof p!=='object')fail(400,'Payload tidak valid');for(const [k,v]of Object.entries(p)){if(!/^[A-Z]{1,3}$/.test(k)||!v||typeof v!=='object'||!('v'in v))fail(400,'Struktur kolom tidak valid');}payload=JSON.stringify(p);after=p;}
+   const version=Number(old.version)+1;await db.batch([db.prepare('INSERT INTO records(id,sheet_id,department,row_num,payload,version,deleted) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload,version=excluded.version,deleted=excluded.deleted').bind(id,old.sheet_id,old.department,old.row_num,payload,version,deleted),audit(u,method==='DELETE'?'archive.delete':'archive.update',id,old,after)]);
+   return json({ok:true,version,warning:'Snapshot formula sumber tidak dihitung ulang otomatis; gunakan modul transaksi untuk kalkulasi baru.'});
   }
   if(path==='/api/records'&&method==='POST'){
-   const b=await body(),s=await one('SELECT * FROM sheets WHERE id=?',b.sheet_id);if(!s)fail(404,'Sheet tidak ditemukan');requireAllow(u,s.department,'create');if(!b.payload||typeof b.payload!=='object'||Array.isArray(b.payload))fail(400,'Payload wajib diisi');const id=uid();await db.batch([db.prepare('INSERT INTO records(id,sheet_id,department,row_num,payload) VALUES(?,?,?,(SELECT coalesce(max(row_num),0)+1 FROM records WHERE sheet_id=?),?)').bind(id,s.id,s.department,s.id,JSON.stringify(b.payload)),audit(u,'archive.create',id,null,b.payload)]);return json({id});
+   const b=await body(),s=await one('SELECT * FROM sheets WHERE id=?',b.sheet_id);if(!s)fail(404,'Sheet tidak ditemukan');requireAllow(u,s.department,'create');if(!b.payload||typeof b.payload!=='object'||Array.isArray(b.payload))fail(400,'Payload wajib diisi');const base=await one('SELECT coalesce(max(row_end),0) n FROM record_chunks WHERE sheet_id=?',s.id),overlay=await one('SELECT coalesce(max(row_num),0) n FROM records WHERE sheet_id=?',s.id),row=Math.max(Number(base?.n||0),Number(overlay?.n||0))+1,id=uid();await db.batch([db.prepare('INSERT INTO records(id,sheet_id,department,row_num,payload) VALUES(?,?,?,?,?)').bind(id,s.id,s.department,row,JSON.stringify(b.payload)),db.prepare('UPDATE sheets SET rows=max(rows,?) WHERE id=?').bind(row,s.id),audit(u,'archive.create',id,null,b.payload)]);return json({id,row_num:row});
   }
   if(path==='/api/entries'&&method==='GET'){
    const module=url.searchParams.get('module');if(!modules[module])fail(400,'Modul tidak valid');const page=Math.max(0,Number(url.searchParams.get('page'))||0),q=url.searchParams.get('q')||'';
@@ -104,8 +106,9 @@ export default {async fetch(req,env){
   }
   if(path==='/api/documents')return json(await all('SELECT * FROM documents WHERE source_id=? ORDER BY page',url.searchParams.get('source')));
   if(path.startsWith('/api/files/')){
-   const id=path.slice(11),s=await one('SELECT * FROM sources WHERE id=?',id);if(!s)fail(404,'File tidak ditemukan');const obj=await env.FILES.get(s.id+'/'+s.name);if(!obj)fail(404,'File sumber belum diunggah ke penyimpanan dokumen');
-   const type={pdf:'application/pdf',png:'image/png',jpeg:'image/jpeg',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}[s.kind]||'application/octet-stream';return new Response(obj.body,{headers:{...headers,'Content-Type':type,'Content-Disposition':"inline; filename*=UTF-8''"+encodeURIComponent(s.name)}});
+   const id=path.slice(11),meta=await one('SELECT f.* FROM source_files f JOIN sources s ON s.id=f.source_id WHERE f.source_id=?',id);if(!meta)fail(404,'File sumber tidak ditemukan di D1');let next=0;const batchSize=13;
+   const stream=new ReadableStream({async pull(controller){try{if(next>=meta.chunks){controller.close();return;}const parts=await all('SELECT chunk_no,data FROM source_file_chunks WHERE source_id=? AND chunk_no>=? ORDER BY chunk_no LIMIT ?',id,next,batchSize);if(!parts.length)throw Error('Chunk file tidak lengkap');for(const part of parts){const bytes=part.data instanceof Uint8Array?part.data:Uint8Array.from(part.data);controller.enqueue(bytes);next=Number(part.chunk_no)+1;}if(next>=meta.chunks)controller.close();}catch(e){controller.error(e);}}});
+   return new Response(stream,{headers:{...headers,'Content-Type':meta.mime_type,'Content-Length':String(meta.bytes),'Content-Disposition':"inline; filename*=UTF-8''"+encodeURIComponent(meta.name)}});
   }
   if(path==='/api/users'){
    if(u.role!=='superadmin')fail(403,'Khusus superadmin');if(method==='GET')return json((await all('SELECT * FROM users ORDER BY name')).map(publicUser));
