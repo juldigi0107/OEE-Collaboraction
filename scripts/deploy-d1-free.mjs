@@ -7,4 +7,5 @@ const root=resolve(import.meta.dirname,'..');
 const run=args=>{const r=spawnSync('npx',['wrangler',...args],{cwd:root+'/backend',stdio:'inherit',shell:process.platform==='win32'});if(r.status!==0)throw Error('Deployment stopped; inspect the failed command before retrying.');};
 run(['d1','execute','oee-collaboraction','--remote','--file',root+'/backend/schema.sql']);
 for(const f of (await readdir(root+'/data/d1-free/sql')).filter(x=>x.endsWith('.sql')).sort()) run(['d1','execute','oee-collaboraction','--remote','--file',root+'/data/d1-free/sql/'+f]);
-console.log('D1-only seed uploaded. Verify /api/health, source counts, archive pages, module counts and original-file downloads.');
+run(['d1','execute','oee-collaboraction','--remote','--file',root+'/backend/realtime-schema.sql']);
+console.log('D1-only seed + realtime schema uploaded. Verify /api/health, /api/realtime/overview, source counts, archive pages, module counts and file reconstruction.');
