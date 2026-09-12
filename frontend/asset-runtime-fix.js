@@ -4,9 +4,10 @@
   for(const sheet of Array.from(document.styleSheets)){
     try{
       for(const rule of Array.from(sheet.cssRules||[])){
-        if(rule.selectorText==='.home-hero,.login-visual') hero=pickUrl(rule.style.backgroundImage)||hero;
-        if(rule.selectorText==='img[src="assets/logo-bmj.png"]') logo=pickUrl(rule.style.content)||logo;
-        if(rule.selectorText==='img[src="assets/splash-factory.png"]') splash=pickUrl(rule.style.content)||splash;
+        const s=String(rule.selectorText||'');
+        if(s.includes('.home-hero')&&s.includes('.login-visual')) hero=pickUrl(rule.style.backgroundImage)||hero;
+        if(s.includes('assets/logo-bmj.png')) logo=pickUrl(rule.style.content)||logo;
+        if(s.includes('assets/splash-factory.png')) splash=pickUrl(rule.style.content)||splash;
       }
     }catch{}
   }
