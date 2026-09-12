@@ -1,0 +1,57 @@
+/* 7-inch Raspberry Pi kiosk profile: target 1024x600 landscape */
+body.kiosk-mode{overflow:hidden;background:#eef4f8;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+body.kiosk-mode .shell{display:block;min-height:100vh}
+body.kiosk-mode .sidebar,body.kiosk-mode .topbar,body.kiosk-mode .toTop{display:none!important}
+body.kiosk-mode .workspace{display:block;min-height:100vh}
+body.kiosk-mode .content{padding:8px!important;margin:0!important;max-width:none!important;height:100vh;overflow:auto}
+body.kiosk-mode .heading{margin:0 0 7px!important}
+body.kiosk-mode .heading h1{font-size:20px!important;margin:0}
+body.kiosk-mode .heading .eyebrow,body.kiosk-mode .heading .muted{display:none}
+body.kiosk-mode .hmi-machine-strip{display:flex;gap:6px;overflow-x:auto;padding:0 0 6px;margin:0;scrollbar-width:none}
+body.kiosk-mode .hmi-machine-strip::-webkit-scrollbar{display:none}
+body.kiosk-mode .machine-chip{min-width:118px;padding:7px 9px!important;min-height:48px;border-radius:12px}
+body.kiosk-mode .machine-chip span{font-size:13px}
+body.kiosk-mode .machine-chip small{font-size:10px}
+body.kiosk-mode .hmi-grid{grid-template-columns:minmax(0,1fr) 236px!important;gap:8px!important;margin:0!important}
+body.kiosk-mode .panel{border-radius:12px;padding:11px!important}
+body.kiosk-mode .hmi-head{margin-bottom:8px}
+body.kiosk-mode .hmi-head h2{font-size:21px;margin:2px 0}
+body.kiosk-mode .machine-caption{font-size:10px}
+body.kiosk-mode .live-clock strong{font-size:20px}
+body.kiosk-mode .live-clock span{font-size:10px}
+body.kiosk-mode .state-badge{font-size:11px;padding:5px 8px}
+body.kiosk-mode .run-hero{padding:10px 12px!important;margin-bottom:8px!important}
+body.kiosk-mode .run-hero h2{font-size:23px;margin:2px 0}
+body.kiosk-mode .run-hero p{font-size:11px;margin:2px 0}
+body.kiosk-mode .run-duration strong{font-size:20px}
+body.kiosk-mode .run-kpis{grid-template-columns:repeat(4,1fr)!important;gap:6px!important;margin:7px 0!important}
+body.kiosk-mode .run-kpis>div{padding:8px!important;min-height:58px}
+body.kiosk-mode .run-kpis span{font-size:10px}
+body.kiosk-mode .run-kpis strong{font-size:20px}
+body.kiosk-mode .hmi-actions{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;margin-top:7px!important}
+body.kiosk-mode .action-card{min-height:64px!important;padding:8px!important;font-size:14px!important;border-radius:11px!important}
+body.kiosk-mode .action-card span{font-size:9px!important;margin-top:2px}
+body.kiosk-mode button,body.kiosk-mode input,body.kiosk-mode select{min-height:48px}
+body.kiosk-mode .hmi-form{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}
+body.kiosk-mode .hmi-form label{font-size:10px;gap:2px}
+body.kiosk-mode .hmi-form input,body.kiosk-mode .hmi-form select{padding:6px 8px!important;font-size:13px}
+body.kiosk-mode .checklist-gate{grid-column:1/-1;display:flex!important;align-items:center;gap:9px!important;padding:8px!important;flex-wrap:wrap}
+body.kiosk-mode .checklist-gate strong{width:auto!important;margin-right:3px}
+body.kiosk-mode .checklist-gate label{display:flex!important;align-items:center;gap:4px;font-size:11px}
+body.kiosk-mode .checklist-gate input{min-height:auto;width:20px;height:20px}
+body.kiosk-mode .hmi-start{grid-column:1/-1;min-height:54px!important;font-size:17px!important}
+body.kiosk-mode .live-metrics h3,body.kiosk-mode .escalation-card h3{font-size:14px;margin:0 0 6px}
+body.kiosk-mode .metric-big{padding:8px 0!important}
+body.kiosk-mode .metric-big strong{font-size:28px!important}
+body.kiosk-mode .metric-pair{gap:6px!important}
+body.kiosk-mode .metric-pair>div{padding:8px!important}
+body.kiosk-mode .metric-pair strong{font-size:16px!important}
+body.kiosk-mode .heartbeat{font-size:10px;margin-top:8px!important}
+body.kiosk-mode dialog{width:min(740px,96vw)!important;max-height:94vh!important}
+body.kiosk-mode .dialoghead{padding:10px 14px!important}
+body.kiosk-mode .dialogbody{padding:12px!important;max-height:78vh!important}
+body.kiosk-mode .formgrid{gap:8px!important}
+body.kiosk-mode .formactions{margin-top:10px!important}
+body.kiosk-mode #toast{bottom:8px;font-size:12px;padding:9px 14px}
+@media(max-width:850px){body.kiosk-mode .hmi-grid{grid-template-columns:1fr!important}body.kiosk-mode .hmi-side{display:grid;grid-template-columns:1fr 1fr;gap:6px}body.kiosk-mode .content{overflow:auto}}
+@media(max-height:620px) and (min-width:900px){body.kiosk-mode .hmi-ready{padding:8px!important;margin-bottom:6px!important}body.kiosk-mode .ready-graphic{width:45px!important;height:45px!important}body.kiosk-mode .hmi-ready h3{font-size:16px!important;margin:1px 0!important}body.kiosk-mode .hmi-ready p{font-size:10px!important;margin:0!important}}
