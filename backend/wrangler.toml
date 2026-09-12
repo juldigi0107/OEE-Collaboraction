@@ -8,4 +8,4 @@ ALLOWED_ORIGIN = "https://juldigi0107.github.io"
 [[d1_databases]]
 binding = "DB"
 database_name = "oee-collaboraction"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "85624616-87c2-45d4-a4cf-49c0544e163a"
