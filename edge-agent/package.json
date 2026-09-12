@@ -1,0 +1,9 @@
+{
+  "name":"oee-collaboraction-edge-agent",
+  "version":"1.0.0",
+  "private":true,
+  "type":"module",
+  "engines":{"node":">=20"},
+  "scripts":{"start":"node agent.mjs"},
+  "dependencies":{"modbus-serial":"8.0.25","node-opcua-client":"2.183.1"}
+}
