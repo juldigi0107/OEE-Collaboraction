@@ -91,7 +91,7 @@ export default {async fetch(req,env){
    const b=await body(),s=await one('SELECT * FROM sheets WHERE id=?',b.sheet_id);if(!s)fail(404,'Sheet tidak ditemukan');requireAllow(u,s.department,'create');if(!b.payload||typeof b.payload!=='object'||Array.isArray(b.payload))fail(400,'Payload wajib diisi');const base=await one('SELECT coalesce(max(row_end),0) n FROM record_chunks WHERE sheet_id=?',s.id),overlay=await one('SELECT coalesce(max(row_num),0) n FROM records WHERE sheet_id=?',s.id),row=Math.max(Number(base?.n||0),Number(overlay?.n||0))+1,id=uid();await db.batch([db.prepare('INSERT INTO records(id,sheet_id,department,row_num,payload) VALUES(?,?,?,?,?)').bind(id,s.id,s.department,row,JSON.stringify(b.payload)),db.prepare('UPDATE sheets SET rows=max(rows,?) WHERE id=?').bind(row,s.id),audit(u,'archive.create',id,null,b.payload)]);return json({id,row_num:row});
   }
   if(path==='/api/entries'&&method==='GET'){
-   const module=url.searchParams.get('module');if(!modules[module])fail(400,'Modul tidak valid');const page=Math.max(0,Number(url.searchParams.get('page'))||0),q=url.searchParams.get('q')||'';
+   const module=url.searchParams.get('module');if(!modules[module])fail(400,'Modul tidak valid');const page=Math.max(0,Number(url.searchParams.get('page'))||0),q=(url.searchParams.get('q')||'').slice(0,46);
    return json({rows:await all('SELECT * FROM entries WHERE module=? AND deleted=0 AND payload LIKE ? ORDER BY updated DESC LIMIT 50 OFFSET ?',module,'%'+q+'%',page*50),total:(await one('SELECT count(*) n FROM entries WHERE module=? AND deleted=0 AND payload LIKE ?',module,'%'+q+'%')).n,page});
   }
   if(path==='/api/entries'&&method==='POST'){
