@@ -1,0 +1,20 @@
+name: Validate OEE Collaboraction
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate frontend JavaScript
+        run: |
+          for f in frontend/*.js; do echo "Checking $f"; node --check "$f"; done
+      - name: Validate Worker modules
+        run: |
+          for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
