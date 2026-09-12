@@ -50,12 +50,16 @@ export default {
     }
 
     if(u.pathname==='/api/readiness'){
+      if(!env.DB)return json({ok:false,ready:false,reason:'D1 binding DB belum tersedia'},503);
+      const required=['users','sessions','login_attempts','audit','settings','password_flags','sources','sheets','documents','record_chunks','records','entries','source_files','source_file_chunks','machine_registry','machine_state','machine_events','machine_minute_snapshot','production_runs','downtime_events','maintenance_calls','quality_events','approvals','integration_connections','integration_sync_log'];
       try{
-        if(!env.DB)return json({ok:false,ready:false,reason:'D1 binding DB belum tersedia'},503);
-        await env.DB.prepare('SELECT id FROM users LIMIT 1').first();
-        return json({ok:true,ready:true,database:'oee-collaboraction',schema:'ready'});
-      }catch{
-        return json({ok:true,ready:false,database:'oee-collaboraction',schema:'not-initialized'},503);
+        const q=required.map(()=>'?').join(',');
+        const r=await env.DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${q})`).bind(...required).all();
+        const present=new Set((r.results||[]).map(x=>x.name));
+        const missing=required.filter(x=>!present.has(x));
+        return json({ok:true,ready:missing.length===0,database:'oee-collaboraction',schema:missing.length?'partial':'ready',missing_tables:missing},missing.length?503:200);
+      }catch(e){
+        return json({ok:false,ready:false,database:'oee-collaboraction',schema:'error',message:String(e?.message||e)},503);
       }
     }
 
