@@ -18,3 +18,8 @@ jobs:
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
+      - name: Production Worker smoke check
+        continue-on-error: true
+        run: |
+          echo "Checking https://oee.offsetbmj.workers.dev/api/health"
+          curl --location --max-time 20 --show-error --include https://oee.offsetbmj.workers.dev/api/health || true
