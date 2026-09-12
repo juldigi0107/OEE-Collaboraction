@@ -38,28 +38,32 @@ export default {
   async fetch(req,env,ctx){
     const u=new URL(req.url);
 
-    if(u.pathname==='/'){
-      return json({
-        ok:true,
-        service:'OEE Collaboraction',
-        storage:'D1-only',
-        health:'/api/health',
-        readiness:'/api/readiness',
-        frontend:'https://juldigi0107.github.io/OEE-Collaboraction/'
-      });
-    }
+    if(u.pathname==='/'||u.pathname==='/api/readiness'){
+      const {origin,ok,h}=cors(req,env);
+      if(origin&&!ok.includes(origin))return wrap(json({error:'Origin tidak diizinkan'},403),h);
+      if(req.method==='OPTIONS')return new Response(null,{status:204,headers:h});
 
-    if(u.pathname==='/api/readiness'){
-      if(!env.DB)return json({ok:false,ready:false,reason:'D1 binding DB belum tersedia'},503);
+      if(u.pathname==='/'){
+        return wrap(json({
+          ok:true,
+          service:'OEE Collaboraction',
+          storage:'D1-only',
+          health:'/api/health',
+          readiness:'/api/readiness',
+          frontend:'https://juldigi0107.github.io/OEE-Collaboraction/'
+        }),h);
+      }
+
+      if(!env.DB)return wrap(json({ok:false,ready:false,reason:'D1 binding DB belum tersedia'},503),h);
       const required=['users','sessions','login_attempts','audit','settings','password_flags','sources','sheets','documents','record_chunks','records','entries','source_files','source_file_chunks','machine_registry','machine_state','machine_events','machine_minute_snapshot','production_runs','downtime_events','maintenance_calls','quality_events','approvals','integration_connections','integration_sync_log'];
       try{
         const q=required.map(()=>'?').join(',');
         const r=await env.DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${q})`).bind(...required).all();
         const present=new Set((r.results||[]).map(x=>x.name));
         const missing=required.filter(x=>!present.has(x));
-        return json({ok:true,ready:missing.length===0,database:'oee-collaboraction',schema:missing.length?'partial':'ready',missing_tables:missing},missing.length?503:200);
+        return wrap(json({ok:true,ready:missing.length===0,database:'oee-collaboraction',schema:missing.length?'partial':'ready',missing_tables:missing},missing.length?503:200),h);
       }catch(e){
-        return json({ok:false,ready:false,database:'oee-collaboraction',schema:'error',message:String(e?.message||e)},503);
+        return wrap(json({ok:false,ready:false,database:'oee-collaboraction',schema:'error',message:String(e?.message||e)},503),h);
       }
     }
 
