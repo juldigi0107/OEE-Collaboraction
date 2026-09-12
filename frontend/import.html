@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Web Import Center · OEE Collaboraction</title>
+<style>
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#153b61;background:#edf4fa}*{box-sizing:border-box}body{margin:0}.wrap{max-width:940px;margin:0 auto;padding:28px 18px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.top a{color:#0878df;text-decoration:none;font-weight:700}.card{background:#fff;border:1px solid #dce8f3;border-radius:14px;padding:22px;box-shadow:0 10px 34px #163f6812;margin:12px 0}h1{margin:0;font-size:27px}h2{font-size:16px;margin:0 0 13px}.muted{color:#7189a3}.drop{border:2px dashed #b9d2e8;border-radius:12px;padding:28px;text-align:center;background:#f8fbfe}.drop input{margin:12px 0}.btn{border:0;border-radius:9px;padding:11px 17px;font-weight:800;cursor:pointer}.primary{background:#0878df;color:#fff}.primary:disabled{opacity:.45;cursor:not-allowed}.progress{height:10px;background:#e8f0f7;border-radius:99px;overflow:hidden;margin:14px 0}.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0878df,#18b8c9);transition:width .2s}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{padding:12px;border-radius:9px;background:#f5f9fd}.stat b{display:block;font-size:20px}.log{white-space:pre-wrap;background:#071d31;color:#cbe3f5;border-radius:9px;padding:14px;max-height:270px;overflow:auto;font:12px/1.5 Consolas,monospace}.ok{color:#16885e}.err{color:#c63e4b}@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div><div class="muted">SUPERADMIN · D1-ONLY</div><h1>Web Import Center</h1></div><a href="./">← Kembali ke aplikasi</a></div>
+  <div class="card"><h2>Import data historis tanpa CMD</h2><p class="muted">Pilih file <b>OEE-Historical-Seed.sql.gz</b>. File diproses lokal di browser lalu dikirim ke D1 dalam batch kecil. Jangan tutup tab sampai selesai.</p>
+    <div class="drop"><input id="file" type="file" accept=".gz,.sql,application/gzip,text/plain"><br><button id="start" class="btn primary" disabled>Mulai Import ke D1</button></div>
+    <div class="progress"><i id="bar"></i></div><div id="status" class="muted">Menunggu file…</div>
+  </div>
+  <div class="card"><h2>Status database</h2><div class="stats" id="stats"></div></div>
+  <div class="card"><h2>Log proses</h2><div class="log" id="log">Web Import Center siap.</div></div>
+</div>
+<script src="import-center.js"></script>
+</body></html>
