@@ -1,0 +1,85 @@
+/* OEE COLLABORACTION — Showcase DNA v4
+   Visual system derived from the approved full-application showcase.
+   Loaded last so it can refine all existing pages without changing business logic. */
+:root{
+  --navy:#062b52;--navy2:#0a3b70;--navy3:#0f4c86;--blue:#1688ff;--blue2:#4fa7ff;
+  --cyan:#18b8c9;--green:#18b36b;--amber:#f7a51a;--red:#ee4c59;--purple:#7657e8;
+  --ink:#16385e;--muted:#7189a3;--line:#dce8f3;--line2:#eaf1f7;--panel:#fff;
+  --soft:#f6f9fd;--canvas:#edf4fa;--shadow:0 8px 28px rgba(22,63,104,.075);
+  font-family:Inter,"Segoe UI",Arial,sans-serif;
+}
+html,body{background:var(--canvas);color:var(--ink)}
+body{font-size:14px}
+button,input,select,textarea{border-radius:8px}
+button{padding:8px 12px;font-size:12px;font-weight:700}
+.primary{background:linear-gradient(180deg,#238fff,#0878e8)!important;box-shadow:0 7px 15px rgba(15,130,255,.18)!important}
+.soft-primary{background:#eef7ff;color:#0870d0;border-color:#cae5fd}
+input,select,textarea{border-color:#cfddeb;padding:9px 10px;font-size:12px}
+input:focus,select:focus,textarea:focus{border-color:#45a3ff;box-shadow:0 0 0 3px rgba(22,136,255,.10)}
+h1{font-size:26px;letter-spacing:-.65px;color:#13375e}h2{font-size:17px}h3{font-size:14px}
+
+/* Shell / navigation */
+.shell{grid-template-columns:214px minmax(0,1fr)}
+.workspace{grid-column:2}
+.sidebar{width:214px;background:linear-gradient(180deg,#052846 0%,#07345a 46%,#062b4d 100%);box-shadow:4px 0 20px rgba(8,42,73,.11)}
+.sidebar-brand{padding:14px 14px 13px;gap:9px;min-height:63px}
+.sidebar-brand img{width:50px;height:28px;border-radius:4px;padding:2px}
+.sidebar-brand strong{font-size:10.5px;line-height:1.15;letter-spacing:.2px}.sidebar-brand span{font-size:8px;margin-top:3px;color:#a9c8e1}
+.navscroll{padding:9px 7px 13px}.navgroup{font-size:8px;letter-spacing:1.25px;margin:15px 9px 5px;color:#7099ba}
+.nav{min-height:32px;padding:5px 7px;margin:1px 0;border-radius:6px;font-size:10.5px;gap:4px}
+.nav.active{background:linear-gradient(90deg,#168bff,#0875dd);box-shadow:0 5px 13px rgba(5,120,230,.26)}
+.nav .raster-icon{transform:scale(.52);margin:-6px}
+.sidebar-foot{padding:11px 14px;font-size:8px}.sidebar-foot small{font-size:8px}
+
+.topbar{height:58px;padding:8px 18px;background:rgba(255,255,255,.98);box-shadow:0 1px 0 rgba(31,72,111,.05)}
+.product-title strong{font-size:12px;color:#0a3260}.product-title span{font-size:8.5px;letter-spacing:.2px}
+.system-badge{font-size:9px;padding:5px 8px}.avatar{width:31px;height:31px;font-size:12px}.user strong{font-size:10px}.user small{font-size:8px}.icon-button span:last-child{font-size:9px}
+.content{padding:15px 18px 28px;max-width:1900px}
+.heading{margin:2px 0 12px}.heading h1{font-size:21px;margin-bottom:2px}.heading .muted{font-size:10px}.eyebrow{font-size:8px;letter-spacing:1.2px;margin-bottom:4px}
+
+/* Dashboard */
+.home-hero{height:118px;border-radius:10px;margin-bottom:12px;box-shadow:0 7px 20px rgba(10,50,85,.12);background-position:center 50%}
+.hero-overlay{background:linear-gradient(90deg,rgba(3,31,58,.88),rgba(5,56,94,.52) 46%,rgba(3,34,58,.10) 78%)}
+.hero-content{left:22px;top:17px;max-width:580px}.hero-kicker{font-size:8px;letter-spacing:1.2px}.hero-content h1{font-size:24px;line-height:1.02;margin:7px 0 4px}.hero-content p{font-size:10px;margin:0 0 8px}.hero-badges{gap:5px}.hero-badges span{font-size:8px;padding:1px 6px 1px 0}.hero-badges .raster-icon{transform:scale(.45);margin:-7px}
+.hero-date{right:10px;top:9px;border-radius:6px;padding:6px 8px;font-size:8px}
+.cards{gap:9px;margin:10px 0 11px}.card,.panel{border-radius:9px;padding:13px;border-color:#dbe7f2;box-shadow:var(--shadow)}
+.kpi-card{min-height:103px}.kpi-card:after{width:72px;height:72px}.kpi-top{gap:2px}.kpi-top .raster-icon{transform:scale(.55);margin:-5px}.card .label{font-size:9px}.card .value{font-size:25px;margin:5px 0;color:#143f6d}.card .value small{font-size:11px}.kpi-note,.card .foot{font-size:8px}
+.premium-notice{padding:8px 10px;border-radius:7px;font-size:9px}.premium-notice .raster-icon{transform:scale(.48);margin:-6px}.premium-notice span{font-size:9px}
+.grid{gap:10px;margin:10px 0}.premium-panel{box-shadow:var(--shadow)}.panel-title{margin-bottom:9px}.panel-title h2{font-size:12px}.panel-title span{font-size:8px}.panel-title .raster-icon{transform:scale(.52);margin:-6px}.chart{height:190px}.legend{font-size:8px}.barrow{margin:10px 0}.barlabel{font-size:9px}.bar{height:6px}
+.department-line{padding:6px 0;font-size:10px}.department-line .raster-icon{transform:scale(.45);margin:-7px}.department-line strong{font-size:8px}.metric-line,.statline{padding:8px 0;font-size:9px}
+
+/* Tables, forms and information pages */
+.filters{gap:6px;margin:9px 0}.filters input,.filters select{min-height:32px}.tablewrap{border-radius:7px;max-height:72vh}table{font-size:9.5px}th{font-size:8px;background:#f3f8fc;color:#57728f}td,th{padding:7px 8px}tbody tr:hover{background:#f3f9ff}.pagination{margin:9px 0;font-size:9px}
+.sheetinfo{font-size:9px}.docgrid{gap:9px}.doccard{gap:7px}.doccard h3{font-size:11px}.doccard p,.doccard small{font-size:8.5px}
+dialog{border-radius:11px}.dialoghead{padding:12px 14px}.dialoghead h2{font-size:14px!important}.dialogbody{padding:14px}.formgrid{gap:9px}label{font-size:10px;gap:4px}.formactions{margin-top:12px}.errorbox{font-size:10px;padding:8px 9px;border-radius:6px}
+details{margin:8px 0}summary{font-size:10px}pre{font-size:9px}
+
+/* Login — approved showcase composition */
+.premium-login{grid-template-columns:minmax(0,1.2fr) minmax(355px,.66fr);background:#eef5fb}
+.login-visual{background-position:center}.login-shade{background:linear-gradient(90deg,rgba(5,38,69,.62),rgba(5,48,82,.28) 57%,rgba(5,48,82,.14))}
+.login-brand{left:34px;top:25px;gap:10px}.login-brand img{width:75px;border-radius:5px}.login-brand strong{font-size:13px}.login-brand span{font-size:9px}.login-brand small{font-size:8px}
+.login-copy{left:36px;bottom:38px;max-width:540px}.login-copy h1{font-size:37px;margin:8px 0}.login-copy p{font-size:12px;max-width:500px}.value-strip{gap:7px;margin-top:13px}.value-strip>div{font-size:8px;padding:1px 7px 1px 0}.value-strip .raster-icon{transform:scale(.48);margin:-6px}
+.login-panel{padding:26px;background:#f5f9fd}.login-card{width:min(360px,100%);gap:13px;border-radius:11px;padding:23px;box-shadow:0 16px 45px rgba(23,55,88,.10)}.login-card h2{font-size:20px}.login-card .muted{font-size:9px}.login-button{padding:11px}.login-security{font-size:8px;padding:6px}.login-card footer{font-size:7.5px}
+.input-shell{border-radius:7px}.input-shell .raster-icon{transform:scale(.45);margin:-7px}.show-pass{font-size:8px}
+
+/* Splash */
+.splash{background:linear-gradient(145deg,#edf6fd,#e4eef8)}.splash-card{width:min(670px,91vw);border-radius:15px;padding:20px 25px;box-shadow:0 24px 70px rgba(15,55,92,.12)}.splash-logo{width:80px}.splash-title strong{font-size:16px}.splash-title span{font-size:9px}.factory-illustration{max-height:260px;object-fit:cover;border-radius:8px;margin:8px auto}.splash-card h2{font-size:14px}.progress{height:5px}.splash-steps{margin-top:12px}.splash-steps span{font-size:8px}.splash-steps .raster-icon{transform:scale(.5);margin:-6px}
+
+/* Live machine wall */
+.machine-wall{gap:10px}.machine-live-card{border-radius:8px;box-shadow:var(--shadow)}.machine-live-card header{padding:9px 11px}.machine-live-card header span{font-size:8px}.machine-live-body div{padding:8px 10px}.machine-live-body span{font-size:7.5px}.machine-live-body strong{font-size:13px}.machine-live-card footer{padding:7px 10px;font-size:8px}
+
+/* HMI — dark 7 inch visual matching approved reference */
+.hmi-machine-strip{gap:6px;padding:2px 0 9px}.machine-chip{min-width:125px;padding:8px 9px;border-radius:8px;box-shadow:none}.machine-chip span{font-size:9px}.machine-chip small{font-size:8px}.machine-chip.active{box-shadow:0 0 0 2px rgba(22,136,255,.18)}
+.hmi-grid{grid-template-columns:minmax(0,2.4fr) minmax(225px,.72fr);gap:9px}.hmi-main,.hmi-side>.panel{background:#081a2d!important;border-color:#173a5d!important;color:#e7f3ff;box-shadow:0 8px 28px rgba(2,17,31,.16)}
+.hmi-main{border-radius:9px}.hmi-head{padding:12px 15px;background:linear-gradient(135deg,#09223d,#0b3152);border-color:#173d61}.hmi-head h2{font-size:19px;color:#fff}.machine-caption,.run-label{font-size:8px;color:#89b8de}.live-clock strong{font-size:18px;color:#fff}.live-clock span{font-size:8px;color:#8cafcc}.state-badge{font-size:8px;padding:4px 7px}
+.hmi-ready{padding:17px 17px 5px}.ready-graphic{width:48px;height:48px;border-radius:10px;background:#0e355c}.hmi-ready h3{color:#fff}.hmi-ready p{font-size:9px;color:#98b6cf}.hmi-form{padding:11px 16px 16px;gap:8px}.hmi-form label{color:#b9d1e5}.hmi-form input,.hmi-form select{background:#0d2946;border-color:#244d70;color:#fff}.checklist-gate{padding:10px;border-radius:8px;background:#0d2946;border-color:#244d70;gap:10px}.hmi-start{padding:11px!important;font-size:11px!important}
+.run-hero{padding:15px;background:linear-gradient(135deg,#0a365d,#0c5b87)}.run-hero h2{font-size:23px;color:#fff}.run-hero p{font-size:9px}.run-duration strong{font-size:17px}.run-duration span{font-size:8px}.run-kpis{background:#173955;border-color:#173955}.run-kpis div{background:#0b233b;padding:10px 12px}.run-kpis span{font-size:8px;color:#85a9c8}.run-kpis strong{font-size:17px;color:#fff}.downtime-active{margin:9px 12px 0;padding:9px 10px;border-radius:7px;font-size:9px}.downtime-active span{font-size:8px}.hmi-actions{gap:6px;padding:11px 12px 13px}.action-card{min-height:58px;border-radius:7px!important;padding:9px 10px!important;font-size:10px!important}.action-card span{font-size:7.5px;margin-top:2px}.action-card.pdt{background:#c87510;color:#fff;border-color:#e89420}.action-card.updt{background:#cc3944;color:#fff;border-color:#e45a64}.action-card.coj{background:#6546c5;color:#fff;border-color:#8065d7}.action-card.quality{background:#0d75be;color:#fff;border-color:#2990d5}.action-card.mtc{background:#7b40c4;color:#fff;border-color:#9360d1}.action-card.finish{background:#536477;color:#fff;border-color:#758497}.hmi-side{gap:9px}.hmi-side>.panel{padding:11px}.hmi-side h3{color:#fff;font-size:10px}.metric-big{padding:7px 0;border-color:#173a5d}.metric-big span,.metric-pair span{font-size:8px;color:#89a8c2}.metric-big strong{font-size:25px;color:#fff}.metric-pair{padding:8px 0;gap:6px}.metric-pair strong{font-size:14px;color:#fff}.heartbeat{font-size:8px;color:#9ab5cc}.call-active{padding:7px;border-radius:6px;background:#2a2618;border-color:#5f4b20}.call-active span{font-size:8px}
+
+/* Integrations & admin */
+.integration-grid{gap:9px;margin-top:10px}.integration-card{gap:9px}.integration-head h3{font-size:11px}.system-logo{width:32px;height:32px;border-radius:8px;font-size:14px}.connection-status{font-size:8px;padding:4px 6px}.integration-meta{gap:6px}.integration-meta span{font-size:8px}.integration-meta strong{font-size:9px}.architecture-flow{margin-top:10px}.architecture-flow span{padding:7px 9px;border-radius:6px;font-size:9px}
+
+/* Touch / kiosk at 7 inch */
+body.hmi-kiosk .content{padding:5px!important;background:#061523!important}body.hmi-kiosk .heading{display:none!important}body.hmi-kiosk .hmi-machine-strip{padding:2px 2px 5px!important}body.hmi-kiosk .hmi-grid{gap:5px!important}body.hmi-kiosk .hmi-main,body.hmi-kiosk .hmi-side>.panel{border-radius:5px!important}body.hmi-kiosk .machine-chip{min-width:106px!important;padding:5px 7px!important}body.hmi-kiosk .hmi-head{padding:7px 9px!important}body.hmi-kiosk .run-hero{padding:9px!important}body.hmi-kiosk .run-kpis div{padding:7px 8px!important}body.hmi-kiosk .hmi-actions{padding:7px!important;gap:5px!important}body.hmi-kiosk .action-card{min-height:52px!important;font-size:9px!important}body.hmi-kiosk .hmi-side>.panel{padding:8px!important}
+
+@media(max-width:1200px){.shell{grid-template-columns:205px minmax(0,1fr)}.sidebar{width:205px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}.hmi-grid{grid-template-columns:1fr}.hmi-side{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.sidebar{width:230px}.content{padding:10px}.home-hero{height:145px}.hero-content{left:15px;top:18px}.hero-content h1{font-size:23px}.premium-login{grid-template-columns:1fr}.login-card{width:min(390px,100%)}}
