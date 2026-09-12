@@ -47,7 +47,7 @@ export default {async fetch(req,env){
    if(await one("SELECT id FROM users WHERE role='superadmin'"))fail(409,'Superadmin sudah disiapkan');
    if(!b.username||!b.name||typeof b.password!=='string'||b.password.length<12)fail(400,'Nama, username dan password minimal 12 karakter wajib diisi');
    const salt=uid(),ph=await pwd(b.password,salt);
-   await run("INSERT INTO users(id,username,name,role,department,permissions,password_hash,salt) SELECT ?,?,?,'superadmin','PROJECT','[]',?,? WHERE NOT EXISTS(SELECT 1 FROM users WHERE role='superadmin')",uid(),b.username.toLowerCase().trim(),b.name,ph,salt);
+   const id=uid();await db.batch([db.prepare("INSERT INTO users(id,username,name,role,department,permissions,password_hash,salt) SELECT ?,?,?,'superadmin','PROJECT','[]',?,? WHERE NOT EXISTS(SELECT 1 FROM users WHERE role='superadmin')").bind(id,b.username.toLowerCase().trim(),b.name,ph,salt),db.prepare('INSERT OR IGNORE INTO password_flags(user_id,must_change) VALUES(?,1)').bind(id)]);
    return json({ok:true});
   }
   if(path==='/api/login'&&method==='POST'){
@@ -57,18 +57,18 @@ export default {async fetch(req,env){
    await run('INSERT INTO login_attempts VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN until_ts<? THEN 1 ELSE count+1 END,until_ts=CASE WHEN until_ts<? THEN excluded.until_ts ELSE until_ts END',key,now+900000,now,now);
    const u=await one('SELECT * FROM users WHERE username=?',username);const ph=await pwd(String(b.password||''),u?.salt||'nonexistent-account');
    if(!u||!u.active||ph!==u.password_hash)fail(401,'Username atau password salah');
-   await run('DELETE FROM login_attempts WHERE key=?',key);const token=uid()+uid();await run('INSERT INTO sessions VALUES(?,?,?)',await hash(token),u.id,now+28800000);return json({token,user:publicUser(u)});
+   await run('DELETE FROM login_attempts WHERE key=?',key);const token=uid()+uid();await run('INSERT INTO sessions VALUES(?,?,?)',await hash(token),u.id,now+28800000);const flag=await one('SELECT must_change FROM password_flags WHERE user_id=?',u.id);return json({token,user:{...publicUser(u),must_change_password:!!flag?.must_change}});
   }
   const token=(req.headers.get('Authorization')||'').replace(/^Bearer /,'');
   const u=await one('SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await hash(token),Date.now());
   if(!u)fail(401,'Silakan login kembali');
-  if(path==='/api/me')return json(publicUser(u));
+  if(path==='/api/me'){const flag=await one('SELECT must_change FROM password_flags WHERE user_id=?',u.id);return json({...publicUser(u),must_change_password:!!flag?.must_change});}
   if(path==='/api/logout'&&method==='POST'){await run('DELETE FROM sessions WHERE token_hash=?',await hash(token));return json({ok:true});}
   if(path==='/api/password'&&method==='PUT'){
    const b=await body();if(typeof b.password!=='string'||b.password.length<12)fail(400,'Password minimal 12 karakter');if(await pwd(String(b.current||''),u.salt)!==u.password_hash)fail(403,'Password saat ini salah');
-   const salt=uid();await db.batch([db.prepare('UPDATE users SET password_hash=?,salt=? WHERE id=?').bind(await pwd(b.password,salt),salt,u.id),db.prepare('DELETE FROM sessions WHERE user_id=?').bind(u.id),audit(u,'password',u.id,null,null)]);return json({ok:true});
+   const salt=uid();await db.batch([db.prepare('UPDATE users SET password_hash=?,salt=? WHERE id=?').bind(await pwd(b.password,salt),salt,u.id),db.prepare('DELETE FROM password_flags WHERE user_id=?').bind(u.id),db.prepare('DELETE FROM sessions WHERE user_id=?').bind(u.id),audit(u,'password',u.id,null,null)]);return json({ok:true});
   }
-  if(path==='/api/catalog')return json({sources:await all('SELECT * FROM sources ORDER BY department,name'),sheets:await all('SELECT * FROM sheets ORDER BY department,source_id,name'),settings:await all('SELECT * FROM settings')});
+  if(path==='/api/catalog')return json({sources:await all('SELECT * FROM sources ORDER BY department,name'),sheets:await all('SELECT * FROM sheets ORDER BY department,source_id,name'),settings:u.role==='superadmin'?await all('SELECT * FROM settings'):[]});
   if(path==='/api/dashboard'){
    const names=['OEE Printing (2)','OEE AP','OEE FG'];let series=[];
    for(const name of names){const s=await one("SELECT * FROM sheets WHERE department='PROD' AND name=?",name);if(!s)continue;const rows=await all(archiveCTE+' SELECT row_num,payload FROM combined WHERE deleted=0 ORDER BY row_num',s.id,s.id);series.push({name,sheet_id:s.id,rows:rows.map(r=>({row:r.row_num,cells:JSON.parse(r.payload)}))});}
@@ -122,7 +122,7 @@ export default {async fetch(req,env){
    }
   }
   if(path==='/api/settings'&&method==='PUT'){
-   const b=await body();const dept=b.department||'PROJECT';requireAllow(u,dept,'config');if(!['MTC','QC','PROD','PPIC','PDS','PROJECT'].includes(dept)||!b.key)fail(400,'Konfigurasi tidak valid');const old=await one('SELECT * FROM settings WHERE key=?',b.key);if(old)requireAllow(u,old.department,'config');if(b.key==='brand'&&u.role!=='superadmin')fail(403,'Brand khusus superadmin');
+   if(u.role!=='superadmin')fail(403,'Khusus superadmin');const b=await body();const dept=b.department||'PROJECT';if(!['MTC','QC','PROD','PPIC','PDS','PROJECT'].includes(dept)||!b.key)fail(400,'Konfigurasi tidak valid');const old=await one('SELECT * FROM settings WHERE key=?',b.key);if(old)requireAllow(u,old.department,'config');if(b.key==='brand'&&u.role!=='superadmin')fail(403,'Brand khusus superadmin');
    await db.batch([db.prepare('INSERT INTO settings VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(b.key,JSON.stringify(b.value),dept),audit(u,'config.save',b.key,old,b.value)]);return json({ok:true});
   }
   if(path==='/api/audit'){if(u.role!=='superadmin')fail(403,'Khusus superadmin');return json(await all('SELECT a.*,u.name FROM audit a LEFT JOIN users u ON a.user_id=u.id ORDER BY created DESC LIMIT 200'));}
