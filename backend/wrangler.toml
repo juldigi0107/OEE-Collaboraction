@@ -4,7 +4,13 @@ compatibility_date = "2026-09-01"
 workers_dev = true
 
 [vars]
-ALLOWED_ORIGIN = "https://juldigi0107.github.io"
+ALLOWED_ORIGIN = "https://oee-collaboraction.offsetbmj.workers.dev,https://juldigi0107.github.io"
+
+[assets]
+directory = "../frontend"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 [triggers]
 crons = ["* * * * *"]
