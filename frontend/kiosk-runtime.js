@@ -1,0 +1,1 @@
+(()=>{if(!window.OEE_KIOSK?.enabled)return;const baseShopfloor=shopfloor;shopfloor=async function(refresh=false){await baseShopfloor(refresh);if(!refresh){if(hmiTimer)clearInterval(hmiTimer);hmiTimer=setInterval(()=>{if(view==='shopfloor'&&!modal.open)baseShopfloor(true).catch(()=>{});},30000);}};})();
