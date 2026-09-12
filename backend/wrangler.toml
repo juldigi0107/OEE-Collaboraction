@@ -1,5 +1,5 @@
 name = "oee-collaboraction-api"
-main = "worker-v3.mjs"
+main = "worker-v4.mjs"
 compatibility_date = "2026-09-01"
 
 [vars]
