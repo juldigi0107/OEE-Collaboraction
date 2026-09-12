@@ -9,7 +9,3 @@ ALLOWED_ORIGIN = "https://juldigi0107.github.io"
 binding = "DB"
 database_name = "oee-collaboraction"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
-
-[[r2_buckets]]
-binding = "FILES"
-bucket_name = "oee-collaboraction-documents"
