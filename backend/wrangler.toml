@@ -1,6 +1,7 @@
-name = "oee"
+name = "oee-collaboraction"
 main = "worker-v4.mjs"
 compatibility_date = "2026-09-01"
+workers_dev = true
 
 [vars]
 ALLOWED_ORIGIN = "https://juldigi0107.github.io"
