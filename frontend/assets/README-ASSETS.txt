@@ -1,0 +1,1 @@
+Original BMJ visual assets are sourced from user-provided files. Do not replace with generated placeholders.
