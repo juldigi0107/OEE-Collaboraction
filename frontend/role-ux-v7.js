@@ -49,7 +49,13 @@
     if(!select||select.dataset.roleScoped)return;
     const own=user.department||'';
     [...select.options].forEach(o=>{if(o.value!==own)o.remove();});
-    if(own){select.value=own;select.disabled=true;select.setAttribute('aria-label','Department dikunci sesuai scope admin');}
+    if(own){
+      select.value=own;
+      select.name='department_display';
+      select.disabled=true;
+      select.setAttribute('aria-label','Department dikunci sesuai scope admin');
+      const hidden=document.createElement('input');hidden.type='hidden';hidden.name='department';hidden.value=own;select.insertAdjacentElement('afterend',hidden);
+    }
     select.dataset.roleScoped='1';
   }
   function markReadOnlyDialogs(){
