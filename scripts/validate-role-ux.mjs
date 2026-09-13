@@ -12,6 +12,7 @@ need(core.includes("user?.role==='admin'&&user.department===d"),'Policy admin de
 need(role.includes("new Set(['users','audit','integrations','import'])"),'Guard menu superadmin belum lengkap.');
 need(role.includes("perms().includes('config')"),'Guard konfigurasi admin belum mengikuti izin config.');
 need(role.includes("select.disabled=true"),'Department konfigurasi admin belum dikunci pada UI.');
+need(role.includes("hidden.name='department'"),'Department admin yang dikunci belum dipertahankan pada FormData.');
 need(role.includes("Mode view-only"),'Penanda role user view-only belum tersedia.');
 need(index.includes('role-ux-v7.css')&&index.includes('role-ux-v7.js'),'Role UX bundle belum dimuat index.html.');
 
