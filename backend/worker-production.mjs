@@ -1,5 +1,6 @@
 import app from './worker-v6.mjs';
 import {handleReleaseV11,captureReleaseV11,afterReleaseV11} from './release-v11.mjs';
+import {handleSecurityV15} from './release-v15-security.mjs';
 
 const BUILD_VERSION='6.1.0-source-audit';
 let schemaReady=null;
@@ -18,6 +19,8 @@ export default {
     const path=new URL(req.url).pathname;
     if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
     if(path==='/api/assets'||path==='/api/import-data')await ensureAdditiveSchema(env);
+    const securityResponse=await handleSecurityV15(req,env);
+    if(securityResponse)return securityResponse;
     const releaseResponse=await handleReleaseV11(req,env);
     if(releaseResponse)return releaseResponse;
     const signal=await captureReleaseV11(req);
