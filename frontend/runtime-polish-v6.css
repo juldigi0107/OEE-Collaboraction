@@ -1,7 +1,7 @@
 /* BMJ OEE runtime polish v6 — responsive, low-cognitive, non-destructive. */
-.runtime-sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(9,29,47,.42);backdrop-filter:blur(2px);z-index:4;border:0;border-radius:0;padding:0;min-height:0}
+.runtime-sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(9,29,47,.42);backdrop-filter:blur(2px);z-index:4;border:0;border-radius:0;padding:0;min-height:0}.runtime-sidebar-backdrop:hover,.runtime-sidebar-backdrop:focus{background:rgba(9,29,47,.42);border:0}
 .runtime-sidebar-backdrop.show{display:block}
-body.runtime-menu-open{overflow:hidden}
+body.runtime-menu-open,body.runtime-dialog-open{overflow:hidden}
 .runtime-status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:99px;background:#eef5fa;color:#587086;font-size:.63rem;font-weight:700;white-space:nowrap}
 .runtime-status:before{content:"";width:7px;height:7px;border-radius:50%;background:#25bd78;box-shadow:0 0 0 3px rgba(37,189,120,.10)}
 .runtime-status.offline{background:#fff3f3;color:#a53c49}.runtime-status.offline:before{background:#e04c5c;box-shadow:0 0 0 3px rgba(224,76,92,.10)}
@@ -45,5 +45,5 @@ body.runtime-menu-open{overflow:hidden}
   .toTop{width:40px;height:40px;right:12px;bottom:12px}
 }
 @media(max-width:380px){.auth-story{min-height:34vh!important}.auth-panel{min-height:66vh!important}.home-hero-v4{height:150px}.home-hero-copy p{display:none}.topbar .avatar{display:none!important}.filters{grid-template-columns:1fr}.filters button{grid-column:1/-1}}
-@media(hover:none){button:hover{background:inherit}.nav.active:hover{background:linear-gradient(90deg,#0b84f3,#0876dc)}.department-card-v4:hover{transform:none}}
+@media(hover:none){button:hover{background:inherit}.nav.active:hover{background:linear-gradient(90deg,#0b84f3,#0876dc)}.department-card-v4:hover{transform:none}.runtime-sidebar-backdrop:hover{background:rgba(9,29,47,.42)}}
 @media(prefers-reduced-motion:reduce){.sidebar,.toTop{transition:none!important}}
