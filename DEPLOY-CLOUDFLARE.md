@@ -1,51 +1,62 @@
-# Deployment Backend OEE ke Cloudflare
+# Deployment Backend OEE ke Cloudflare — D1 Only
 
 Frontend production: https://juldigi0107.github.io/OEE-Collaboraction/
 
-## Resource Cloudflare
+Backend production: `oee-collaboraction` pada Cloudflare Workers.
 
-Buat resource berikut pada akun Cloudflare yang akan dipakai produksi:
+## Arsitektur produksi
 
-1. D1 database: `oee-collaboraction`
-2. R2 bucket privat: `oee-collaboraction-documents`
-3. Worker: `oee-collaboraction-api`
+- Frontend: GitHub Pages dari folder `frontend/`.
+- Backend: Cloudflare Worker `backend/worker-v6.mjs` melalui `wrangler.toml` di root repository.
+- Database: Cloudflare D1 `oee-collaboraction`.
+- Dokumen, XLSX/PDF/PPTX, gambar, serta historical archive: disimpan di **D1 sebagai chunk BLOB/JSON**.
+- **Tidak menggunakan R2**.
+- Data bisnis privat, database seed, token, dan secret tidak boleh disimpan di repository publik.
 
-Setelah D1 dibuat, salin Database ID lalu ganti `REPLACE_WITH_D1_DATABASE_ID` pada `backend/wrangler.toml`.
+`wrangler.toml` saat ini memakai D1 database ID `85624616-87c2-45d4-a4cf-49c0544e163a` dan Worker `oee-collaboraction`.
 
-`ALLOWED_ORIGIN` sudah dibatasi ke origin GitHub Pages: `https://juldigi0107.github.io`.
+## Deployment melalui Cloudflare Dashboard
 
-## Deploy source Worker
-
-Cloudflare Workers Builds dapat dihubungkan ke repository ini. Gunakan:
+Hubungkan Workers Builds ke repository:
 
 - Repository: `juldigi0107/OEE-Collaboraction`
 - Production branch: `main`
-- Root directory: `backend`
+- Root directory: **repository root**
 - Build command: kosong
 - Deploy command: `npx wrangler deploy`
 
-Jangan memasukkan data bisnis, database seed, token, atau `.dev.vars` ke repository publik.
+Jangan mengatur Root Directory ke `backend`, karena konfigurasi production berada pada `wrangler.toml` di root repository.
 
-## Data produksi
+## Urutan aman sebelum deploy
 
-Data aktual tidak disimpan di GitHub. Paket deployment privat memiliki SQL seed D1 dan original source files untuk R2.
+1. Backup/ekspor D1 production lebih dahulu.
+2. Terapkan perubahan schema secara **additive**. Migration `backend/migrations/0001_asset_catalog.sql` hanya menambah `asset_catalog` dan index; tidak menghapus tabel/data lama.
+3. Pastikan binding D1 pada Worker bernama `DB` dan menunjuk database `oee-collaboraction`.
+4. Pastikan `ALLOWED_ORIGIN` mencakup `https://juldigi0107.github.io` dan domain Worker production.
+5. Deploy Worker dari branch `main` melalui Workers Builds.
+6. Buka `/api/health`; respons yang benar harus menunjukkan service OEE dan storage D1-only.
+7. Setelah backend sehat, workflow GitHub Pages akan menerbitkan folder `frontend/` dari `main`.
 
-Untuk D1, gunakan Wrangler terhadap database baru/empty:
+## Data aktual dan impor
 
-`npx wrangler d1 execute oee-collaboraction --remote --file=<file.sql>`
+Source code publik tidak membawa data aktual. Paket privat hasil audit berisi database/arsip dan paket impor yang dapat dimasukkan melalui superadmin.
 
-Untuk original documents, upload ke R2 dengan struktur object key `<source-id>/<filename>` sesuai manifest privat.
+Impor dilakukan ke D1 dengan ID sumber yang stabil dan `INSERT OR IGNORE`, sehingga pengulangan batch yang sama tidak mengganti record yang sudah ada. Namun sebelum mengimpor ke D1 yang sudah memiliki data lama, cocokkan `sources.sha256` agar sumber yang sama tidak tercatat dengan ID berbeda.
 
-## Bootstrap superadmin
+File besar direkonstruksi dari tabel `source_file_chunks`; aplikasi tidak memerlukan R2.
 
-Set runtime secret `BOOTSTRAP_TOKEN` pada Worker. Gunakan nilai acak panjang. Setelah superadmin pertama berhasil dibuat melalui UI aplikasi, hapus secret tersebut.
+## Bootstrap akun
 
-Tidak ada username/password produksi bawaan.
+Tidak ada username/password produksi bawaan. Untuk instalasi baru, set Worker Secret `BOOTSTRAP_TOKEN` dengan nilai acak kuat, lakukan bootstrap superadmin satu kali, wajibkan penggantian password awal, lalu hapus secret bootstrap.
 
-## Setelah Worker live
+Untuk database existing, pertahankan akun yang sudah ada dan jangan menjalankan seed akun tetap.
 
-Ubah `frontend/config.js` menjadi:
+## Setelah deployment
 
-`window.OEE_CONFIG = { apiBase: "https://<worker-url>" };`
+Frontend `frontend/config.js` sudah menunjuk `https://oee-collaboraction.offsetbmj.workers.dev` saat berjalan di GitHub Pages. Lakukan login dan validasi minimal:
 
-Lalu GitHub Pages akan otomatis redeploy frontend pada commit berikutnya.
+- superadmin dapat seluruh konfigurasi dan CRUD;
+- admin hanya dapat CRUD/config department sendiri sesuai permission;
+- user hanya view;
+- seluruh 21 file sumber dan 121 sheet tetap dapat ditelusuri setelah data privat diimpor;
+- HMI tidak dianggap terhubung ke mesin nyata sebelum heartbeat aktual diterima.
