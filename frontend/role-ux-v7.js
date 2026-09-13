@@ -45,9 +45,13 @@
   }
   function scopeConfigDepartment(){
     if(user?.role!=='admin')return;
+    const own=user.department||'';
+    qa('#de5System details').forEach(detail=>{
+      const summary=detail.querySelector('summary')?.textContent||'';
+      if(own&&!summary.includes(`· ${own}`))detail.remove();
+    });
     const select=q('#de5Config select[name="department"]');
     if(!select||select.dataset.roleScoped)return;
-    const own=user.department||'';
     [...select.options].forEach(o=>{if(o.value!==own)o.remove();});
     if(own){
       select.value=own;
