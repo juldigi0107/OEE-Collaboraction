@@ -1,4 +1,5 @@
 import app from './worker-v6.mjs';
+import {handleReleaseV11,captureReleaseV11,afterReleaseV11} from './release-v11.mjs';
 
 const BUILD_VERSION='6.1.0-source-audit';
 let schemaReady=null;
@@ -17,7 +18,12 @@ export default {
     const path=new URL(req.url).pathname;
     if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
     if(path==='/api/assets'||path==='/api/import-data')await ensureAdditiveSchema(env);
-    return app.fetch(req,env,ctx);
+    const releaseResponse=await handleReleaseV11(req,env);
+    if(releaseResponse)return releaseResponse;
+    const signal=await captureReleaseV11(req);
+    const response=await app.fetch(req,env,ctx);
+    if(signal&&response.ok)ctx.waitUntil(afterReleaseV11(signal,response.clone(),req.clone(),env));
+    return response;
   },
   scheduled(controller,env,ctx){
     return app.scheduled?.(controller,env,ctx);
