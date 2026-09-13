@@ -6,7 +6,7 @@
   const roleLabel=()=>user?.role==='superadmin'?'Superadmin':user?.role==='admin'?'Admin Department':'View Only';
   const perms=()=>Array.isArray(user?.permissions)?user.permissions:[];
   const configAllowed=()=>user?.role==='superadmin'||(user?.role==='admin'&&perms().includes('config'));
-  const viewAllowed=v=>!superViews.has(v)&&v!=='settings'||user?.role==='superadmin'||(v==='settings'&&configAllowed());
+  const viewAllowed=v=>(!superViews.has(v)&&v!=='settings')||user?.role==='superadmin'||(v==='settings'&&configAllowed());
   const mutationSummary=()=>{
     if(user?.role==='superadmin')return 'Akses penuh seluruh department, akun, konfigurasi, dan CRUD.';
     if(user?.role==='admin'){
@@ -17,32 +17,40 @@
   };
   function guardNavigation(){
     qa('[data-view]').forEach(el=>{
-      const v=el.dataset.view;
-      if(!viewAllowed(v)){el.hidden=true;el.setAttribute('aria-hidden','true');}
+      const allowed=viewAllowed(el.dataset.view);
+      if(el.hidden===allowed)el.hidden=!allowed;
+      if(allowed)el.removeAttribute('aria-hidden');else el.setAttribute('aria-hidden','true');
     });
   }
   function roleChip(){
-    const host=q('.user');if(!host||host.querySelector('.role-ux-chip')||!user)return;
-    const chip=document.createElement('span');chip.className=`role-ux-chip role-${user.role||'user'}`;chip.textContent=roleLabel();chip.title=mutationSummary();
-    const logout=host.querySelector('#logout,.logout-compact');host.insertBefore(chip,logout||null);
+    const host=q('.user');if(!host||!user)return;
+    let chip=host.querySelector('.role-ux-chip');
+    if(!chip){chip=document.createElement('span');chip.className='role-ux-chip';const logout=host.querySelector('#logout,.logout-compact');host.insertBefore(chip,logout||null);}
+    const cls=`role-ux-chip role-${user.role||'user'}`;if(chip.className!==cls)chip.className=cls;
+    const label=roleLabel(),title=mutationSummary();if(chip.textContent!==label)chip.textContent=label;if(chip.title!==title)chip.title=title;
   }
   function scopeBanner(){
     const c=q('#content');if(!c||!user)return;
-    const old=c.querySelector(':scope > .role-ux-scope');if(old)old.remove();
     const current=typeof view==='string'?view:'dashboard';
     const dataViews=current==='workspace'||current.startsWith('dept:')||['operations','documents','quality','shopfloor','live','settings'].includes(current);
-    if(!dataViews||user.role==='superadmin')return;
-    const n=document.createElement('div');n.className=`role-ux-scope ${user.role==='user'?'is-readonly':'is-admin'}`;
-    n.innerHTML=`<strong>${user.role==='user'?'Mode View Only':'Scope Admin Department'}</strong><span>${esc(mutationSummary())}</span>`;
-    const h=c.querySelector('.heading');if(h)h.insertAdjacentElement('afterend',n);else c.prepend(n);
+    let n=c.querySelector(':scope > .role-ux-scope');
+    if(!dataViews||user.role==='superadmin'){if(n)n.remove();return;}
+    const mode=user.role==='user'?'Mode View Only':'Scope Admin Department';
+    const summary=mutationSummary();
+    const klass=`role-ux-scope ${user.role==='user'?'is-readonly':'is-admin'}`;
+    if(!n){n=document.createElement('div');const h=c.querySelector('.heading');if(h)h.insertAdjacentElement('afterend',n);else c.prepend(n);}
+    if(n.className!==klass)n.className=klass;
+    const signature=`${mode}|${summary}`;
+    if(n.dataset.signature!==signature){n.dataset.signature=signature;n.innerHTML=`<strong>${esc(mode)}</strong><span>${esc(summary)}</span>`;}
   }
   function scopeConfigDepartment(){
     if(user?.role!=='admin')return;
     const select=q('#de5Config select[name="department"]');
-    if(!select)return;
+    if(!select||select.dataset.roleScoped)return;
     const own=user.department||'';
     [...select.options].forEach(o=>{if(o.value!==own)o.remove();});
     if(own){select.value=own;select.disabled=true;select.setAttribute('aria-label','Department dikunci sesuai scope admin');}
+    select.dataset.roleScoped='1';
   }
   function markReadOnlyDialogs(){
     const d=q('#modal');if(!d?.open||user?.role!=='user')return;
