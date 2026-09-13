@@ -27,3 +27,31 @@ jobs:
       - name: Production Worker health check
         run: |
           curl --fail --location --max-time 20 --show-error https://oee-collaboraction.offsetbmj.workers.dev/api/health
+      - name: Production build version check
+        run: |
+          body=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/api/version)
+          echo "$body"
+          echo "$body" | grep -Fq '"version":"6.1.0-source-audit"'
+          echo "$body" | grep -Fq '"storage":"D1-only"'
+          echo "$body" | grep -Fq '"r2":false'
+      - name: Production D1 readiness check
+        run: |
+          tmp=$(mktemp)
+          code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' https://oee-collaboraction.offsetbmj.workers.dev/api/readiness)
+          cat "$tmp"
+          test "$code" = "200"
+          grep -Fq '"ready":true' "$tmp"
+          grep -Fq '"schema":"ready"' "$tmp"
+      - name: Production frontend and BMJ asset smoke check
+        run: |
+          html=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/)
+          echo "$html" | grep -Fq 'OEE Collaboraction'
+          curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
+          curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
+      - name: Production protected endpoint check
+        run: |
+          tmp=$(mktemp)
+          code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' https://oee-collaboraction.offsetbmj.workers.dev/api/me)
+          cat "$tmp"
+          test "$code" = "401"
+          grep -Fq 'Silakan login kembali' "$tmp"
