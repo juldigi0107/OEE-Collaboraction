@@ -3,13 +3,29 @@
   const params=new URLSearchParams(location.search),displayId=params.get('display');
   if(!displayId)return;
   const REFRESH_MS=15000,LAYOUT_MS=60000;
-  let timer=0,layoutTimer=0,lastLayout='',refreshing=false;
+  let timer=0,layoutTimer=0,lastLayout='',refreshing=false,blocked=false;
   const q=s=>document.querySelector(s);
   const safe=v=>{try{return typeof v==='string'?JSON.parse(v):v||{};}catch{return {};}};
   const pct=v=>typeof v==='number'&&Number.isFinite(v)?(v*100).toLocaleString('id-ID',{maximumFractionDigits:1})+'%':'—';
   const fmt=v=>typeof v==='number'&&Number.isFinite(v)?v.toLocaleString('id-ID',{maximumFractionDigits:1}):'—';
   const minutes=ts=>ts?Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/60000)):null;
-  function currentLayout(){const s=(catalog?.settings||[]).find(x=>x.key===`DISPLAY_LAYOUT.${displayId}`);return s?safe(s.value):null;}
+  const settingFrom=list=>(list||[]).find(x=>x.key===`DISPLAY_LAYOUT.${displayId}`);
+  function currentLayout(){
+    const item=settingFrom(catalog?.settings);if(!item)return null;
+    const layout=safe(item.value);
+    return layout.status==='published'&&String(layout.machine||'').trim()?layout:null;
+  }
+  function blockDisplay(message){
+    if(blocked)return;blocked=true;clearInterval(timer);clearInterval(layoutTimer);
+    const host=q('#fieldDisplay');if(!host)return;
+    host.replaceChildren();
+    const card=document.createElement('section');card.className='field-display-blocked';
+    const logo=document.createElement('img');logo.src='assets/logo-bmj.svg';logo.alt='BMJ';
+    const title=document.createElement('h1');title.textContent='Display belum siap ditayangkan';
+    const text=document.createElement('p');text.textContent=message;
+    const code=document.createElement('small');code.textContent='ID display: '+displayId;
+    card.append(logo,title,text,code);host.append(card);
+  }
   function statusNode(){
     let el=q('#fieldDisplayLiveStatus');
     if(!el&&q('#fieldDisplay')){el=document.createElement('div');el.id='fieldDisplayLiveStatus';el.className='field-display-live';q('#fieldDisplay').appendChild(el);}
@@ -54,9 +70,10 @@
   }
   function renderClock(layout){for(const w of layout?.widgets||[]){if(w.source==='system.clock'){const [v,m]=resolve(w,null,{});setValue(w,v,m);}}}
   async function refresh(){
-    if(refreshing||document.hidden||!q('#fieldDisplay'))return;refreshing=true;
+    if(refreshing||document.hidden||!q('#fieldDisplay')||blocked)return;refreshing=true;
     try{
-      const layout=currentLayout();if(!layout)return;
+      const layout=currentLayout();
+      if(!layout){blockDisplay('Layout harus berstatus Published dan memiliki kode mesin sebelum dipasang di lapangan.');return;}
       const [dash,rt]=await Promise.all([api('/dashboard'),api('/realtime/overview').catch(()=>null)]);
       const ctx=machineContext(rt,layout);
       for(const w of layout.widgets||[]){const [v,m]=resolve(w,dash,ctx);if(v!==undefined)setValue(w,v,m);}
@@ -65,11 +82,13 @@
     finally{refreshing=false;}
   }
   async function checkLayout(){
-    if(!q('#fieldDisplay'))return;
+    if(!q('#fieldDisplay')||blocked)return;
     try{
       const next=await api('/catalog');
-      const item=(next.settings||[]).find(x=>x.key===`DISPLAY_LAYOUT.${displayId}`);
-      if(!item)return;
+      const item=settingFrom(next.settings);
+      if(!item){blockDisplay('Layout display tidak ditemukan. Periksa ID display pada URL mesin.');return;}
+      const layout=safe(item.value);
+      if(layout.status!=='published'||!String(layout.machine||'').trim()){blockDisplay('Layout harus dipublikasikan oleh superadmin dan ditetapkan ke mesin sebelum dapat ditampilkan.');return;}
       const signature=typeof item.value==='string'?item.value:JSON.stringify(item.value);
       if(lastLayout&&signature!==lastLayout){location.reload();return;}
       lastLayout=signature;catalog=next;
@@ -77,9 +96,14 @@
   }
   function boot(){
     const wait=()=>{
-      const layout=currentLayout();
-      if(!layout||!q('#fieldDisplay')){setTimeout(wait,350);return;}
-      const item=(catalog.settings||[]).find(x=>x.key===`DISPLAY_LAYOUT.${displayId}`);lastLayout=typeof item?.value==='string'?item.value:JSON.stringify(item?.value||layout);
+      if(blocked)return;
+      const item=settingFrom(catalog?.settings);
+      if(!item||!q('#fieldDisplay')){setTimeout(wait,350);return;}
+      const layout=safe(item.value);
+      if(layout.status!=='published'||!String(layout.machine||'').trim()){
+        blockDisplay('Layout harus dipublikasikan oleh superadmin dan ditetapkan ke mesin sebelum dapat ditampilkan.');return;
+      }
+      lastLayout=typeof item.value==='string'?item.value:JSON.stringify(item.value);
       status(true,'Menyiapkan data live…');refresh();
       timer=setInterval(refresh,REFRESH_MS);layoutTimer=setInterval(checkLayout,LAYOUT_MS);
       setInterval(()=>renderClock(currentLayout()),1000);
