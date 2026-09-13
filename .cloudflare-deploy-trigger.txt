@@ -1,0 +1,1 @@
+Trigger Cloudflare Worker deployment after changing project Root Directory to repository root.
