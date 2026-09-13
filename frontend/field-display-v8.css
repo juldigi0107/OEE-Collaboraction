@@ -1,0 +1,8 @@
+/* BMJ OEE Field Display v8 */
+.field-display-live{position:fixed;right:14px;top:12px;z-index:9998;display:flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid rgba(161,218,190,.28);border-radius:99px;background:rgba(5,27,43,.68);backdrop-filter:blur(8px);color:#dff8eb;font:700 11px/1.2 Inter,Segoe UI,sans-serif;letter-spacing:.02em;pointer-events:none}
+.field-display-live i{width:7px;height:7px;border-radius:50%;background:#2fd186;box-shadow:0 0 0 4px rgba(47,209,134,.12)}
+.field-display-live.is-stale{border-color:rgba(242,187,92,.30);color:#ffe8bd}.field-display-live.is-stale i{background:#f3ab3c;box-shadow:0 0 0 4px rgba(243,171,60,.13)}
+#fieldDisplay .display-widget,#fieldDisplay .de5-widget{transition:opacity .18s ease,border-color .18s ease}
+#fieldDisplay .display-widget-value,#fieldDisplay .de5-widget-body strong{font-variant-numeric:tabular-nums}
+@media(max-width:700px){.field-display-live{right:8px;top:8px;font-size:9px;padding:5px 8px}}
+@media(prefers-reduced-motion:reduce){#fieldDisplay .display-widget,#fieldDisplay .de5-widget{transition:none}}
