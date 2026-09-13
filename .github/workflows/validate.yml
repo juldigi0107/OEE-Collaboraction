@@ -25,6 +25,8 @@ jobs:
         run: node scripts/validate-auth-flow.mjs
       - name: Validate release blueprint coverage
         run: node scripts/validate-release-v10.mjs
+      - name: Validate final release blueprint
+        run: node scripts/validate-release-final.mjs
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
@@ -53,28 +55,44 @@ jobs:
           html=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/)
           echo "$html" | grep -Fq 'BMJ OEE Platform | Packaging Offset'
           echo "$html" | grep -Fq 'id="app"'
-          echo "$html" | grep -Fq 'role-ux-v7.js'
-          echo "$html" | grep -Fq 'field-display-v8.js'
-          echo "$html" | grep -Fq 'release-v10.js'
+          for asset in role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js; do echo "$html" | grep -Fq "$asset"; done
+          for asset in release-v10.css release-v11.css role-dashboard-v12.css workflow-v13.css governance-v14.css; do curl --fail --silent --show-error --location --max-time 20 -o /dev/null "https://oee-collaboraction.offsetbmj.workers.dev/$asset"; done
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
-          curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/release-v10.css
       - name: Production field display publish guard check
         run: |
           js=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/field-display-v8.js)
           echo "$js" | grep -Fq "layout.status==='published'"
           echo "$js" | grep -Fq 'Display belum siap ditayangkan'
-      - name: Production release v10 smoke check
+          release=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-v10.js)
+          echo "$release" | grep -Fq 'filter(m=>normalize(m.code)===code)'
+      - name: Production release workflow smoke check
         run: |
-          js=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-v10.js)
-          echo "$js" | grep -Fq 'Tata Kelola & Readiness'
-          echo "$js" | grep -Fq 'Pusat Data & Dokumen'
-          echo "$js" | grep -Fq 'barcodePlanScan'
-          echo "$js" | grep -Fq 'filter(m=>normalize(m.code)===code)'
+          r10=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-v10.js)
+          echo "$r10" | grep -Fq 'Tata Kelola & Readiness'
+          echo "$r10" | grep -Fq 'Pusat Data & Dokumen'
+          echo "$r10" | grep -Fq 'barcodePlanScan'
+          r11=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-v11.js)
+          echo "$r11" | grep -Fq 'Approval & Verifikasi'
+          echo "$r11" | grep -Fq 'Close Maintenance'
+          r12=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/role-dashboard-v12.js)
+          echo "$r12" | grep -Fq '/role-dashboard?department='
+          r13=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/workflow-v13.js)
+          echo "$r13" | grep -Fq 'Released / Siap Produksi'
+          r14=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/governance-v14.js)
+          echo "$r14" | grep -Fq 'Audit Log'
+          echo "$r14" | grep -Fq '[disamarkan]'
       - name: Production protected endpoint check
         run: |
+          for endpoint in me approvals role-dashboard shopfloor/plans; do
+            tmp=$(mktemp)
+            code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' "https://oee-collaboraction.offsetbmj.workers.dev/api/$endpoint")
+            cat "$tmp"
+            test "$code" = "401"
+            grep -Fq 'Silakan login kembali' "$tmp"
+          done
           tmp=$(mktemp)
-          code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' https://oee-collaboraction.offsetbmj.workers.dev/api/me)
+          code=$(curl --silent --show-error --location --max-time 20 -X POST -H 'Content-Type: application/json' -d '{}' -o "$tmp" -w '%{http_code}' https://oee-collaboraction.offsetbmj.workers.dev/api/shopfloor/start)
           cat "$tmp"
           test "$code" = "401"
           grep -Fq 'Silakan login kembali' "$tmp"
