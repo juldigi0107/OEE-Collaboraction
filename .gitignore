@@ -1,11 +1,8 @@
 data/
-*.sqlite
-*.sqlite3
-*.db
-.dev.vars
-.env
-.env.*
+.env*
+.dev.vars*
 .wrangler/
 node_modules/
-.DS_Store
-Thumbs.db
+audit/
+*.sqlite
+*.zip
