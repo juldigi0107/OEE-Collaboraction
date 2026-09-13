@@ -55,6 +55,11 @@ jobs:
           echo "$html" | grep -Fq 'field-display-v8.js'
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
+      - name: Production field display publish guard check
+        run: |
+          js=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/field-display-v8.js)
+          echo "$js" | grep -Fq "layout.status==='published'"
+          echo "$js" | grep -Fq 'Display belum siap ditayangkan'
       - name: Production protected endpoint check
         run: |
           tmp=$(mktemp)
