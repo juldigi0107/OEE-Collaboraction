@@ -23,6 +23,8 @@ jobs:
         run: node scripts/validate-navigation.mjs
       - name: Validate login and session flow
         run: node scripts/validate-auth-flow.mjs
+      - name: Validate release blueprint coverage
+        run: node scripts/validate-release-v10.mjs
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
@@ -53,13 +55,22 @@ jobs:
           echo "$html" | grep -Fq 'id="app"'
           echo "$html" | grep -Fq 'role-ux-v7.js'
           echo "$html" | grep -Fq 'field-display-v8.js'
+          echo "$html" | grep -Fq 'release-v10.js'
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
+          curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/release-v10.css
       - name: Production field display publish guard check
         run: |
           js=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/field-display-v8.js)
           echo "$js" | grep -Fq "layout.status==='published'"
           echo "$js" | grep -Fq 'Display belum siap ditayangkan'
+      - name: Production release v10 smoke check
+        run: |
+          js=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-v10.js)
+          echo "$js" | grep -Fq 'Tata Kelola & Readiness'
+          echo "$js" | grep -Fq 'Pusat Data & Dokumen'
+          echo "$js" | grep -Fq 'barcodePlanScan'
+          echo "$js" | grep -Fq 'filter(m=>normalize(m.code)===code)'
       - name: Production protected endpoint check
         run: |
           tmp=$(mktemp)
