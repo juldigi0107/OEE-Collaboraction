@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'frontend/**'
       - 'wrangler.toml'
   workflow_dispatch:
 permissions:
@@ -36,3 +37,6 @@ jobs:
           done
           echo "Cloudflare deployment did not expose expected version"
           exit 1
+      - name: Verify production readiness
+        run: |
+          curl --fail --location --max-time 20 --show-error https://oee-collaboraction.offsetbmj.workers.dev/api/readiness
