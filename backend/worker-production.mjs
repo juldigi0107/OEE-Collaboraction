@@ -1,5 +1,6 @@
 import app from './worker-v6.mjs';
 
+const BUILD_VERSION='6.1.0-source-audit';
 let schemaReady=null;
 async function ensureAdditiveSchema(env){
   if(!schemaReady){
@@ -14,6 +15,7 @@ async function ensureAdditiveSchema(env){
 export default {
   async fetch(req,env,ctx){
     const path=new URL(req.url).pathname;
+    if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
     if(path==='/api/assets'||path==='/api/import-data')await ensureAdditiveSchema(env);
     return app.fetch(req,env,ctx);
   },
