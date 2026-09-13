@@ -25,44 +25,71 @@ async function entityInfo(db,a){
 async function roleDashboard(db,dept){
  const metrics=[];
  if(dept==='PROD'){
-  const running=Number((await one(db,"SELECT COUNT(*) n FROM production_runs WHERE status='RUNNING'"))?.n||0);
-  const openDown=Number((await one(db,"SELECT COUNT(*) n FROM downtime_events WHERE status='OPEN'"))?.n||0);
-  const online=Number((await one(db,"SELECT COUNT(*) n FROM machine_registry WHERE active=1 AND heartbeat_at IS NOT NULL AND datetime(heartbeat_at,'+3 minutes')>=datetime('now')"))?.n||0);
+  const running=Number((await one(db,"SELECT COUNT(*) n FROM production_runs WHERE status='RUNNING'"))?.n||0),openDown=Number((await one(db,"SELECT COUNT(*) n FROM downtime_events WHERE status='OPEN'"))?.n||0),online=Number((await one(db,"SELECT COUNT(*) n FROM machine_registry WHERE active=1 AND heartbeat_at IS NOT NULL AND datetime(heartbeat_at,'+3 minutes')>=datetime('now')"))?.n||0);
   metrics.push(metric('running','PRO aktif',running,'','Realtime HMI'),metric('downtime','Downtime aktif',openDown,'','Realtime HMI'),metric('online','Mesin heartbeat',online,'','Machine registry'),metric('records','Register hasil produksi',await countEntries(db,'production'),'','Transaksi terpetakan'));
  }
  if(dept==='QC'){
-  const q=await one(db,"SELECT COUNT(*) events,COALESCE(SUM(sample_qty),0) sample,COALESCE(SUM(good_qty),0) good,COALESCE(SUM(reject_qty),0) reject FROM quality_events WHERE created_ts>=datetime('now','-30 days')")||{};
-  const rate=Number(q.sample)>0?Number(q.good)/Number(q.sample):null;
+  const q=await one(db,"SELECT COUNT(*) events,COALESCE(SUM(sample_qty),0) sample,COALESCE(SUM(good_qty),0) good,COALESCE(SUM(reject_qty),0) reject FROM quality_events WHERE created_ts>=datetime('now','-30 days')")||{},rate=Number(q.sample)>0?Number(q.good)/Number(q.sample):null;
   metrics.push(metric('events','Quality event 30 hari',Number(q.events||0),'','HMI Quality'),metric('sample','Sample live',Number(q.sample||0),'','HMI Quality'),metric('reject','Reject live',Number(q.reject||0),'','HMI Quality'),metric('quality_rate','Quality rate live',rate,'ratio','HMI Quality','Good / sample pada event live; tidak mengganti definisi historis workbook'),metric('records','Register QC historis',await countEntries(db,'quality'),'','Transaksi terpetakan'));
  }
  if(dept==='MTC'){
-  const calls=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN status<>'CLOSED' THEN 1 ELSE 0 END) open_calls,AVG(CASE WHEN acknowledged_ts IS NOT NULL THEN (julianday(acknowledged_ts)-julianday(requested_ts))*1440.0 END) response_min,AVG(CASE WHEN closed_ts IS NOT NULL AND acknowledged_ts IS NOT NULL THEN (julianday(closed_ts)-julianday(acknowledged_ts))*1440.0 END) repair_min FROM maintenance_calls WHERE requested_ts>=datetime('now','-30 days')")||{};
-  const run=await one(db,"SELECT SUM((julianday(end_ts)-julianday(start_ts))*24.0) run_hours FROM production_runs WHERE end_ts IS NOT NULL AND start_ts>=datetime('now','-30 days')")||{};
-  const br=Number((await one(db,"SELECT COUNT(*) n FROM downtime_events WHERE class='UPDT' AND start_ts>=datetime('now','-30 days')"))?.n||0),hours=Number(run.run_hours||0),mtbf=br>0&&hours>0?hours/br:null;
+  const calls=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN status<>'CLOSED' THEN 1 ELSE 0 END) open_calls,AVG(CASE WHEN acknowledged_ts IS NOT NULL THEN (julianday(acknowledged_ts)-julianday(requested_ts))*1440.0 END) response_min,AVG(CASE WHEN closed_ts IS NOT NULL AND acknowledged_ts IS NOT NULL THEN (julianday(closed_ts)-julianday(acknowledged_ts))*1440.0 END) repair_min FROM maintenance_calls WHERE requested_ts>=datetime('now','-30 days')")||{},runStats=await one(db,"SELECT SUM((julianday(end_ts)-julianday(start_ts))*24.0) run_hours FROM production_runs WHERE end_ts IS NOT NULL AND start_ts>=datetime('now','-30 days')")||{};
+  const br=Number((await one(db,"SELECT COUNT(*) n FROM downtime_events WHERE class='UPDT' AND start_ts>=datetime('now','-30 days')"))?.n||0),hours=Number(runStats.run_hours||0),mtbf=br>0&&hours>0?hours/br:null;
   metrics.push(metric('open_calls','Maintenance call aktif',Number(calls.open_calls||0),'','Maintenance call'),metric('response','Response time rata-rata',calls.response_min==null?null:Number(calls.response_min),'menit','Maintenance call','Requested → acknowledged'),metric('mttr','MTTR maintenance live',calls.repair_min==null?null:Number(calls.repair_min),'menit','Maintenance call','Acknowledged → closed; hanya event live'),metric('mtbf','MTBF live estimate',mtbf,'jam','Production run + UPDT','Run hours / jumlah UPDT 30 hari; tampil — bila data live belum cukup'),metric('records','Register corrective',await countEntries(db,'maintenance'),'','Transaksi terpetakan'));
  }
  if(dept==='PPIC'){
-  const planning=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN json_extract(payload,'$.status') IN ('Released','Direncanakan') THEN 1 ELSE 0 END) ready,SUM(CASE WHEN json_extract(payload,'$.status')='Dimulai' THEN 1 ELSE 0 END) started FROM entries WHERE module='planning' AND deleted=0")||{};
-  metrics.push(metric('planning','Planning terdaftar',Number(planning.total||0),'','Planning D1'),metric('ready','Planning siap/dirilis',Number(planning.ready||0),'','Planning D1'),metric('started','Planning dimulai',Number(planning.started||0),'','Planning D1'),metric('confirmation','Konfirmasi terdaftar',await countEntries(db,'confirmation'),'','Konfirmasi PPIC'));
+  const planning=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN json_extract(payload,'$.status')='Released' THEN 1 ELSE 0 END) ready,SUM(CASE WHEN json_extract(payload,'$.status')='Dimulai' THEN 1 ELSE 0 END) started FROM entries WHERE module='planning' AND deleted=0")||{};
+  metrics.push(metric('planning','Planning terdaftar',Number(planning.total||0),'','Planning D1'),metric('ready','Planning Released',Number(planning.ready||0),'','Planning D1'),metric('started','Planning dimulai',Number(planning.started||0),'','Planning D1'),metric('confirmation','Konfirmasi terdaftar',await countEntries(db,'confirmation'),'','Konfirmasi PPIC'));
  }
  if(dept==='PDS'){
   const d=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN CAST(json_extract(payload,'$.cost') AS REAL)>0 THEN CAST(json_extract(payload,'$.cost') AS REAL) ELSE 0 END) cost FROM entries WHERE module='development' AND deleted=0")||{};
   metrics.push(metric('trial','Trial/development',Number(d.total||0),'','Register Development'),metric('cost','Biaya tercatat',Number(d.cost||0),'Rp','Register Development','Mengikuti nilai sumber; anomali workbook tetap ditandai di Kualitas Data'));
  }
  if(dept==='PROJECT'){
-  const p=await one(db,"SELECT COUNT(*) total,AVG(CASE WHEN CAST(json_extract(payload,'$.progress') AS REAL) BETWEEN 0 AND 100 THEN CAST(json_extract(payload,'$.progress') AS REAL) END) progress FROM entries WHERE module='project' AND deleted=0")||{};
-  const readiness=Number((await one(db,"SELECT COUNT(*) n FROM settings WHERE key LIKE 'RELEASE_READINESS.%'"))?.n||0);
+  const p=await one(db,"SELECT COUNT(*) total,AVG(CASE WHEN CAST(json_extract(payload,'$.progress') AS REAL) BETWEEN 0 AND 100 THEN CAST(json_extract(payload,'$.progress') AS REAL) END) progress FROM entries WHERE module='project' AND deleted=0")||{},readiness=Number((await one(db,"SELECT COUNT(*) n FROM settings WHERE key LIKE 'RELEASE_READINESS.%'"))?.n||0);
   metrics.push(metric('projects','Action plan / project',Number(p.total||0),'','Project register'),metric('progress','Progress rata-rata',p.progress==null?null:Number(p.progress),'persen','Project register'),metric('master','Master data',await countEntries(db,'master'),'','Master register'),metric('readiness','Readiness configuration',readiness,'area','Release governance'));
  }
  return metrics;
 }
+async function workflowGate(req,env,path){
+ const {u,error}=await authorizedUser(req,env);if(error)return error;
+ let body={};try{body=await req.clone().json();}catch{}
+ if(path==='/api/shopfloor/start'){
+   const plan=await one(env.DB,"SELECT payload FROM entries WHERE id=? AND module='planning' AND deleted=0",body.plan_id||'');
+   if(!plan)return json(req,env,{error:'Pilih planning yang telah dirilis PPIC'},409);
+   const payload=parse(plan.payload);if(payload.status!=='Released')return json(req,env,{error:'Planning harus berstatus Released sebelum Start PRO'},409);
+ }
+ if(path==='/api/shopfloor/downtime/stop'){
+   const d=await one(env.DB,"SELECT root_cause FROM downtime_events WHERE id=? AND status='OPEN'",body.id||'');
+   if(d&&!String(body.root_cause||d.root_cause||'').trim())return json(req,env,{error:'Root cause / tindakan wajib diisi sebelum downtime ditutup'},400);
+ }
+ if(path==='/api/shopfloor/maintenance/close'){
+   const c=await one(env.DB,'SELECT status FROM maintenance_calls WHERE id=?',body.id||'');
+   if(!c)return json(req,env,{error:'Maintenance call tidak ditemukan'},404);
+   if(c.status!=='ACKNOWLEDGED')return json(req,env,{error:'Maintenance call harus di-acknowledge sebelum ditutup'},409);
+   if(!String(body.note||'').trim())return json(req,env,{error:'Tindakan penyelesaian wajib diisi sebelum Maintenance Close'},400);
+ }
+ if(path==='/api/approvals/decide'){
+   const a=await one(env.DB,'SELECT status FROM approvals WHERE id=?',body.id||'');
+   if(!a)return json(req,env,{error:'Approval tidak ditemukan'},404);
+   if(a.status!=='PENDING')return json(req,env,{error:'Approval ini sudah memiliki keputusan'},409);
+   if(body.status==='REJECTED'&&!String(body.note||'').trim())return json(req,env,{error:'Alasan wajib diisi untuk penolakan'},400);
+ }
+ return null;
+}
 export async function handleReleaseV11(req,env){
  const url=new URL(req.url),path=url.pathname;
+ if(req.method==='GET'&&path==='/api/shopfloor/plans'){
+   const {error}=await authorizedUser(req,env);if(error)return error;
+   return json(req,env,await all(env.DB,"SELECT id,payload,version,updated FROM entries WHERE module='planning' AND deleted=0 AND json_extract(payload,'$.status')='Released' ORDER BY json_extract(payload,'$.date'),updated LIMIT 200"));
+ }
+ if(req.method==='POST'&&['/api/shopfloor/start','/api/shopfloor/downtime/stop','/api/shopfloor/maintenance/close','/api/approvals/decide'].includes(path)){
+   const blocked=await workflowGate(req,env,path);if(blocked)return blocked;
+ }
  if(req.method!=='GET'||!['/api/approvals','/api/role-dashboard'].includes(path))return null;
  const {u,error}=await authorizedUser(req,env);if(error)return error;
  if(path==='/api/role-dashboard'){
-   const requested=String(url.searchParams.get('department')||u.department||'PROJECT').toUpperCase();
-   const dept=u.role==='superadmin'?requested:u.department;
+   const requested=String(url.searchParams.get('department')||u.department||'PROJECT').toUpperCase(),dept=u.role==='superadmin'?requested:u.department;
    if(!['PROD','QC','MTC','PPIC','PDS','PROJECT'].includes(dept))return json(req,env,{error:'Department tidak valid'},400);
    return json(req,env,{department:dept,generated_at:now(),metrics:await roleDashboard(env.DB,dept)});
  }
@@ -79,15 +106,11 @@ export async function captureReleaseV11(req){
  try{return {path,body:await req.clone().json()};}catch{return {path,body:{}};}
 }
 export async function afterReleaseV11(signal,response,req,env){
- if(!signal||!response?.ok)return;
- const u=await auth(req,env);if(!u)return;
+ if(!signal||!response?.ok)return;const u=await auth(req,env);if(!u)return;
  let entityType='',entityId='',step='VERIFY';
  if(signal.path==='/api/shopfloor/finish'){entityType='production_run';entityId=signal.body.run_id||'';step='FINAL_VERIFY';}
  if(signal.path==='/api/shopfloor/downtime/stop'){entityType='downtime';entityId=signal.body.id||'';step='ROOT_CAUSE_VERIFY';}
- if(signal.path==='/api/shopfloor/quality'){
-   entityType='quality';step='QC_VERIFY';
-   try{entityId=(await response.clone().json()).id||'';}catch{}
- }
+ if(signal.path==='/api/shopfloor/quality'){entityType='quality';step='QC_VERIFY';try{entityId=(await response.clone().json()).id||'';}catch{}}
  if(!entityType||!entityId)return;
  await run(env.DB,"INSERT INTO approvals(id,entity_type,entity_id,step,status,requested_by,requested_ts) VALUES(?,?,?,?, 'PENDING',?,?) ON CONFLICT(entity_type,entity_id,step) DO NOTHING",uid(),entityType,entityId,step,u.id,now());
 }
