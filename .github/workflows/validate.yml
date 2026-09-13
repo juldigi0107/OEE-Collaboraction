@@ -21,6 +21,8 @@ jobs:
         run: node scripts/validate-role-ux.mjs
       - name: Validate active navigation coverage
         run: node scripts/validate-navigation.mjs
+      - name: Validate login and session flow
+        run: node scripts/validate-auth-flow.mjs
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
