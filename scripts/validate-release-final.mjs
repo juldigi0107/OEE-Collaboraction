@@ -15,6 +15,8 @@ const production=read('backend/worker-production.mjs');
 const realtime=read('backend/realtime.mjs');
 const wrangler=read('wrangler.toml');
 const active=[r10,r11,r12,r13,r14].join('\n');
+const securityCall=production.indexOf('const securityResponse=await handleSecurityV15');
+const releaseCall=production.indexOf('const releaseResponse=await handleReleaseV11');
 const checks=[
  ['release bundles active',['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js'].every(x=>index.includes(x))],
  ['core department modules',['confirmation','planning','production','downtime','quality','maintenance','development','checklist','logbook','process','energy','master','project','batch'].every(x=>core.includes(x))],
@@ -24,14 +26,14 @@ const checks=[
  ['barcode planning assistant',r10.includes('barcodePlanScan')],
  ['approval navigation and decisions',r11.includes("view==='approvals'")&&r11.includes('/approvals/decide')],
  ['automatic approval creation',back.includes('FINAL_VERIFY')&&back.includes('ROOT_CAUSE_VERIFY')&&back.includes('QC_VERIFY')],
- ['approval listing endpoint',back.includes("path==='/api/approvals'")],
- ['role dashboard endpoint',back.includes("path==='/api/role-dashboard'")&&r12.includes('/role-dashboard?department=')],
+ ['approval listing endpoint',back.includes("'/api/approvals'")&&back.includes('requested_by_name')],
+ ['role dashboard endpoint',back.includes("'/api/role-dashboard'")&&r12.includes('/role-dashboard?department=')],
  ['maintenance KPI semantics',back.includes('MTTR maintenance live')&&back.includes('MTBF live estimate')],
  ['released planning enforced',back.includes("payload.status!=='Released'")&&back.includes("json_extract(payload,'$.status')='Released'")&&r13.includes('Released / Siap Produksi')],
  ['downtime root cause gate',back.includes('Root cause / tindakan wajib diisi')],
  ['maintenance acknowledge and closure gate',back.includes("c.status!=='ACKNOWLEDGED'")&&r11.includes('Close Maintenance')],
  ['rejection reason gate',back.includes('Alasan wajib diisi untuk penolakan')],
- ['permission gate before workflow lookup',production.indexOf('handleSecurityV15')<production.indexOf('handleReleaseV11')&&security.includes('Tidak memiliki izin verifikasi')],
+ ['permission gate before workflow lookup',securityCall>=0&&releaseCall>=0&&securityCall<releaseCall&&security.includes('Tidak memiliki izin verifikasi')],
  ['UPDT escalation automation',realtime.includes("class='UPDT'")&&realtime.includes("'+10 minutes'")],
  ['audit sensitive-value redaction',r14.includes('(password|hash|salt|token|secret|credential)')],
  ['business-facing source registry',r10.includes('Pusat Data & Dokumen')&&r10.includes('Register sumber')],
