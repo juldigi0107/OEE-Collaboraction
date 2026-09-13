@@ -1,0 +1,38 @@
+name: Deploy Cloudflare Worker
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'wrangler.toml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-worker-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Deploy OEE Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wranglerVersion: '4'
+          command: deploy
+      - name: Verify production version
+        run: |
+          expected='6.1.0-source-audit'
+          for attempt in $(seq 1 12); do
+            body=$(curl --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/api/version || true)
+            echo "Attempt $attempt: $body"
+            if echo "$body" | grep -Fq "\"version\":\"$expected\""; then
+              echo "Cloudflare production verified: $expected"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Cloudflare deployment did not expose expected version"
+          exit 1
