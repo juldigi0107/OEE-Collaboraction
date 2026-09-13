@@ -22,7 +22,7 @@ export default {
     if(releaseResponse)return releaseResponse;
     const signal=await captureReleaseV11(req);
     const response=await app.fetch(req,env,ctx);
-    if(signal&&response.ok)ctx.waitUntil(afterReleaseV11(signal,response.clone(),req.clone(),env));
+    if(signal&&response.ok)ctx.waitUntil(afterReleaseV11(signal,response.clone(),req,env));
     return response;
   },
   scheduled(controller,env,ctx){
