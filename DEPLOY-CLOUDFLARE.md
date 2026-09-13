@@ -1,23 +1,24 @@
 # Deployment Backend OEE ke Cloudflare — D1 Only
 
-Frontend production: https://juldigi0107.github.io/OEE-Collaboraction/
+Frontend production: `https://juldigi0107.github.io/OEE-Collaboraction/`
 
-Backend production: `oee-collaboraction` pada Cloudflare Workers.
+Backend production: `https://oee-collaboraction.offsetbmj.workers.dev`
 
-## Arsitektur produksi
+## Arsitektur production
 
 - Frontend: GitHub Pages dari folder `frontend/`.
-- Backend: Cloudflare Worker `backend/worker-v6.mjs` melalui `wrangler.toml` di root repository.
+- Backend entrypoint: `backend/worker-production.mjs` melalui `wrangler.toml` di root repository.
+- Core API: `backend/worker-v6.mjs` beserta realtime/edge modules.
 - Database: Cloudflare D1 `oee-collaboraction`.
-- Dokumen, XLSX/PDF/PPTX, gambar, serta historical archive: disimpan di **D1 sebagai chunk BLOB/JSON**.
-- **Tidak menggunakan R2**.
-- Data bisnis privat, database seed, token, dan secret tidak boleh disimpan di repository publik.
+- Dokumen, XLSX/PDF/PPTX, gambar dan historical archive: D1 chunk BLOB/JSON.
+- **Tidak menggunakan R2.**
+- Data bisnis privat, database hasil audit, token dan secret tidak boleh disimpan di repository publik.
 
-`wrangler.toml` saat ini memakai D1 database ID `85624616-87c2-45d4-a4cf-49c0544e163a` dan Worker `oee-collaboraction`.
+`wrangler.toml` memakai binding `DB`, database `oee-collaboraction`, dan database ID production yang sudah dikonfigurasi pada repository.
 
-## Deployment melalui Cloudflare Dashboard
+## Workers Builds
 
-Hubungkan Workers Builds ke repository:
+Gunakan:
 
 - Repository: `juldigi0107/OEE-Collaboraction`
 - Production branch: `main`
@@ -25,38 +26,52 @@ Hubungkan Workers Builds ke repository:
 - Build command: kosong
 - Deploy command: `npx wrangler deploy`
 
-Jangan mengatur Root Directory ke `backend`, karena konfigurasi production berada pada `wrangler.toml` di root repository.
+Jangan mengatur Root Directory ke `backend`, karena `wrangler.toml`, static assets binding, D1 binding dan production entrypoint berada dari root repository.
 
-## Urutan aman sebelum deploy
+## Schema D1 yang aman
 
-1. Backup/ekspor D1 production lebih dahulu.
-2. Terapkan perubahan schema secara **additive**. Migration `backend/migrations/0001_asset_catalog.sql` hanya menambah `asset_catalog` dan index; tidak menghapus tabel/data lama.
-3. Pastikan binding D1 pada Worker bernama `DB` dan menunjuk database `oee-collaboraction`.
-4. Pastikan `ALLOWED_ORIGIN` mencakup `https://juldigi0107.github.io` dan domain Worker production.
-5. Deploy Worker dari branch `main` melalui Workers Builds.
-6. Buka `/api/health`; respons yang benar harus menunjukkan service OEE dan storage D1-only.
-7. Setelah backend sehat, workflow GitHub Pages akan menerbitkan folder `frontend/` dari `main`.
+Production wrapper melakukan guard additive sebelum endpoint aset/impor digunakan:
+
+- `CREATE TABLE IF NOT EXISTS asset_catalog(...)`
+- `CREATE INDEX IF NOT EXISTS asset_parent ...`
+
+Migration yang sama tersedia di `backend/migrations/0001_asset_catalog.sql`. Guard ini tidak melakukan `DROP`, tidak menghapus row, dan tidak mengganti akun existing.
+
+Untuk perubahan schema berikutnya, tetap lakukan backup/ekspor D1 sebelum migration. Jangan pernah mengganti database production menggunakan file SQLite lokal secara langsung.
 
 ## Data aktual dan impor
 
-Source code publik tidak membawa data aktual. Paket privat hasil audit berisi database/arsip dan paket impor yang dapat dimasukkan melalui superadmin.
+Source code publik tidak membawa data aktual. Paket privat hasil audit berisi source database/arsip dan JSONL import batches.
 
-Impor dilakukan ke D1 dengan ID sumber yang stabil dan `INSERT OR IGNORE`, sehingga pengulangan batch yang sama tidak mengganti record yang sudah ada. Namun sebelum mengimpor ke D1 yang sudah memiliki data lama, cocokkan `sources.sha256` agar sumber yang sama tidak tercatat dengan ID berbeda.
+Impor melalui akun superadmin menggunakan ID stabil dan `INSERT OR IGNORE`. Sebelum mengimpor ke D1 yang sudah berisi data lama, cocokkan `sources.sha256` agar sumber yang sama tidak tercatat dua kali dengan ID berbeda.
 
-File besar direkonstruksi dari tabel `source_file_chunks`; aplikasi tidak memerlukan R2.
+File besar direkonstruksi dari `source_file_chunks`; aplikasi tidak memerlukan R2.
 
-## Bootstrap akun
+Target hasil audit setelah seluruh paket privat diimpor:
 
-Tidak ada username/password produksi bawaan. Untuk instalasi baru, set Worker Secret `BOOTSTRAP_TOKEN` dengan nilai acak kuat, lakukan bootstrap superadmin satu kali, wajibkan penggantian password awal, lalu hapus secret bootstrap.
+- 21 source files;
+- 121 worksheets;
+- 100.125 historical source rows/data-formula rows;
+- dokumen/slide/aset sumber tetap dapat ditelusuri;
+- transaksi hasil pemetaan mempertahankan `source_file`, `source_sheet`, dan `source_record`.
 
-Untuk database existing, pertahankan akun yang sudah ada dan jangan menjalankan seed akun tetap.
+## Bootstrap dan akun
 
-## Setelah deployment
+Tidak ada username/password production bawaan. Untuk instalasi baru, set Worker Secret `BOOTSTRAP_TOKEN` dengan nilai acak kuat, bootstrap superadmin satu kali, wajibkan penggantian password awal, lalu hapus secret tersebut.
 
-Frontend `frontend/config.js` sudah menunjuk `https://oee-collaboraction.offsetbmj.workers.dev` saat berjalan di GitHub Pages. Lakukan login dan validasi minimal:
+Untuk database existing, pertahankan akun existing; jangan menjalankan seed akun tetap.
 
-- superadmin dapat seluruh konfigurasi dan CRUD;
-- admin hanya dapat CRUD/config department sendiri sesuai permission;
-- user hanya view;
-- seluruh 21 file sumber dan 121 sheet tetap dapat ditelusuri setelah data privat diimpor;
-- HMI tidak dianggap terhubung ke mesin nyata sebelum heartbeat aktual diterima.
+## Checklist setelah deploy
+
+1. Pastikan `/api/health` merespons service OEE dengan storage D1-only.
+2. Login dengan akun existing.
+3. Superadmin harus dapat akun/izin/config/import/audit seluruh department.
+4. Admin harus ditolak ketika mencoba mengubah department lain atau permission yang tidak diberikan.
+5. User harus gagal melakukan POST/PUT/DELETE.
+6. Pastikan dashboard tidak mengganti error/kosong sumber menjadi nol.
+7. Pastikan HMI hanya menampilkan mesin realtime sebagai connected setelah heartbeat aktual diterima.
+8. Setelah import sumber, cocokkan jumlah source/sheet dan sample SHA-256 dengan paket privat.
+
+## Status validasi repository
+
+Build v6 telah melalui GitHub Actions untuk syntax frontend, syntax Worker, dan production Worker smoke check dengan hasil sukses. GitHub Pages production deployment juga sukses. Status build/deploy Cloudflare versi tertentu tetap harus dilihat dari Workers Builds/Deployment history pada akun Cloudflare karena GitHub tidak menyediakan log Cloudflare tersebut.
