@@ -2,7 +2,7 @@ import core from './worker.mjs';
 import {handleRealtime,runScheduledIntegrations,runAutomation} from './realtime.mjs';
 import {handleEdgeSync} from './edge-sync.mjs';
 
-const hidden=new Set(['General flow New Sistem.pdf','BMJ_Inquiry_Form_Print_20260604.xlsx','01 des 2023 HMI Display.pdf']);
+const hidden=new Set();
 const routed=p=>p.startsWith('/api/realtime/')||p.startsWith('/api/shopfloor/')||p.startsWith('/api/edge/')||p.startsWith('/api/integrations/')||p.startsWith('/api/approvals');
 
 function cors(req,env){
@@ -101,3 +101,4 @@ export default {
     ctx.waitUntil(Promise.all([runScheduledIntegrations(env),runAutomation(env)]));
   }
 };
+
