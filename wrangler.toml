@@ -1,5 +1,5 @@
 name = "oee-collaboraction"
-main = "backend/worker-v6.mjs"
+main = "backend/worker-production.mjs"
 compatibility_date = "2026-09-01"
 workers_dev = true
 
