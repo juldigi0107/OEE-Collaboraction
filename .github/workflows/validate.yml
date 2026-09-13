@@ -18,8 +18,21 @@ jobs:
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
-      - name: Production Worker smoke check
-        continue-on-error: true
+      - name: Production Worker health check
         run: |
-          echo "Checking https://oee-collaboraction.offsetbmj.workers.dev/api/health"
           curl --fail --location --max-time 20 --show-error https://oee-collaboraction.offsetbmj.workers.dev/api/health
+      - name: Verify deployed Worker version
+        if: github.event_name == 'push'
+        run: |
+          expected='6.1.0-source-audit'
+          for attempt in $(seq 1 18); do
+            body=$(curl --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/api/version || true)
+            echo "Attempt $attempt: $body"
+            if echo "$body" | grep -Fq "\"version\":\"$expected\""; then
+              echo "Production Worker version verified: $expected"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Production Worker did not expose expected version: $expected"
+          exit 1
