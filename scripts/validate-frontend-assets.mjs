@@ -27,7 +27,7 @@ else{
     requireFile(rel,'index.html');
     if(/\.(?:css|js)$/i.test(rel))entryFiles.add(rel);
   }
-  for(const required of ['workspace.css','visual-v4.css','display-editor-v5.css','runtime-polish-v6.css','role-ux-v7.css','app-core.js','visual-v4.js','display-editor-v5.js','runtime-polish-v6.js','role-ux-v7.js']){
+  for(const required of ['workspace.css','visual-v4.css','display-editor-v5.css','runtime-polish-v6.css','role-ux-v7.css','field-display-v8.css','app-core.js','visual-v4.js','display-editor-v5.js','runtime-polish-v6.js','role-ux-v7.js','field-display-v8.js']){
     if(!html.includes(required))errors.push(`index.html belum memuat ${required}`);
   }
 }
