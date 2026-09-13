@@ -15,6 +15,8 @@ jobs:
       - name: Validate frontend JavaScript
         run: |
           for f in frontend/*.js; do echo "Checking $f"; node --check "$f"; done
+      - name: Validate frontend asset integrity
+        run: node scripts/validate-frontend-assets.mjs
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
