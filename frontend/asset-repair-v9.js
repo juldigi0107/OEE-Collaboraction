@@ -1,14 +1,15 @@
-/* BMJ OEE asset repair v9 — keeps original user-provided hero asset and fixes legacy Base64 packaging. */
+/* BMJ OEE asset repair v9.1 — keeps original user-provided hero asset and fixes legacy Base64 packaging. */
 (()=>{
-  const HERO='assets/hero-bmj-photo.jpg';
-  const LOGO='assets/logo-bmj.svg';
+  const REV='20260913-1';
+  const HERO=`assets/hero-bmj-photo.jpg?v=${REV}`;
+  const LOGO=`assets/logo-bmj.svg?v=${REV}`;
   let heroObjectUrl='';
   const heroSelectors=['.auth-story','.home-hero-v4','.login-visual','.home-hero','.password-visual','.splash-v4'];
 
   function normalizeLogo(root=document){
     root.querySelectorAll?.('img').forEach(img=>{
       const src=img.getAttribute('src')||'';
-      if(src.includes('logo-bmj-source.webp')||src.includes('logo-bmj.png')||img.closest('.brand,.auth-brand,.splash-brand,.de5-brand,.sidebar-brand')){
+      if(src.includes('logo-bmj-source.webp')||src.includes('logo-bmj.png')||src.includes('logo-bmj.svg')||img.closest('.brand,.auth-brand,.splash-brand,.de5-brand,.sidebar-brand')){
         if(img.getAttribute('src')!==LOGO) img.setAttribute('src',LOGO);
       }
     });
@@ -55,7 +56,7 @@
       applyHero(heroObjectUrl);
     }catch(e){
       console.warn('BMJ hero repair:',e);
-      applyHero('assets/hero-bmj.svg');
+      applyHero(`assets/hero-bmj.svg?v=${REV}`);
     }
   }
 
