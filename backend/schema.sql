@@ -5,8 +5,6 @@ CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT,action TEXT,en
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL,department TEXT NOT NULL DEFAULT 'PROJECT');
 CREATE TABLE IF NOT EXISTS password_flags(user_id TEXT PRIMARY KEY,must_change INTEGER NOT NULL DEFAULT 1);
 INSERT OR IGNORE INTO settings VALUES('brand','{"name":"OEE COLLABORACTION - BMJ PACKAGING OFFSET","tagline":"Intelligent Platform © 2026 IDJ","plant":"BMJ Packaging Offset"}','PROJECT');
-INSERT OR IGNORE INTO users(id,username,name,role,department,permissions,password_hash,salt,active) VALUES('seed-superadmin','superadmin','Superadmin','superadmin','PROJECT','[]','6a0f50586935de199de7293026746c36de15b95d6222eb60b307fcb768117f04','bmj-oee-2026-superadmin-bootstrap',1);
-INSERT OR IGNORE INTO password_flags(user_id,must_change) VALUES('seed-superadmin',1);
 CREATE TABLE IF NOT EXISTS sources(id TEXT PRIMARY KEY,name TEXT NOT NULL,path TEXT,department TEXT NOT NULL,kind TEXT NOT NULL,sha256 TEXT,bytes INTEGER);
 CREATE TABLE IF NOT EXISTS sheets(id TEXT PRIMARY KEY,source_id TEXT NOT NULL,name TEXT NOT NULL,department TEXT NOT NULL,rows INTEGER NOT NULL DEFAULT 0,cols INTEGER NOT NULL DEFAULT 0,meta TEXT NOT NULL DEFAULT '{}');
 CREATE INDEX IF NOT EXISTS sheets_department ON sheets(department,source_id,name);
@@ -22,3 +20,6 @@ CREATE INDEX IF NOT EXISTS entries_module ON entries(module,department,deleted);
 CREATE TABLE IF NOT EXISTS source_files(source_id TEXT PRIMARY KEY,name TEXT NOT NULL,mime_type TEXT NOT NULL,bytes INTEGER NOT NULL,sha256 TEXT,chunks INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS source_file_chunks(source_id TEXT NOT NULL,chunk_no INTEGER NOT NULL,data BLOB NOT NULL,PRIMARY KEY(source_id,chunk_no));
 CREATE INDEX IF NOT EXISTS source_file_chunks_source ON source_file_chunks(source_id,chunk_no);
+
+CREATE TABLE IF NOT EXISTS asset_catalog(id TEXT PRIMARY KEY,parent TEXT NOT NULL,path TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS asset_parent ON asset_catalog(parent);
