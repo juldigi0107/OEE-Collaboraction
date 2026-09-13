@@ -1,37 +1,53 @@
 # OEE Collaboraction
 
-Frontend OEE Collaboraction berjalan di GitHub Pages. Backend production dirancang untuk Cloudflare Workers + Cloudflare D1 **tanpa R2**.
+Platform OEE BMJ Packaging Offset dengan frontend GitHub Pages dan backend Cloudflare Workers + Cloudflare D1 **tanpa R2**.
 
-## Arsitektur
+## Production architecture
 
-- Frontend: GitHub Pages (`frontend/`)
-- API: Cloudflare Worker (`backend/worker.mjs`)
-- Database, historical archive, dan original source files: Cloudflare D1
-- Data bisnis privat tidak disimpan di repository publik ini.
+- Frontend: `frontend/` → GitHub Pages.
+- API production entrypoint: `backend/worker-production.mjs`.
+- Core API: `backend/worker-v6.mjs` + existing realtime/edge modules.
+- Database: Cloudflare D1 `oee-collaboraction`.
+- Historical spreadsheet rows: D1 `record_chunks` + overlay CRUD `records`.
+- Dokumen/aset sumber: D1 `source_files` / `source_file_chunks`.
+- Katalog aset: D1 `asset_catalog`.
+- **Tidak memakai R2.**
+- Data bisnis privat, database hasil audit, token, dan secret tidak disimpan di repository publik.
 
-Historical spreadsheet rows disimpan sebagai JSON chunks pada tabel `record_chunks`; perubahan CRUD menggunakan tabel overlay `records`. File PDF/XLSX/PPTX/JPEG/PNG disimpan sebagai BLOB chunks pada `source_file_chunks` dan direkonstruksi oleh endpoint `/api/files/:sourceId`.
+Production wrapper memastikan schema katalog aset secara additive menggunakan `CREATE TABLE/INDEX IF NOT EXISTS` ketika fitur aset atau impor pertama kali dipakai. Migration terpisah `backend/migrations/0001_asset_catalog.sql` tetap tersedia untuk deployment terkelola. Tidak ada migration v6 yang menghapus tabel atau data existing.
 
-## D1 Free-plan seed
+## Hak akses
 
-Paket deployment privat berisi `data/source.sqlite` dan `data/originals/`. Jalankan:
+- `superadmin`: seluruh fitur, seluruh department, akun, izin, konfigurasi, CRUD, impor, integrasi dan audit.
+- `admin`: CRUD/config hanya pada department sendiri dan hanya untuk permission yang diberikan superadmin.
+- `user`: read-only.
 
-```bash
-python scripts/build-d1-free.py
-node scripts/deploy-d1-free.mjs --new-empty-database
-```
+Validasi dilakukan kembali di backend pada setiap operasi; UI bukan satu-satunya lapisan pembatasan.
 
-Builder memecah data menjadi statement yang aman untuk batas statement D1 dan menekan jumlah initial row writes dengan packing raw source rows menjadi chunks. Jangan commit folder `data/`, hasil seed, token, atau secret ke repository ini.
+## Cakupan sumber hasil audit
 
-## Konfigurasi Cloudflare
+Paket privat hasil analisis `OEE DASHBOARD(1).zip` mencakup 21 file dan 121 sheet dengan 100.125 baris berisi data/formula. Raw source dipertahankan agar transaksi dapat ditelusuri kembali. Error/formula sumber tidak diganti nol. Versi MTC Ori/Verifikasi, PPIC signed reversal, perbedaan unit, dan periode campuran diperlakukan sebagai provenance, bukan digabung secara asumtif.
 
-1. Buat D1 database bernama `oee-collaboraction`.
-2. Masukkan Database ID ke `backend/wrangler.toml` menggantikan `REPLACE_WITH_D1_DATABASE_ID`.
-3. Set secret `BOOTSTRAP_TOKEN` pada Worker.
-4. Deploy Worker dengan Wrangler atau Cloudflare dashboard/build integration.
-5. Setelah URL Worker tersedia, set `frontend/config.js` ke URL tersebut dan deploy GitHub Pages kembali.
+## Validasi build
 
-`ALLOWED_ORIGIN` production saat ini adalah `https://juldigi0107.github.io`.
+- 291 pemeriksaan API lokal: lulus.
+- 10 pemeriksaan alur Shopfloor HMI: lulus.
+- Rekonstruksi 21 file sumber: SHA-256 identik dengan original.
+- GitHub Actions frontend JavaScript: lulus.
+- GitHub Actions Worker modules: lulus.
+- Production Worker smoke check: lulus.
+- GitHub Pages production deployment: lulus.
 
-## Verifikasi lokal D1-only
+Pengujian perangkat PLC/ODIN/SAP/Qlik dan heartbeat mesin nyata tetap memerlukan endpoint/credential/perangkat lapangan.
 
-Build D1-only telah diuji dengan 23 API checks dan rekonstruksi file sumber terbesar; file hasil rekonstruksi memiliki SHA-256 yang sama dengan original.
+## Deployment
+
+`wrangler.toml` berada di root repository dan menunjuk `backend/worker-production.mjs`. Cloudflare Workers Builds harus menggunakan repository root dan branch `main`. Detail aman tersedia di `DEPLOY-CLOUDFLARE.md`.
+
+Frontend production: `https://juldigi0107.github.io/OEE-Collaboraction/`
+
+Backend production: `https://oee-collaboraction.offsetbmj.workers.dev`
+
+## Data aktual
+
+Data aktual tidak dimasukkan ke repository publik. Paket privat menyediakan database hasil audit dan JSONL import batches. Impor dilakukan melalui akun superadmin dengan ID stabil dan `INSERT OR IGNORE`; sebelum mengimpor ke D1 existing, cocokkan SHA-256 sumber untuk mencegah duplikasi provenance.
