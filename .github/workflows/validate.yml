@@ -45,7 +45,10 @@ jobs:
       - name: Production frontend and BMJ asset smoke check
         run: |
           html=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/)
-          echo "$html" | grep -Fq 'OEE Collaboraction'
+          echo "$html" | grep -Fq 'BMJ OEE Platform | Packaging Offset'
+          echo "$html" | grep -Fq 'id="app"'
+          echo "$html" | grep -Fq 'role-ux-v7.js'
+          echo "$html" | grep -Fq 'field-display-v8.js'
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
       - name: Production protected endpoint check
