@@ -1,0 +1,2 @@
+Cloudflare deployment trigger after changing Root Directory to repository root.
+Generated to verify automatic Git deployments.
