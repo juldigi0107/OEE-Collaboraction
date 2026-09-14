@@ -1,6 +1,7 @@
 import {handleSupportV21} from './release-v21-support.mjs';
 import {workflowHealthV51} from './release-v51-workflow-reconciliation.mjs';
 import {mirrorHealthV52} from './release-v52-mirror-reconciliation.mjs';
+import {runtimeInvariantHealthV55} from './release-v55-runtime-invariants.mjs';
 const enc=new TextEncoder();
 const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(String(s||''))));
@@ -49,5 +50,5 @@ export async function handleDataLifecycleV46(req,env,buildVersion,releaseFingerp
  const path=new URL(req.url).pathname;if(req.method!=='GET'||!['/api/storage-health','/api/release-manifest'].includes(path))return null;
  const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);if(u.role!=='superadmin')return out(req,env,{error:'Storage Health khusus Superadmin'},403);
  if(path==='/api/storage-health')return out(req,env,await storageHealthV46(env));
- const base=await handleSupportV21(req,env,buildVersion,releaseFingerprint);if(!base||!base.ok)return base;let body;try{body=await base.clone().json();}catch{return base;}const [storage,workflow,mirror]=await Promise.all([storageHealthV46(env),workflowHealthV51(env),mirrorHealthV52(env)]);body.storage_health=storage;body.workflow_health=workflow;body.mirror_health=mirror;return responseFrom(base,body);
+ const base=await handleSupportV21(req,env,buildVersion,releaseFingerprint);if(!base||!base.ok)return base;let body;try{body=await base.clone().json();}catch{return base;}const [storage,workflow,mirror,invariants]=await Promise.all([storageHealthV46(env),workflowHealthV51(env),mirrorHealthV52(env),runtimeInvariantHealthV55(env)]);body.storage_health=storage;body.workflow_health=workflow;body.mirror_health=mirror;body.runtime_invariants=invariants;body.runtime_ready=workflow.ready===true&&mirror.ready===true&&invariants.ready===true;return responseFrom(base,body);
 }
