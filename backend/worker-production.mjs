@@ -13,7 +13,7 @@ import {handleDataLifecycleV46,runLifecycleHousekeepingV46} from './release-v46-
 import {handleQueryPerformanceV47} from './release-v47-query-performance.mjs';
 
 const BUILD_VERSION='6.2.0';
-const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47','query-performance-v47'];
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47','query-performance-v47','frontend-security-v48'];
 let schemaReady=null;
 async function addColumnIfMissing(env,table,column,ddl){
   const columns=(await env.DB.prepare(`PRAGMA table_info('${table}')`).all()).results||[];
@@ -42,6 +42,18 @@ async function ensureAdditiveSchema(env){
     })().catch(error=>{schemaReady=null;throw error;});
   }
   return schemaReady;
+}
+function secureFrontendResponse(path,response){
+  if(path.startsWith('/api/'))return response;
+  const headers=new Headers(response.headers);
+  headers.set('X-Content-Type-Options','nosniff');
+  headers.set('X-Frame-Options','DENY');
+  headers.set('Referrer-Policy','same-origin');
+  headers.set('Permissions-Policy','camera=(), microphone=(), geolocation=(), payment=()');
+  headers.set('Cross-Origin-Opener-Policy','same-origin');
+  headers.set('Strict-Transport-Security','max-age=31536000');
+  headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' https://oee-collaboraction.offsetbmj.workers.dev; frame-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
 
 export default {
@@ -76,7 +88,7 @@ export default {
     const signal=await captureReleaseV11(req);
     const response=await app.fetch(req,env,ctx);
     if(signal&&response.ok)ctx.waitUntil(afterReleaseV11(signal,response.clone(),req,env));
-    return response;
+    return secureFrontendResponse(path,response);
   },
   scheduled(controller,env,ctx){
     const existing=app.scheduled?.(controller,env,ctx);
