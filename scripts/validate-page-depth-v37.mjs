@@ -12,6 +12,7 @@ const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
 const lifecycle=read('backend/release-v46-data-lifecycle.mjs');
 const process59=read('backend/release-v59-process-capability.mjs');
+const telemetry61=read('backend/release-v61-telemetry-freshness.mjs');
 const runtime=read('frontend/operational-control-runtime-v31.js');
 const worker=read('backend/worker-production.mjs');
 const checks=[
@@ -56,8 +57,15 @@ const checks=[
  ['HMI stale machine selection fails closed',hmi60.includes("SENTINEL='__RESELECT_REQUIRED__'")&&hmi60.includes('tidak lagi tersedia pada overview')&&hmi60.includes('Pilih mesin secara eksplisit')],
  ['HMI stale machine locks mutation controls',hmi60.includes('#startRun input')&&hmi60.includes('.hmi-actions button')&&hmi60.includes("data-operation-locked','machine-reselect")],
  ['HMI explicit machine selection remains possible',hmi60.includes("document.querySelectorAll('[data-machine]')")&&hmi60.includes('machineExists')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,moduleTable,lifecycle,process59].join('\n')))]
+ ['stale telemetry is never displayed as numeric counter/speed',hmi60.includes("counter.textContent='—'")&&hmi60.includes("speed.textContent='—'")&&hmi60.includes('Telemetry tidak authoritative')],
+ ['Finish UI requires manual actual when counter lineage untrusted',hmi60.includes("actual.required=true")&&hmi60.includes('Actual Qty manual wajib diisi')&&hmi60.includes('auto_counter_finish_ready')],
+ ['telemetry status endpoint authenticated',telemetry61.includes("path==='/api/telemetry-status'")&&telemetry61.includes('Silakan login kembali')&&telemetry61.includes('heartbeat_age_seconds')],
+ ['pre-start telemetry trust captured',telemetry61.includes('captureTelemetryStartV61')&&telemetry61.includes('counter_start_trusted')&&worker.includes('afterTelemetryStartV61')],
+ ['automatic Finish requires trusted start and end counter',telemetry61.includes('startTrusted&&endTrusted')&&telemetry61.includes('Actual Qty wajib diisi manual')&&telemetry61.includes('lineage-nya tidak authoritative')],
+ ['counter trust column additive',worker.includes("counter_start_trusted','ALTER TABLE production_runs ADD COLUMN counter_start_trusted INTEGER NOT NULL DEFAULT 0")],
+ ['telemetry capability fingerprinted',worker.includes('telemetry-freshness-v61')&&worker.includes('hmi-operation-safety-v60')],
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,moduleTable,lifecycle,process59,telemetry61].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, HMI fail-closed, and storage guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, and storage guards checked.`);
