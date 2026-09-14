@@ -15,7 +15,7 @@ const checks=[
  ['explicit confirmation before run',js.includes('ic30Confirm')&&js.includes('Saya sudah memeriksa ringkasan paket')],
  ['idempotent result presentation',js.includes('Sudah ada / dilewati')&&js.includes('data existing tidak dihapus atau ditimpa')],
  ['backend still insert-or-ignore',backend.includes('INSERT OR IGNORE INTO ${b.table}')],
- ['backend superadmin guard',backend.includes("user.role!=='superadmin'")&&backend.includes("p==='/api/import-data'"))],
+ ['backend superadmin guard',backend.includes("user.role!=='superadmin'")&&backend.includes("p==='/api/import-data'")],
  ['responsive import center',css.includes('@media(max-width:900px)')&&css.includes('@media(max-width:560px)')]
 ];
 const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Import v30 validation OK — ${checks.length} staging, validation, and idempotency guards checked.`);
