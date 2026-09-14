@@ -15,8 +15,21 @@ function redact(value,key=''){
 }
 async function count(db,table,where='1=1'){try{return Number((await one(db,`SELECT COUNT(*) n FROM ${table} WHERE ${where}`))?.n||0)}catch{return null}}
 async function tableCounts(db){
- const specs=[['users','users','active=1'],['sources','sources'],['sheets','sheets'],['record_chunks','record_chunks'],['entries','entries','deleted=0'],['source_files','source_files'],['audit','audit'],['machine_registry','machine_registry','active=1'],['production_runs','production_runs'],['downtime_events','downtime_events'],['maintenance_calls','maintenance_calls'],['quality_events','quality_events'],['approvals','approvals']];
+ const specs=[['users','users','active=1'],['sources','sources'],['sheets','sheets'],['record_chunks','record_chunks'],['entries','entries','deleted=0'],['source_files','source_files'],['asset_catalog','asset_catalog'],['audit','audit'],['machine_registry','machine_registry','active=1'],['production_runs','production_runs'],['downtime_events','downtime_events'],['maintenance_calls','maintenance_calls'],['quality_events','quality_events'],['approvals','approvals']];
  const rows=[];for(const [key,table,where] of specs)rows.push({key,count:await count(db,table,where||'1=1')});return rows;
+}
+async function qualityCoverage(db){
+ try{
+  const totals=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN unit IS NULL OR trim(unit)='' THEN 1 ELSE 0 END) missing_unit,SUM(CASE WHEN unit IS NOT NULL AND trim(unit)<>'' THEN 1 ELSE 0 END) with_unit FROM quality_events")||{};
+  const units=await all(db,"SELECT lower(trim(unit)) unit,COUNT(*) events FROM quality_events WHERE unit IS NOT NULL AND trim(unit)<>'' GROUP BY lower(trim(unit)) ORDER BY events DESC,unit");
+  return {total:Number(totals.total||0),with_unit:Number(totals.with_unit||0),missing_unit:Number(totals.missing_unit||0),units:units.map(x=>({unit:x.unit,events:Number(x.events||0)})),aggregation_policy:'Kuantitas Quality live hanya diagregasi di dalam unit yang sama; event legacy tanpa unit tidak ditebak.'};
+ }catch{return {total:null,with_unit:null,missing_unit:null,units:[],aggregation_policy:'Kolom unit belum dapat diverifikasi.'};}
+}
+async function mediaCoverage(db){
+ try{
+  const total=Number((await one(db,'SELECT COUNT(*) n FROM asset_catalog'))?.n||0),parents=Number((await one(db,'SELECT COUNT(DISTINCT parent) n FROM asset_catalog'))?.n||0),web=Number((await one(db,"SELECT COUNT(*) n FROM asset_catalog WHERE lower(path) LIKE '%.png' OR lower(path) LIKE '%.jpg' OR lower(path) LIKE '%.jpeg' OR lower(path) LIKE '%.gif' OR lower(path) LIKE '%.webp' OR lower(path) LIKE '%.svg'"))?.n||0);
+  return {embedded_assets:total,parent_sources:parents,web_previewable_assets:web,status:total>0?'catalogued':'not_backfilled',note:total>0?'Child media tersedia untuk preview/traceability; file Office asli tetap source authority.':'Builder sudah mendukung embedded media, tetapi D1 production belum memiliki child asset yang terindeks.'};
+ }catch{return {embedded_assets:null,parent_sources:null,web_previewable_assets:null,status:'unavailable',note:'Asset Catalog belum dapat dibaca.'};}
 }
 function selectedSetting(key){return /^(DATA_GOVERNANCE\.|OPERATIONAL_CONTROL\.|UAT_RELEASE\.|RELEASE_READINESS\.|DISPLAY_LAYOUT\.|brand$)/.test(key);}
 export async function handleSupportV21(req,env,buildVersion,releaseFingerprint=[]){
@@ -31,12 +44,14 @@ export async function handleSupportV21(req,env,buildVersion,releaseFingerprint=[
  const operationalControl=settings.filter(x=>x.key.startsWith('OPERATIONAL_CONTROL.')).map(x=>({key:x.key,approved:x.value?.approved===true,item_count:Array.isArray(x.value?.items)?x.value.items.length:0,updated_at:x.value?.updated_at||null}));
  const delivery=settings.find(x=>x.key==='OPERATIONAL_CONTROL.delivery_plan')?.value||{},deliveryOpen=Array.isArray(delivery.items)?delivery.items.filter(x=>!['closed','not_applicable'].includes(String(x.status||'').toLowerCase())).length:0;
  const uat=settings.filter(x=>x.key.startsWith('UAT_RELEASE.')).map(x=>({key:x.key,status:x.value?.status||'not_started',owner:x.value?.owner||'',evidence_present:!!String(x.value?.evidence||'').trim(),updated_at:x.value?.updated_at||null}));
+ const [qualityUnitCoverage,embeddedMediaCoverage,counts]=await Promise.all([qualityCoverage(env.DB),mediaCoverage(env.DB),tableCounts(env.DB)]);
  return out(req,env,{
   manifest_type:'configuration_and_release_manifest',
   disclaimer:'Manifest ini bukan full backup D1 dan tidak dapat menggantikan prosedur export/restore database Cloudflare.',
   generated_at:new Date().toISOString(),service:'OEE Collaboraction',build_version:buildVersion,release_fingerprint:[...releaseFingerprint],storage:'D1-only',r2:false,
   runtime:{database_binding:'DB',schema:'ready',frontend_assets:'Worker assets + GitHub Pages'},
   operational:{pending_approvals:pendingApprovals,open_downtime:openDowntime,open_maintenance_calls:openMaintenance,delivery_open_actions:deliveryOpen},
-  table_counts:await tableCounts(env.DB),governance,operational_control:operationalControl,uat,active_users:activeUsers,integrations,sources,settings
+  data_coverage:{quality_units:qualityUnitCoverage,embedded_media:embeddedMediaCoverage},
+  table_counts:counts,governance,operational_control:operationalControl,uat,active_users:activeUsers,integrations,sources,settings
  });
 }
