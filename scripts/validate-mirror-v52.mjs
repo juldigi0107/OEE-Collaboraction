@@ -17,6 +17,7 @@ const checks=[
  ['release manifest contains mirror health',lifecycle.includes("mirrorHealthV52")&&lifecycle.includes('body.mirror_health=mirror')],
  ['release control surfaces mirror consistency',release.includes("api('/mirror-health')")&&release.includes('Source Mirror Consistency')&&release.includes('Mirror hilang')&&release.includes('Mirror stale')],
  ['runtime health can downgrade final release',release.includes('function downgradeRuntime')&&release.includes("badge.textContent='Belum final'")&&release.includes("if(!ready)downgradeRuntime('Workflow")&&release.includes("if(!ready)downgradeRuntime('Register mirror")],
+ ['runtime health fails closed when unavailable',release.includes("catch(e){downgradeRuntime('Workflow Health tidak dapat diverifikasi')")&&release.includes("catch(e){downgradeRuntime('Mirror Health tidak dapat diverifikasi')")&&release.includes('Status ini diperlakukan sebagai blocker release sampai health endpoint kembali dapat dibaca.')],
  ['no prototype language',!/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([mirror,live,release].join('\n'))]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}console.log(`Mirror v52 validation OK — ${checks.length} source-of-truth, reconciliation, and release-gate guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}console.log(`Mirror v52 validation OK — ${checks.length} source-of-truth, reconciliation, fail-closed, and release-gate guards checked.`);
