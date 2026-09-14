@@ -27,5 +27,7 @@ export async function handlePlanAuthorityV53(req,env){
  const cfg=await machineConfig(env),planMachine=canonical(cfg,plan.machine),requestMachine=canonical(cfg,body.machine);if(requestMachine&&planMachine&&requestMachine!==planMachine)return out(req,env,409,'Mesin pada request tidak sama dengan canonical machine Planning Released');
  if(hasValue(body.material)&&!sameText(body.material,plan.material))return out(req,env,409,'Material pada request tidak sama dengan Material Planning Released');
  if(hasValue(body.planned_qty)&&!sameNumber(body.planned_qty,plan.target))return out(req,env,409,'Target Qty pada request tidak sama dengan Target Qty Planning Released');
+ if(hasValue(plan.shift)&&hasValue(body.shift)&&!sameText(body.shift,plan.shift))return out(req,env,409,'Shift pada request tidak sama dengan Shift Planning Released');
+ if(hasValue(plan.group)&&hasValue(body.group)&&!sameText(body.group,plan.group))return out(req,env,409,'Group pada request tidak sama dengan Group Planning Released');
  return null;
 }
