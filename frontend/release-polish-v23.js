@@ -32,7 +32,7 @@
   figure.append(img,cap);link.insertAdjacentElement('afterend',figure);
  };
 
- /* Replace the legacy free-form JSON field for new rows and remove native browser confirmation for archive deletion. */
+ /* Replace the legacy free-form JSON field for new rows and remove browser-native deletion confirmation. */
  const baseRowDetail=rowDetail;
  rowDetail=function(row,dept){
   if(!row)return openNativeSourceRow(dept);
@@ -46,6 +46,22 @@
   $('#rp23DeleteCancel').onclick=()=>rowDetail(row,dept);
   $('#rp23DeleteConfirm').onclick=async()=>{const btn=$('#rp23DeleteConfirm');btn.disabled=true;try{await api('/records/'+encodeURIComponent(row.id),'DELETE',{version:row.version});modal.close();toast('Baris diarsipkan. File sumber asli dan jejak audit tetap tersedia.');await render();}catch(err){btn.disabled=false;toast(err.message);}};
  }
+
+ const baseEntryForm=entryForm;
+ entryForm=function(row){
+  const out=baseEntryForm(row);
+  if(!row)return out;
+  const del=$('#delEntry');if(del)del.onclick=()=>transactionDeleteDialog(row);
+  return out;
+ };
+ function transactionDeleteDialog(row){
+  let p={};try{p=JSON.parse(row.payload||'{}')}catch{}
+  const label=modules[opModule]?.[0]||opModule,title=p.title||p.pro||p.machine||`Record ${row.id}`;
+  dialog('Arsipkan transaksi',`<div class="rp23-source-context"><strong>${esc(label)}</strong><span>${esc(title)}</span></div><div class="notice">Transaksi akan dihapus dari register aktif melalui soft delete. Jejak perubahan tetap tersimpan pada audit log dan data sumber historis tidak dihapus.</div><div class="formactions"><button type="button" id="rp23EntryDeleteCancel">Kembali</button><button type="button" id="rp23EntryDeleteConfirm" class="danger">Arsipkan transaksi</button></div>`);
+  $('#rp23EntryDeleteCancel').onclick=()=>entryForm(row);
+  $('#rp23EntryDeleteConfirm').onclick=async()=>{const btn=$('#rp23EntryDeleteConfirm');btn.disabled=true;try{await api('/entries/'+encodeURIComponent(row.id),'DELETE',{version:row.version});modal.close();toast('Transaksi diarsipkan dan perubahan tercatat pada audit log.');await render();}catch(err){btn.disabled=false;toast(err.message);}};
+ }
+
  function openNativeSourceRow(dept){
   if(!can(dept,'create'))return toast('Akun ini tidak memiliki izin menambah baris sumber.');
   const sheet=(catalog?.sheets||[]).find(s=>s.id===activeSheet);
