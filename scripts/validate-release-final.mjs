@@ -17,6 +17,11 @@ const uatView=read('frontend/uat-release-view-v17.js');
 const uatEdit=read('frontend/uat-release-edit-v17.js');
 const release18=read('frontend/release-status-v18.js');
 const support21=read('frontend/support-recovery-v21.js');
+const settings27=read('frontend/settings-polish-v27.js');
+const oc31core=read('frontend/operational-control-core-v31.js');
+const oc31view=read('frontend/operational-control-view-v31.js');
+const oc31edit=read('frontend/operational-control-edit-v31.js');
+const oc31runtime=read('frontend/operational-control-runtime-v31.js');
 const back=read('backend/release-v11.mjs');
 const security=read('backend/release-v15-security.mjs');
 const governance19=read('backend/release-v19-governance.mjs');
@@ -25,13 +30,13 @@ const supportBackend21=read('backend/release-v21-support.mjs');
 const production=read('backend/worker-production.mjs');
 const realtime=read('backend/realtime.mjs');
 const wrangler=read('wrangler.toml');
-const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,machine20ui,uatCore,uatView,uatEdit,release18,support21].join('\n');
+const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,machine20ui,uatCore,uatView,uatEdit,release18,support21,oc31core,oc31view,oc31edit,oc31runtime].join('\n');
 const supportCall=production.indexOf('const supportResponse=await handleSupportV21');
 const machineCall=production.indexOf('const machineGovernanceResponse=await handleMachineGovernanceV20');
 const governanceCall=production.indexOf('const governanceResponse=await handleGovernanceV19');
 const securityCall=production.indexOf('const securityResponse=await handleSecurityV15');
 const releaseCall=production.indexOf('const releaseResponse=await handleReleaseV11');
-const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','machine-governance-v20.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js','support-recovery-v21.js'];
+const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','machine-governance-v20.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js','support-recovery-v21.js','operational-control-core-v31.js','operational-control-view-v31.js','operational-control-edit-v31.js','operational-control-runtime-v31.js'];
 const checks=[
  ['release bundles active',bundles.every(x=>index.includes(x))],
  ['core department modules',['confirmation','planning','production','downtime','quality','maintenance','development','checklist','logbook','process','energy','master','project','batch'].every(x=>core.includes(x))],
@@ -77,6 +82,17 @@ const checks=[
  ['authoritative source badge requires approval',release18.includes('DG16.approved(a)')&&release18.includes('Authoritative')],
  ['release control links governance and UAT',release18.includes("navigate('data-governance')")&&release18.includes("navigate('uat-release')")],
  ['support and recovery bundle active',index.includes('support-recovery-v21.js')&&support21.length>0&&supportBackend21.length>0&&production.includes('handleSupportV21')],
+ ['operational control five blueprint baselines',['cycle_targets','loss_time_classification','machine_triggers','field_ownership','delivery_plan'].every(x=>oc31core.includes(x))],
+ ['operational control business view',oc31view.includes('Cycle Target & Ideal Speed')&&oc31view.includes('Klasifikasi Loss-Time')&&oc31view.includes('Machine Trigger Rules')&&oc31view.includes('Field Ownership & Source of Truth')&&oc31view.includes('Delivery Plan & Open Action')],
+ ['loss-time source seeds preserve ambiguity',['Cleaning','No Operator','Start Up','Trial','No Material','No Tools'].every(x=>oc31edit.includes(x))&&oc31edit.includes('Belum diputuskan')],
+ ['cycle target has no fabricated default number',oc31edit.includes('target_speed_per_hour')&&oc31edit.includes('cycle_seconds')&&!oc31edit.includes('target_speed_per_hour:')&&!oc31edit.includes('cycle_seconds:')],
+ ['operational approval explicit',oc31edit.includes('name="approved"')&&oc31edit.includes('telah diverifikasi')],
+ ['generic settings reserves operational control',settings27.includes("['OPERATIONAL_CONTROL.','Standar Operasional','operational-control']")],
+ ['backend operational control restricted to superadmin',governance19.includes("key.startsWith('OPERATIONAL_CONTROL.')")&&governance19.includes('validateOperational')&&governance19.includes('Standar Operasional hanya dapat disahkan oleh Superadmin')],
+ ['backend cycle and delivery approval integrity',governance19.includes('Minimal satu Cycle Target wajib ditetapkan')&&governance19.includes('evidence closure wajib diisi')],
+ ['approved loss-time baseline enforced at runtime',machine20.includes('OPERATIONAL_CONTROL.loss_time_classification')&&machine20.includes('Reason code belum terdaftar pada baseline Loss-Time')&&machine20.includes('Owner Department harus')],
+ ['HMI standard card uses approved cycle baseline',oc31runtime.includes('OC31.approved(cfg)')&&oc31runtime.includes('Standard Proses')&&oc31runtime.includes('cycle_seconds')],
+ ['downtime preset uses approved loss baseline',oc31runtime.includes('Pilih reason code yang disahkan')&&oc31runtime.includes('lossFor(klass)')],
  ['D1 only configuration',wrangler.includes('[[d1_databases]]')&&!/\[\[r2_buckets\]\]/.test(wrangler)],
  ['no prototype language in active release UI',!/\b(prototype|mockup|dummy|lorem ipsum|data demo|contoh data)\b/i.test(active)]
 ];
