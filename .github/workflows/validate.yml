@@ -8,7 +8,7 @@ jobs:
   syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -66,7 +66,7 @@ jobs:
           grep -Fq '"schema":"ready"' "$tmp"
       - name: Production frontend and BMJ asset smoke check
         run: |
-          js_assets="role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js release-polish-v23.js module-table-v25.js archive-semantic-v26.js settings-polish-v27.js access-governance-v28.js display-lifecycle-v29.js import-center-v30.js"
+          js_assets="role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js release-polish-v23.js module-table-v25.js archive-semantic-v26.js settings-polish-v27.js access-governance-v28.js display-lifecycle-v29.js import-center-v30.js operational-control-core-v31.js operational-control-view-v31.js operational-control-edit-v31.js operational-control-runtime-v31.js release-resilience-v33.js dashboard-period-v34.js"
           ready=0
           for attempt in $(seq 1 12); do
             html=$(curl --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/ || true)
@@ -83,7 +83,7 @@ jobs:
             sleep 5
           done
           test "$ready" = "1"
-          for asset in release-v10.css release-v11.css role-dashboard-v12.css workflow-v13.css governance-v14.css data-governance-v16.css uat-release-v17.css release-status-v18.css support-recovery-v21.css release-polish-v23.css module-table-v25.css archive-semantic-v26.css settings-polish-v27.css access-governance-v28.css display-lifecycle-v29.css import-center-v30.css; do curl --fail --silent --show-error --location --max-time 20 -o /dev/null "https://oee-collaboraction.offsetbmj.workers.dev/$asset"; done
+          for asset in release-v10.css release-v11.css role-dashboard-v12.css workflow-v13.css governance-v14.css data-governance-v16.css uat-release-v17.css release-status-v18.css support-recovery-v21.css release-polish-v23.css module-table-v25.css archive-semantic-v26.css settings-polish-v27.css access-governance-v28.css display-lifecycle-v29.css import-center-v30.css operational-control-v31.css; do curl --fail --silent --show-error --location --max-time 20 -o /dev/null "https://oee-collaboraction.offsetbmj.workers.dev/$asset"; done
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
       - name: Production field display publish guard check
@@ -148,6 +148,16 @@ jobs:
           echo "$r30" | grep -Fq 'Paket lolos validasi lokal'
           echo "$r30" | grep -Fq 'D1 belum berubah'
           echo "$r30" | grep -Fq 'bukan payload base64 yang valid'
+          r31=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/operational-control-runtime-v31.js)
+          echo "$r31" | grep -Fq 'Belum dapat dipilih otomatis'
+          echo "$r31" | grep -Fq 'Reason baseline wajib'
+          echo "$r31" | grep -Fq "process:'quality'"
+          r33=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-resilience-v33.js)
+          echo "$r33" | grep -Fq 'Belum ada sheet sumber'
+          echo "$r33" | grep -Fq "['jpg','jpeg','webp','gif']"
+          r34=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/dashboard-period-v34.js)
+          echo "$r34" | grep -Fq 'excelEpoch'
+          echo "$r34" | grep -Fq 'periode berasal dari cell tanggal sumber'
           runtime=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/runtime-polish-v6.js)
           echo "$runtime" | grep -Fq 'Memuat data operasional'
           echo "$runtime" | grep -Fq 'Data belum dapat dimuat'
