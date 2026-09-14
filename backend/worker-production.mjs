@@ -24,6 +24,7 @@ async function ensureAdditiveSchema(env){
       await env.DB.prepare('CREATE TABLE IF NOT EXISTS asset_catalog(id TEXT PRIMARY KEY,parent TEXT NOT NULL,path TEXT NOT NULL)').run();
       await env.DB.prepare('CREATE INDEX IF NOT EXISTS asset_parent ON asset_catalog(parent)').run();
       await addColumnIfMissing(env,'quality_events','unit','ALTER TABLE quality_events ADD COLUMN unit TEXT');
+      await addColumnIfMissing(env,'production_runs','unit','ALTER TABLE production_runs ADD COLUMN unit TEXT');
     })().catch(error=>{schemaReady=null;throw error;});
   }
   return schemaReady;
@@ -33,7 +34,7 @@ export default {
   async fetch(req,env,ctx){
     const path=new URL(req.url).pathname;
     if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false,release_fingerprint:RELEASE_FINGERPRINT}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
-    if(['/api/assets','/api/import-data','/api/readiness','/api/shopfloor/quality','/api/role-dashboard'].includes(path))await ensureAdditiveSchema(env);
+    if(['/api/assets','/api/import-data','/api/readiness','/api/shopfloor/quality','/api/role-dashboard','/api/shopfloor/start'].includes(path))await ensureAdditiveSchema(env);
     const supportResponse=await handleSupportV21(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);
     if(supportResponse)return supportResponse;
     const planningSafetyResponse=await handlePlanningSafetyV39(req,env);
