@@ -81,7 +81,9 @@ need(production.includes('runtime-invariants-v55'),'Release fingerprint belum me
 const invariantCall=callPos('const invariantResponse=await handleRuntimeInvariantsV55'),hmiCall=callPos('const hmiSafetyResponse=await handleHmiSafetyV40'),qualityCall=callPos('const qualityUnitResponse=await handleQualityUnitV44');
 need(invariantCall>hmiCall&&qualityCall>invariantCall,'Runtime Invariants harus berjalan setelah HMI validation dan sebelum handler legacy/quality berikutnya.');
 for(const rule of [
- ["WHERE machine_id=? AND status='RUNNING'",'Finish PRO belum memakai atomic status transition.'],
+ ["UPDATE production_runs SET status='FINISHED'",'Finish PRO belum menulis status FINISHED melalui runtime invariant handler.'],
+ ["WHERE id=? AND status='RUNNING'",'Finish PRO belum memakai run ID + status guard untuk atomic transition.'],
+ ["if(!changed(done))return out(req,env,{error:'Finish PRO sudah diproses oleh request lain'}",'Finish PRO belum memverifikasi single-row atomic transition.'],
  ["WHERE NOT EXISTS(SELECT 1 FROM downtime_events WHERE machine_id=? AND status='OPEN')",'Downtime Start belum atomic terhadap double-submit.'],
  ["WHERE id=? AND status='OPEN'",'Downtime/Maintenance transition belum memakai status guard.'],
  ['duplicate_running_runs','Runtime health belum memeriksa duplicate running run.'],
