@@ -70,11 +70,11 @@ const checks=[
  ['source media preserves original authority',source41.includes('Workbook atau presentation asli tetap menjadi source authority')],
  ['non-QC dashboard delegates to KPI semantics',quality44.includes("handleKpiSemanticsV45")&&quality44.includes('if(qc)return qc')],
  ['maintenance rolling window labels are explicit',kpi45.includes('Repair duration rata-rata · closure 30d')&&kpi45.includes('Elapsed production hours per UPDT · 30d')&&kpi45.includes('Baseline KPI belum disahkan')],
- ['maintenance run hours are clipped to window boundary',kpi45.includes("CASE WHEN end_ts<datetime('now')")&&kpi45.includes('CASE WHEN start_ts>${window}')&&kpi45.includes("end_ts>${window}")],
+ ['maintenance run hours clip both window boundaries and include active runs',kpi45.includes("end_ts IS NULL OR end_ts>datetime('now')")&&kpi45.includes('CASE WHEN start_ts>${window}')&&kpi45.includes("COALESCE(end_ts,datetime('now'))>${window}")&&kpi45.includes('termasuk run yang masih aktif sampai waktu sekarang')],
  ['maintenance repair metric uses closure timestamp',kpi45.includes("closed_ts>=${window}")&&kpi45.includes('berdasarkan closed_ts')&&kpi45.includes('closed_calls_30d')],
  ['maintenance official KPI is not overclaimed',kpi45.includes('angka ini tidak diklaim sebagai MTTR resmi')&&kpi45.includes('angka ini bukan klaim MTBF resmi')],
  ['maintenance governance definitions surfaced',kpi45.includes('Definisi MTTR governance:')&&kpi45.includes('Definisi MTBF governance:')],
- ['rolling window policy is exposed',kpi45.includes("body.window_policy='Rolling metrics")&&kpi45.includes('run duration dipotong pada boundary window')],
+ ['rolling window policy is exposed',kpi45.includes("body.window_policy='Rolling metrics")&&kpi45.includes('run duration dipotong pada boundary window')&&kpi45.includes('run aktif sampai waktu sekarang')],
  ['project average is explicitly unweighted',kpi45.includes('bukan weighted portfolio progress')],
  ['register horizon is explicit',kpi45.includes('Cakupan seluruh register D1 terpetakan')&&kpi45.includes('Seluruh register hasil produksi terpetakan')]
 ];
