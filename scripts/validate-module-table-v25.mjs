@@ -34,8 +34,8 @@ const checks=[
  ['live quality requires explicit unit',hmi.includes('name="unit" required')&&hmi.includes('dashboard tidak menjumlahkan unit berbeda')],
  ['quality dashboard groups by unit',quality44.includes("GROUP BY COALESCE(NULLIF(lower(trim(unit)),''),'__missing__')")&&quality44.includes('Kuantitas ditampilkan per unit')],
  ['legacy quality rows remain unrelabelled',quality44.includes('Event lama tanpa satuan')&&quality44.includes('Dikeluarkan dari agregasi qty per unit')],
- ['approval reviewers receive quality unit',quality44.includes("path==='/api/approvals'")&&quality44.includes('unit_status')&&quality44.includes("entity_type==='quality'")],
- ['approval UI surfaces inspection unit',admin37.includes('Satuan inspeksi:')&&admin37.includes('legacy / belum tersedia')],
+ ['approval API exposes quality and production units',quality44.includes("entity_type==='quality'")&&quality44.includes("entity_type==='production_run'")&&quality44.includes('runMap')&&quality44.includes('unit_status')],
+ ['approval UI surfaces both inspection and output units',admin37.includes("'Satuan inspeksi':'Satuan output'")&&admin37.includes('legacy / belum tersedia')],
  ['quality v44 wired before legacy release handler',worker.includes('handleQualityUnitV44')&&worker.indexOf('const qualityUnitResponse=await handleQualityUnitV44')<worker.indexOf('const releaseResponse=await handleReleaseV11')],
  ['quality schema preserves unit',init.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')&&realtimeSchema.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')],
  ['planning form captures target unit',form38.includes('function planningUnit')&&form38.includes("input.name='unit'")&&form38.includes('Wajib saat Released')],
@@ -51,8 +51,10 @@ const checks=[
  ['PDS legacy cost is not aggregated without currency',kpi45.includes('Biaya tanpa currency')&&kpi45.includes('tidak dijumlahkan sampai mata uangnya direkonsiliasi')],
  ['fresh schema has no seeded superadmin',!init.includes("'seed-superadmin'")&&!init.includes("INSERT OR IGNORE INTO users")],
  ['release manifest exposes quality coverage',support21.includes('qualityCoverage')&&support21.includes('aggregation_policy')&&support21.includes('data_coverage')],
+ ['release manifest exposes production unit coverage',support21.includes('productionUnitCoverage')&&support21.includes('production_units')&&support21.includes('run legacy tidak ditebak')],
+ ['release manifest exposes PDS currency coverage',support21.includes('pdsCurrencyCoverage')&&support21.includes('pds_currency')&&support21.includes('currency legacy tidak diasumsikan')],
  ['release manifest exposes embedded media coverage',support21.includes('mediaCoverage')&&support21.includes('embedded_assets')&&support21.includes("status:total>0?'catalogued':'not_backfilled'")],
- ['support UI surfaces data coverage',admin37.includes('Coverage integritas data')&&admin37.includes('QC legacy tanpa satuan')&&admin37.includes('Embedded child asset')],
+ ['support UI surfaces integrity debt',admin37.includes('QC legacy tanpa satuan')&&admin37.includes('Production legacy tanpa unit')&&admin37.includes('PDS cost tanpa currency')&&admin37.includes('Embedded child asset')],
  ['D1 builder extracts embedded OOXML media',builder.includes("'/media/' in n")&&builder.includes("asset_catalog")&&builder.includes('embedded_assets')],
  ['source detail uses authenticated asset catalog',source41.includes("api('/assets?source='")&&source41.includes("'/api/media/'")&&source41.includes('assets.slice(0,12)')],
  ['source media preserves original authority',source41.includes('Workbook atau presentation asli tetap menjadi source authority')],
@@ -64,4 +66,4 @@ const checks=[
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Module, quality-unit, production-unit, currency-safe PDS, KPI-semantics, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
+console.log(`Module, unit-lineage, currency-safe PDS, KPI-semantics, approval, release-coverage, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
