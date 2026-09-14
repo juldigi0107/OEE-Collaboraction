@@ -42,8 +42,14 @@
   if(!can(dept,'create'))return toast('Akun ini tidak memiliki izin menambah baris sumber.');
   const sheet=(catalog?.sheets||[]).find(s=>s.id===activeSheet);
   if(!sheet)return toast('Pilih sheet sumber sebelum menambah baris.');
-  dialog('Tambah baris sumber',`<div class="rp23-source-context"><strong>${esc(sheet.name)}</strong><span>${esc(departments[dept]||dept)} · arsip sumber</span></div><p class="notice">Gunakan editor ini hanya untuk koreksi/penambahan arsip yang memang disetujui pemilik data. File asli tetap dipertahankan dan formula Excel tidak dihitung ulang di browser.</p><form id="rp23RowForm"><div id="rp23Fields" class="rp23-fields"></div><div class="rp23-row-actions"><button type="button" id="rp23AddField">+ Tambah kolom</button></div><label class="full rp23-change-note">Catatan perubahan<input name="change_note" placeholder="Contoh: koreksi hasil verifikasi Production" required></label><div class="formactions"><button type="button" id="rp23Cancel">Batal</button><button class="primary">Simpan baris</button></div></form>`);
+  dialog('Tambah baris sumber',`<div class="rp23-source-context"><strong>${esc(sheet.name)}</strong><span>${esc(departments[dept]||dept)} · arsip sumber</span></div><p class="notice">Gunakan editor ini hanya untuk koreksi atau penambahan arsip yang telah disetujui pemilik data. File asli tetap dipertahankan, formula Excel tidak dihitung ulang di browser, dan aktivitas pengguna tercatat pada audit trail.</p><form id="rp23RowForm"><div id="rp23Fields" class="rp23-fields"></div><div class="rp23-row-actions"><button type="button" id="rp23AddField">+ Tambah kolom</button></div><div class="formactions"><button type="button" id="rp23Cancel">Batal</button><button class="primary">Simpan baris</button></div></form>`);
   const host=$('#rp23Fields');
+  const adaptValue=(line,type)=>{
+   const label=line.querySelector('.rp23-value-label'),old=line.querySelector('.rp23-value'),v=old?.value||'';let input;
+   if(type==='boolean'){input=document.createElement('select');input.innerHTML='<option value="true">Ya</option><option value="false">Tidak</option>';input.value=v==='false'?'false':'true';}
+   else{input=document.createElement('input');input.type=type==='number'?'number':type==='date'?'date':'text';if(type==='number')input.step='any';input.value=v;}
+   input.className='rp23-value';input.setAttribute('aria-label','Nilai kolom');old?.replaceWith(input);label.append(input);
+  };
   const add=(column='',value='',type='text')=>{
    const line=document.createElement('div');line.className='rp23-field';
    line.innerHTML=`<label>Kolom<input class="rp23-col" maxlength="3" placeholder="A" value="${esc(column)}" aria-label="Nama kolom"></label><label>Tipe<select class="rp23-type"><option value="text">Teks</option><option value="number">Angka</option><option value="date">Tanggal</option><option value="boolean">Ya / Tidak</option></select></label><label class="rp23-value-label">Nilai<input class="rp23-value" value="${esc(value)}" aria-label="Nilai kolom"></label><button type="button" class="rp23-remove" aria-label="Hapus kolom">×</button>`;
@@ -52,12 +58,6 @@
    line.querySelector('.rp23-type').onchange=e=>adaptValue(line,e.target.value);
    line.querySelector('.rp23-remove').onclick=()=>{if(host.children.length>1)line.remove();else toast('Minimal satu kolom diperlukan.');};
    host.append(line);adaptValue(line,type);
-  };
-  const adaptValue=(line,type)=>{
-   const label=line.querySelector('.rp23-value-label'),old=line.querySelector('.rp23-value'),v=old?.value||'';let input;
-   if(type==='boolean'){input=document.createElement('select');input.innerHTML='<option value="true">Ya</option><option value="false">Tidak</option>';input.value=v==='false'?'false':'true';}
-   else{input=document.createElement('input');input.type=type==='number'?'number':type==='date'?'date':'text';if(type==='number')input.step='any';input.value=v;}
-   input.className='rp23-value';input.setAttribute('aria-label','Nilai kolom');old?.replaceWith(input);label.append(input);
   };
   add('A','','text');
   $('#rp23AddField').onclick=()=>add();
@@ -73,9 +73,7 @@
      payload[column]={v:value,t};
     }
     if(!Object.keys(payload).length)throw Error('Minimal satu kolom wajib diisi.');
-    const note=new FormData(e.target).get('change_note')?.trim();
-    payload.__CHANGE_NOTE={v:note,t:'str'};
-    await api('/records','POST',{payload,sheet_id:activeSheet});modal.close();toast('Baris arsip disimpan dengan catatan perubahan.');await render();
+    await api('/records','POST',{payload,sheet_id:activeSheet});modal.close();toast('Baris arsip disimpan. Aktivitas tercatat pada audit trail.');await render();
    }catch(err){toast(err.message);}
   };
  }
