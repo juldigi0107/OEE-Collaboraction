@@ -9,16 +9,23 @@ const r11=read('frontend/release-v11.js');
 const r12=read('frontend/role-dashboard-v12.js');
 const r13=read('frontend/workflow-v13.js');
 const r14=read('frontend/governance-v14.js');
+const dgCore=read('frontend/data-governance-core-v16.js');
+const dgView=read('frontend/data-governance-view-v16.js');
+const dgEdit=read('frontend/data-governance-edit-v16.js');
+const uatCore=read('frontend/uat-release-core-v17.js');
+const uatView=read('frontend/uat-release-view-v17.js');
+const uatEdit=read('frontend/uat-release-edit-v17.js');
 const back=read('backend/release-v11.mjs');
 const security=read('backend/release-v15-security.mjs');
 const production=read('backend/worker-production.mjs');
 const realtime=read('backend/realtime.mjs');
 const wrangler=read('wrangler.toml');
-const active=[r10,r11,r12,r13,r14].join('\n');
+const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,uatCore,uatView,uatEdit].join('\n');
 const securityCall=production.indexOf('const securityResponse=await handleSecurityV15');
 const releaseCall=production.indexOf('const releaseResponse=await handleReleaseV11');
+const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js'];
 const checks=[
- ['release bundles active',['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js'].every(x=>index.includes(x))],
+ ['release bundles active',bundles.every(x=>index.includes(x))],
  ['core department modules',['confirmation','planning','production','downtime','quality','maintenance','development','checklist','logbook','process','energy','master','project','batch'].every(x=>core.includes(x))],
  ['published display gate',field.includes("layout.status==='published'")||field.includes("layout.status!=='published'")],
  ['exact display machine scope',r10.includes("filter(m=>normalize(m.code)===code)")],
@@ -38,6 +45,13 @@ const checks=[
  ['audit sensitive-value redaction',r14.includes('(password|hash|salt|token|secret|credential)')],
  ['business-facing source registry',r10.includes('Pusat Data & Dokumen')&&r10.includes('Register sumber')],
  ['source quality reconciliation',r10.includes('Kualitas Data')&&r10.includes('Prioritas rekonsiliasi')],
+ ['data governance five baselines',['kpi_definitions','machine_aliases','shift_calendar','source_authority','join_grain'].every(x=>dgCore.includes(x))],
+ ['data governance business presentation',dgView.includes('Definisi Data & KPI')&&dgView.includes('Belum disahkan')&&dgView.includes('Perlu keputusan owner')],
+ ['data governance uses controlled config path',dgEdit.includes("navigate('settings')")&&dgEdit.includes("f.elements.key.value=key")&&!dgEdit.includes("api('/settings'")],
+ ['UAT seven release gates',['UAT_RELEASE.roles','UAT_RELEASE.devices','UAT_RELEASE.data','UAT_RELEASE.display','UAT_RELEASE.recovery','UAT_RELEASE.integrations','UAT_RELEASE.signoff'].every(x=>uatCore.includes(x))],
+ ['UAT starts unverified',uatEdit.includes("status:'not_started'")&&!uatEdit.includes("status:'passed'")],
+ ['UAT evidence and blockers',uatView.includes('Evidence')&&uatView.includes('Blocker')&&uatEdit.includes("evidence:''")&&uatEdit.includes("blocker:''")],
+ ['UAT requires data governance and release gates',uatView.includes('dgDone')&&uatView.includes('done===rows.length')],
  ['D1 only configuration',wrangler.includes('[[d1_databases]]')&&!/\[\[r2_buckets\]\]/.test(wrangler)],
  ['no prototype language in active release UI',!/\b(prototype|mockup|dummy|lorem ipsum|data demo|contoh data)\b/i.test(active)]
 ];
