@@ -16,6 +16,7 @@ const checks=[
  ['live registers remain read only',live.includes("if(!id.startsWith('live:'))return null")&&live.includes('mirror read-only dari workflow HMI')],
  ['release manifest contains mirror health',lifecycle.includes("mirrorHealthV52")&&lifecycle.includes('body.mirror_health=mirror')],
  ['release control surfaces mirror consistency',release.includes("api('/mirror-health')")&&release.includes('Source Mirror Consistency')&&release.includes('Mirror hilang')&&release.includes('Mirror stale')],
+ ['runtime health can downgrade final release',release.includes('function downgradeRuntime')&&release.includes("badge.textContent='Belum final'")&&release.includes("if(!ready)downgradeRuntime('Workflow")&&release.includes("if(!ready)downgradeRuntime('Register mirror")],
  ['no prototype language',!/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([mirror,live,release].join('\n'))]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}console.log(`Mirror v52 validation OK — ${checks.length} source-of-truth and reconciliation guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}console.log(`Mirror v52 validation OK — ${checks.length} source-of-truth, reconciliation, and release-gate guards checked.`);
