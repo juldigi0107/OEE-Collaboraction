@@ -40,13 +40,30 @@ need(workspace.includes("nav('documents'"),'Menu Dokumen & aset hilang.');
 need(workspace.includes("nav('quality'"),'Menu Validasi sumber hilang.');
 need(workspace.includes("user.role==='superadmin'"),'Guard menu Superadmin hilang.');
 need(workspace.includes("can(user.department,'config')"),'Guard menu Konfigurasi hilang.');
+
+const releaseRoutes=[
+  ['governance',"view==='governance'",'renderGovernance','data-view="governance"'],
+  ['data-governance',"view==='data-governance'",'DG16View?.render','data-view="data-governance"'],
+  ['uat-release',"view==='uat-release'",'UAT17View?.render','data-view="uat-release"'],
+  ['support-recovery',"view==='support-recovery'",'supportRecovery','data-view="support-recovery"']
+];
+for(const [view,routeMarker,handlerMarker,menuMarker] of releaseRoutes){
+  need(bundle.includes(routeMarker),`Route release-control ${view} tidak ditemukan.`);
+  need(bundle.includes(handlerMarker),`Handler release-control ${view} tidak ditemukan.`);
+  need(bundle.includes(menuMarker),`Menu release-control ${view} tidak ditemukan.`);
+}
+need(bundle.includes("user?.role==='superadmin'&&!nav.querySelector('[data-view=\"governance\"]')"),'Tata Kelola & Readiness tidak dijaga untuk Superadmin.');
+need(bundle.includes("if(user?.role!=='superadmin')return")&&bundle.includes('data-view="support-recovery"'),'Support & Recovery tidak dijaga untuk Superadmin.');
 need(index.includes('role-ux-v7.js'),'Role UX guard tidak dimuat.');
 need(index.includes('asset-repair-v9.js'),'BMJ logo/hero runtime tidak dimuat.');
 need(index.includes('field-display-v8.js'),'Field display runtime tidak dimuat.');
+need(index.includes('data-governance-core-v16.js'),'Data Governance runtime tidak dimuat.');
+need(index.includes('uat-release-core-v17.js'),'UAT & Go-Live runtime tidak dimuat.');
+need(index.includes('support-recovery-v21.js'),'Support & Recovery runtime tidak dimuat.');
 
 if(errors.length){
   console.error('Navigation validation FAILED');
   for(const e of errors)console.error('- '+e);
   process.exit(1);
 }
-console.log(`Navigation validation OK — ${Object.keys(handlers).length+1} routes + critical guards checked across ${active.length} active JS bundles.`);
+console.log(`Navigation validation OK — ${Object.keys(handlers).length+1+releaseRoutes.length} routes + critical guards checked across ${active.length} active JS bundles.`);
