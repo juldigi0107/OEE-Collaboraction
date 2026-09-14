@@ -17,9 +17,10 @@ import {handleWorkflowReconciliationV51,reconcileWorkflowLineageV51} from './rel
 import {handleMirrorReconciliationV52,reconcileLiveMirrorsV52} from './release-v52-mirror-reconciliation.mjs';
 import {handlePlanAuthorityV53} from './release-v53-plan-authority.mjs';
 import {handleRuntimeSignoffV54} from './release-v54-runtime-signoff.mjs';
+import {handleRuntimeInvariantsV55,reconcileRuntimeInvariantsV55} from './release-v55-runtime-invariants.mjs';
 
 const BUILD_VERSION='6.2.0';
-const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47','query-performance-v47','frontend-security-v48','live-register-v49','workflow-lineage-v50','workflow-reconciliation-v51','mirror-reconciliation-v52','plan-authority-v53','runtime-signoff-v54'];
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47','query-performance-v47','frontend-security-v48','live-register-v49','workflow-lineage-v50','workflow-reconciliation-v51','mirror-reconciliation-v52','plan-authority-v53','runtime-signoff-v54','runtime-invariants-v55'];
 let schemaReady=null;
 async function addColumnIfMissing(env,table,column,ddl){const columns=(await env.DB.prepare(`PRAGMA table_info('${table}')`).all()).results||[];if(columns.some(x=>x.name===column))return;try{await env.DB.prepare(ddl).run();}catch(error){if(!/duplicate column/i.test(String(error?.message||error)))throw error;}}
 async function ensureAdditiveSchema(env){if(!schemaReady){schemaReady=(async()=>{await env.DB.prepare('CREATE TABLE IF NOT EXISTS asset_catalog(id TEXT PRIMARY KEY,parent TEXT NOT NULL,path TEXT NOT NULL)').run();await env.DB.prepare('CREATE INDEX IF NOT EXISTS asset_parent ON asset_catalog(parent)').run();await addColumnIfMissing(env,'quality_events','unit','ALTER TABLE quality_events ADD COLUMN unit TEXT');await addColumnIfMissing(env,'production_runs','unit','ALTER TABLE production_runs ADD COLUMN unit TEXT');await addColumnIfMissing(env,'production_runs','plan_id','ALTER TABLE production_runs ADD COLUMN plan_id TEXT');await addColumnIfMissing(env,'maintenance_calls','resolution_note','ALTER TABLE maintenance_calls ADD COLUMN resolution_note TEXT');const indexes=['CREATE INDEX IF NOT EXISTS sessions_expires ON sessions(expires)','CREATE INDEX IF NOT EXISTS login_attempts_until ON login_attempts(until_ts)','CREATE INDEX IF NOT EXISTS entries_module_updated ON entries(module,deleted,updated DESC)','CREATE INDEX IF NOT EXISTS production_runs_start ON production_runs(start_ts DESC)','CREATE INDEX IF NOT EXISTS production_runs_plan ON production_runs(plan_id)','CREATE INDEX IF NOT EXISTS downtime_class_start ON downtime_events(class,start_ts DESC)','CREATE INDEX IF NOT EXISTS maintenance_calls_requested ON maintenance_calls(requested_ts DESC)','CREATE INDEX IF NOT EXISTS quality_events_created ON quality_events(created_ts DESC)','CREATE INDEX IF NOT EXISTS approvals_type_status_requested ON approvals(entity_type,status,requested_ts DESC)','CREATE INDEX IF NOT EXISTS integration_sync_connection ON integration_sync_log(connection_id,started_ts DESC)'];for(const sql of indexes)await env.DB.prepare(sql).run();})().catch(error=>{schemaReady=null;throw error;});}return schemaReady;}
@@ -29,8 +30,8 @@ export default {
  async fetch(req,env,ctx){
   const path=new URL(req.url).pathname;
   if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false,release_fingerprint:RELEASE_FINGERPRINT}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
-  if(['/api/assets','/api/import-data','/api/readiness','/api/release-manifest','/api/approvals','/api/shopfloor/quality','/api/role-dashboard','/api/shopfloor/start','/api/shopfloor/finish','/api/shopfloor/maintenance/close','/api/realtime/overview','/api/workflow-health','/api/mirror-health','/api/settings'].includes(path))await ensureAdditiveSchema(env);
-  const liveSignal=await captureLiveRegisterV49(req),workflowSignal=await captureWorkflowLineageV50(req);
+  if(['/api/assets','/api/import-data','/api/readiness','/api/release-manifest','/api/approvals','/api/shopfloor/quality','/api/role-dashboard','/api/shopfloor/start','/api/shopfloor/finish','/api/shopfloor/downtime/start','/api/shopfloor/downtime/stop','/api/shopfloor/maintenance/ack','/api/shopfloor/maintenance/close','/api/realtime/overview','/api/workflow-health','/api/mirror-health','/api/runtime-invariants','/api/settings'].includes(path))await ensureAdditiveSchema(env);
+  const liveSignal=await captureLiveRegisterV49(req),workflowSignal=await captureWorkflowLineageV50(req),approvalSignal=await captureReleaseV11(req);
   const lifecycleResponse=await handleDataLifecycleV46(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);if(lifecycleResponse)return lifecycleResponse;
   const workflowHealthResponse=await handleWorkflowReconciliationV51(req,env);if(workflowHealthResponse)return workflowHealthResponse;
   const mirrorHealthResponse=await handleMirrorReconciliationV52(req,env);if(mirrorHealthResponse)return mirrorHealthResponse;
@@ -45,15 +46,16 @@ export default {
   const securityResponse=await handleSecurityV15(req,env);if(securityResponse)return securityResponse;
   const liveGuard=await handleLiveRegisterV49(req,env);if(liveGuard)return liveGuard;
   const hmiSafetyResponse=await handleHmiSafetyV40(req,env);if(hmiSafetyResponse)return hmiSafetyResponse;
+  const invariantResponse=await handleRuntimeInvariantsV55(req,env);if(invariantResponse){if(invariantResponse.ok){if(approvalSignal)ctx.waitUntil(afterReleaseV11(approvalSignal,invariantResponse.clone(),req,env));if(liveSignal)ctx.waitUntil(afterLiveRegisterV49(liveSignal,invariantResponse.clone(),env));if(workflowSignal)ctx.waitUntil(afterWorkflowLineageV50(workflowSignal,invariantResponse.clone(),env));}return invariantResponse;}
   const qualityUnitResponse=await handleQualityUnitV44(req,env);if(qualityUnitResponse){if(liveSignal&&qualityUnitResponse.ok)ctx.waitUntil(afterLiveRegisterV49(liveSignal,qualityUnitResponse.clone(),env));return qualityUnitResponse;}
   const queryResponse=await handleQueryPerformanceV47(req,env);if(queryResponse)return queryResponse;
   const releaseResponse=await handleReleaseV11(req,env);if(releaseResponse)return releaseResponse;
   const workflowResponse=await handleWorkflowLineageV50(req,env);if(workflowResponse){if(liveSignal&&workflowResponse.ok)ctx.waitUntil(afterLiveRegisterV49(liveSignal,workflowResponse.clone(),env));return workflowResponse;}
-  const signal=await captureReleaseV11(req),response=await app.fetch(req,env,ctx);
-  if(signal&&response.ok)ctx.waitUntil(afterReleaseV11(signal,response.clone(),req,env));
+  const response=await app.fetch(req,env,ctx);
+  if(approvalSignal&&response.ok)ctx.waitUntil(afterReleaseV11(approvalSignal,response.clone(),req,env));
   if(liveSignal&&response.ok)ctx.waitUntil(afterLiveRegisterV49(liveSignal,response.clone(),env));
   if(workflowSignal&&response.ok)ctx.waitUntil(afterWorkflowLineageV50(workflowSignal,response.clone(),env));
   return secureFrontendResponse(path,response);
  },
- scheduled(controller,env,ctx){const existing=app.scheduled?.(controller,env,ctx);ctx.waitUntil(runLifecycleHousekeepingV46(env));ctx.waitUntil(backfillLiveRegistersV49(env,50));ctx.waitUntil(reconcileWorkflowLineageV51(env,150));ctx.waitUntil(reconcileLiveMirrorsV52(env,80));return existing;}
+ scheduled(controller,env,ctx){const existing=app.scheduled?.(controller,env,ctx);ctx.waitUntil(runLifecycleHousekeepingV46(env));ctx.waitUntil(backfillLiveRegistersV49(env,50));ctx.waitUntil(reconcileWorkflowLineageV51(env,150));ctx.waitUntil(reconcileLiveMirrorsV52(env,80));ctx.waitUntil(reconcileRuntimeInvariantsV55(env,100));return existing;}
 };
