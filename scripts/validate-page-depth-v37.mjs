@@ -5,9 +5,11 @@ const safety=read('frontend/operational-safety-v35.js');
 const page=read('frontend/page-depth-v36.js');
 const admin=read('frontend/admin-depth-v37.js');
 const form=read('frontend/transaction-form-v38.js');
+const moduleTable=read('frontend/module-table-v25.js');
 const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
 const lifecycle=read('backend/release-v46-data-lifecycle.mjs');
+const process59=read('backend/release-v59-process-capability.mjs');
 const runtime=read('frontend/operational-control-runtime-v31.js');
 const worker=read('backend/worker-production.mjs');
 const checks=[
@@ -36,12 +38,18 @@ const checks=[
  ['ephemeral housekeeping only',lifecycle.includes('DELETE FROM sessions WHERE expires<=?')&&lifecycle.includes('DELETE FROM login_attempts WHERE until_ts<?')&&!lifecycle.includes('DELETE FROM machine_minute_snapshot')&&!lifecycle.includes('DELETE FROM audit')],
  ['business retention is monitor only',lifecycle.includes("operational:'monitor_only'")&&lifecycle.includes("business_history:'no_automatic_delete'")&&lifecycle.includes("retention:'preserve'")],
  ['scheduled lifecycle cleanup active',worker.includes('runLifecycleHousekeepingV46')&&worker.includes('ctx.waitUntil(runLifecycleHousekeepingV46(env))')],
- ['transaction required rules mirror backend',form.includes("production:['title','date','machine','total','good','planned','runtime','speed']")&&form.includes("batch:['title','date','machine','pro','input_batch','output_batch','qty','good','reject','nc','unit']")],
+ ['transaction required rules mirror backend',form.includes("production:['title','date','machine','total','good','planned','runtime','speed']")&&form.includes("process:['title','date','machine','parameter','value','unit']")&&form.includes("batch:['title','date','machine','pro','input_batch','output_batch','qty','good','reject','nc','unit']")],
  ['PPIC signed values preserved',form.includes('Signed value')&&form.includes('reversal')],
  ['production OEE preview is explicitly non-authoritative',form.includes('Preview kalkulasi')&&form.includes('backend')],
  ['checklist uses controlled yes/no',form.includes('Ya / Siap')&&form.includes('Tidak / Belum')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,lifecycle].join('\n')))]
+ ['process subgroup captured explicitly',form.includes('Subgroup ID')&&form.includes('rational subgroup')&&form.includes("input.name='subgroup'")],
+ ['Ppk and Cpk semantics remain distinct',form.includes('Pp/Ppk & Cp/Cpk')&&form.includes('sampleSd')&&form.includes('pooled')&&form.includes('Cpk belum tersedia')&&form.includes('groups.length>=2&&groups.every(g=>g.length>=2)')],
+ ['process register exposes subgroup trace',moduleTable.includes('Subgroup ${p.subgroup}')&&moduleTable.includes('tidak otomatis dianggap rational subgroup untuk Cpk')],
+ ['process backend guard wired',worker.includes('handleProcessCapabilityV59')&&worker.includes('process-capability-v59')],
+ ['process backend validates specifications',process59.includes('LSL dan USL harus diisi berpasangan')&&process59.includes('LSL harus lebih kecil dari USL')&&process59.includes('Subgroup ID terlalu panjang')],
+ ['process backend requires business context on create',process59.includes('Process measurement baru wajib memiliki mesin dan tanggal')&&process59.includes('Parameter Process wajib diisi')&&process59.includes('Satuan Process wajib diisi')],
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,moduleTable,lifecycle,process59].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, and storage guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, and storage guards checked.`);
