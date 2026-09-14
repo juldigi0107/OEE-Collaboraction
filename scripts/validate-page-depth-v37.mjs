@@ -80,7 +80,7 @@ const checks=[
  ['final UAT requires runtime-ready work calendar',runtimeSignoff.includes('WorkCalendarV62')&&runtimeSignoff.includes('workCalendar?.runtime_ready!==true')&&runtimeSignoff.includes('work_calendar:workCalendar')],
  ['runtime invariants detect missing work-date lineage',invariants55.includes('missing_work_date_lineage')&&invariants55.includes('workDateLineage')&&invariants55.includes("source LIKE 'hmi%'")],
  ['work-date reconciliation starts only after baseline effective timestamp',invariants55.includes('calendarEffective')&&invariants55.includes('start_ts>=?')&&invariants55.includes('baseline_updated_at:effective')],
- ['work-date reconciliation is deterministic and audited',invariants55.includes('WorkCalendarV62.deriveContext(cfg,d)')&&invariants55.includes('WORK_CALENDAR_RECONCILED')&&invariants55.includes("work_date IS NULL OR trim(work_date)=''"))],
+ ['work-date reconciliation is deterministic and audited',invariants55.includes('WorkCalendarV62.deriveContext(cfg,d)')&&invariants55.includes('WORK_CALENDAR_RECONCILED')&&invariants55.includes("work_date IS NULL OR trim(work_date)='' ".trim())],
  ['group rotation is not fabricated',governanceEdit.includes('Group rotation tetap mengikuti planning')&&!calendar62.includes('group=A')&&!calendar62.includes('group_model||')],
  ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62,runtimeSignoff,invariants55].join('\n')))]
 ];
