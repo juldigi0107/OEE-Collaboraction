@@ -1,0 +1,27 @@
+/* BMJ OEE Display Lifecycle v29 — create, duplicate, and deploy-link controls for field displays. */
+(()=>{
+ const PREFIX='DISPLAY_LAYOUT.';
+ const clone=v=>structuredClone(v);
+ const parse=v=>{try{return typeof v==='string'?JSON.parse(v):v||{}}catch{return {}}};
+ const layouts=()=> (catalog?.settings||[]).filter(s=>String(s.key||'').startsWith(PREFIX)).map(s=>{const v=parse(s.value);return{...v,id:v.id||String(s.key).slice(PREFIX.length),department:v.department||s.department||'PROD'}}).filter(v=>v.id);
+ const id=prefix=>`${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+ const wid=()=>id('w');
+ const starter=layoutId=>({id:layoutId,name:'Layout Mesin Baru',department:'PROD',machine:'',resolution:'1920x1080',background:'#071521',status:'draft',updatedAt:new Date().toISOString(),widgets:[
+  {id:wid(),type:'status',title:'Status Mesin',source:'realtime.status',x:0,y:1,w:4,h:2,showTitle:true,transparent:false,accent:'#48b6ff',text:'',locked:false,z:1},
+  {id:wid(),type:'oee',title:'OEE',source:'dashboard.oee',x:4,y:1,w:4,h:2,showTitle:true,transparent:false,accent:'#48b6ff',text:'',locked:false,z:2},
+  {id:wid(),type:'clock',title:'Jam & Tanggal',source:'system.clock',x:8,y:1,w:4,h:2,showTitle:true,transparent:false,accent:'#48b6ff',text:'',locked:false,z:3},
+  {id:wid(),type:'trend',title:'Grafik Trend',source:'dashboard.trend',x:0,y:3,w:8,h:4,showTitle:true,transparent:false,accent:'#48b6ff',text:'',locked:false,z:4},
+  {id:wid(),type:'announcement',title:'Pengumuman',source:'text.announcement',x:8,y:3,w:4,h:4,showTitle:true,transparent:false,accent:'#48b6ff',text:'',locked:false,z:5}
+ ]});
+ const current=()=>{const selected=document.querySelector('#de5Layout')?.value;return layouts().find(x=>x.id===selected)||null;};
+ async function saveLayout(layout){await api('/settings','PUT',{department:layout.department||'PROD',key:PREFIX+layout.id,value:layout});catalog=await api('/catalog');reopen(layout.id);}
+ function reopen(layoutId){window.settings?.();setTimeout(()=>{const tab=[...document.querySelectorAll('.settings-tab')].find(x=>x.dataset.tab==='display');tab?.click();setTimeout(()=>{const select=document.querySelector('#de5Layout');if(!select)return;select.value=layoutId;select.dispatchEvent(new Event('change',{bubbles:true}));},40);},20);}
+ async function createNew(){const layout=starter(id('layout'));try{await saveLayout(layout);toast('Layout baru dibuat sebagai Draft. Tetapkan mesin sebelum publikasi.');}catch(e){toast(e.message);}}
+ async function duplicate(){const source=current();if(!source)return toast('Pilih layout tersimpan yang ingin diduplikasi.');const layout=clone(source);layout.id=id('layout');layout.name=(source.name||'Layout')+' · Salinan';layout.machine='';layout.status='draft';layout.updatedAt=new Date().toISOString();layout.widgets=(layout.widgets||[]).map((w,i)=>({...w,id:wid(),z:w.z??i+1,locked:!!w.locked}));try{await saveLayout(layout);toast('Duplikat dibuat sebagai Draft tanpa assignment mesin.');}catch(e){toast(e.message);}}
+ async function copyLink(){const layout=current();if(!layout)return toast('Pilih layout tersimpan terlebih dahulu.');if(layout.status!=='published'||!String(layout.machine||'').trim())return toast('Link lapangan hanya tersedia untuk layout Published yang sudah memiliki assignment mesin.');const url=new URL(location.href);url.search='';url.hash='';url.searchParams.set('display',layout.id);try{await navigator.clipboard.writeText(url.toString());toast('Link display production disalin.');}catch{dialog('Link Display Mesin',`<p>Salin link berikut untuk TV / mini-PC:</p><input value="${esc(url.toString())}" readonly style="width:100%">`);}}
+ function paintMeta(){const host=document.querySelector('.de5-toolbar');if(!host)return;const layout=current(),chip=host.querySelector('.v29-layout-state');if(!chip)return;const published=layout?.status==='published';chip.className='v29-layout-state '+(published?'published':'draft');chip.textContent=layout?`${published?'Published':'Draft'} · ${layout.machine||'belum ada mesin'}`:'Layout belum tersimpan';const copy=host.querySelector('#v29CopyLink');if(copy)copy.disabled=!(layout&&published&&String(layout.machine||'').trim());}
+ function enhance(){if(user?.role!=='superadmin')return;const toolbar=document.querySelector('.de5-toolbar');if(!toolbar||toolbar.dataset.v29)return;toolbar.dataset.v29='1';const tools=document.createElement('div');tools.className='v29-layout-tools';tools.innerHTML='<button type="button" id="v29NewLayout">＋ Layout Baru</button><button type="button" id="v29DuplicateLayout">Duplikat Layout</button><button type="button" id="v29CopyLink">Salin Link Display</button><span class="v29-layout-state draft">Draft</span>';const select=toolbar.querySelector('#de5Layout');if(select)select.insertAdjacentElement('afterend',tools);else toolbar.append(tools);toolbar.querySelector('#v29NewLayout').onclick=createNew;toolbar.querySelector('#v29DuplicateLayout').onclick=duplicate;toolbar.querySelector('#v29CopyLink').onclick=copyLink;select?.addEventListener('change',()=>queueMicrotask(paintMeta));paintMeta();}
+ let raf=0;const schedule=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(enhance);};
+ const boot=()=>{enhance();new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
