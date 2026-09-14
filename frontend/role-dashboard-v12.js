@@ -13,6 +13,7 @@
   dashboard=async function(){
     await dashboardV11();
     renderDataContext();
+    renderKpiGovernanceNotice();
     await renderRoleOperationalKpi(user?.role==='superadmin'?'PROD':user?.department);
   };
   function renderDataContext(){
@@ -23,6 +24,12 @@
     const context=document.createElement('div');context.className='role-data-context';
     context.innerHTML='<div><strong>Konteks data historis</strong><span>Snapshot workbook ditampilkan sesuai periode transaksi/cell sumber</span></div><div><strong>Operasional</strong><span>KPI department: D1 dan event live yang tersedia</span></div><div><strong>Aturan periode</strong><span>Tanggal transaksi/tanggal kerja menjadi acuan; nama file tidak dijadikan periode</span></div>';
     headingEl.insertAdjacentElement('afterend',context);
+  }
+  function renderKpiGovernanceNotice(){
+    const content=$('#content');if(!content||!window.DG16)return;const cfg=DG16.read(DG16.keys.kpi),approved=DG16.approved(cfg),notice=[...content.querySelectorAll('.notice')].find(x=>/Quality Printing|\bNC\b/i.test(x.textContent||''));if(!notice)return;
+    notice.textContent='';const strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=approved?'Definisi Quality Printing disahkan:':'Definisi Quality Printing belum disahkan:';
+    const rules={good_total:'Good / Total',good_nc_total:'(Good + NC) / Total'};span.textContent=approved?` ${rules[cfg.quality_rule]||cfg.quality_rule||'rule governance'} menjadi rule authoritative. Snapshot workbook tetap ditampilkan apa adanya dan tidak ditulis ulang.`:' dashboard hanya menampilkan snapshot sumber. Good vs Good+NC tidak diasumsikan sampai owner menyelesaikan Data Governance.';
+    notice.append(strong,span);notice.classList.toggle('ok',approved);notice.classList.toggle('warn',!approved);
   }
   async function renderRoleOperationalKpi(dept){
     const content=$('#content');if(!content)return;
