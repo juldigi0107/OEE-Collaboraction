@@ -16,11 +16,11 @@
   };
   function renderDataContext(){
     const content=$('#content');if(!content)return;
-    const subtitle=content.querySelector('.heading .muted');if(subtitle)subtitle.textContent='Snapshot OEE sumber dan KPI operasional dari D1/live';
+    const subtitle=content.querySelector('.heading .muted');if(subtitle)subtitle.textContent='Snapshot sumber terpetakan dan KPI operasional dari D1/live';
     if(content.querySelector('.role-data-context'))return;
     const headingEl=content.querySelector('.heading');if(!headingEl)return;
     const context=document.createElement('div');context.className='role-data-context';
-    context.innerHTML='<div><strong>Konteks data</strong><span>Trend OEE historis: snapshot workbook Agustus 2026</span></div><div><strong>Operasional</strong><span>KPI department: D1 dan event live yang tersedia</span></div><div><strong>Periode sumber</strong><span>Mengikuti metadata masing-masing file, bukan nama file semata</span></div>';
+    context.innerHTML='<div><strong>Konteks historis</strong><span>Snapshot workbook ditampilkan sesuai periode transaksi/cell sumber</span></div><div><strong>Operasional</strong><span>KPI department: D1 dan event live yang tersedia</span></div><div><strong>Aturan periode</strong><span>Tanggal transaksi/tanggal kerja menjadi acuan; nama file tidak dijadikan periode</span></div>';
     headingEl.insertAdjacentElement('afterend',context);
   }
   async function renderRoleOperationalKpi(dept){
