@@ -12,7 +12,7 @@ import {handleQualityUnitV44} from './release-v44-quality-unit.mjs';
 import {handleDataLifecycleV46,runLifecycleHousekeepingV46} from './release-v46-data-lifecycle.mjs';
 
 const BUILD_VERSION='6.2.0';
-const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46'];
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47'];
 let schemaReady=null;
 async function addColumnIfMissing(env,table,column,ddl){
   const columns=(await env.DB.prepare(`PRAGMA table_info('${table}')`).all()).results||[];
@@ -26,6 +26,18 @@ async function ensureAdditiveSchema(env){
       await env.DB.prepare('CREATE INDEX IF NOT EXISTS asset_parent ON asset_catalog(parent)').run();
       await addColumnIfMissing(env,'quality_events','unit','ALTER TABLE quality_events ADD COLUMN unit TEXT');
       await addColumnIfMissing(env,'production_runs','unit','ALTER TABLE production_runs ADD COLUMN unit TEXT');
+      const indexes=[
+        'CREATE INDEX IF NOT EXISTS sessions_expires ON sessions(expires)',
+        'CREATE INDEX IF NOT EXISTS login_attempts_until ON login_attempts(until_ts)',
+        'CREATE INDEX IF NOT EXISTS entries_module_updated ON entries(module,deleted,updated DESC)',
+        'CREATE INDEX IF NOT EXISTS production_runs_start ON production_runs(start_ts DESC)',
+        'CREATE INDEX IF NOT EXISTS downtime_class_start ON downtime_events(class,start_ts DESC)',
+        'CREATE INDEX IF NOT EXISTS maintenance_calls_requested ON maintenance_calls(requested_ts DESC)',
+        'CREATE INDEX IF NOT EXISTS quality_events_created ON quality_events(created_ts DESC)',
+        'CREATE INDEX IF NOT EXISTS approvals_type_status_requested ON approvals(entity_type,status,requested_ts DESC)',
+        'CREATE INDEX IF NOT EXISTS integration_sync_connection ON integration_sync_log(connection_id,started_ts DESC)'
+      ];
+      for(const sql of indexes)await env.DB.prepare(sql).run();
     })().catch(error=>{schemaReady=null;throw error;});
   }
   return schemaReady;
