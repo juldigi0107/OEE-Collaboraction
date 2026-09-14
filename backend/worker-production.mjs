@@ -6,6 +6,7 @@ import {handleMachineGovernanceV20} from './release-v20-machine-governance.mjs';
 import {handleSupportV21} from './release-v21-support.mjs';
 
 const BUILD_VERSION='6.2.0';
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34'];
 let schemaReady=null;
 async function ensureAdditiveSchema(env){
   if(!schemaReady){
@@ -20,7 +21,7 @@ async function ensureAdditiveSchema(env){
 export default {
   async fetch(req,env,ctx){
     const path=new URL(req.url).pathname;
-    if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
+    if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false,release_fingerprint:RELEASE_FINGERPRINT}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
     if(path==='/api/assets'||path==='/api/import-data')await ensureAdditiveSchema(env);
     const supportResponse=await handleSupportV21(req,env,BUILD_VERSION);
     if(supportResponse)return supportResponse;
