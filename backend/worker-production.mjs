@@ -13,13 +13,17 @@ import {handleQualityUnitV44} from './release-v44-quality-unit.mjs';
 const BUILD_VERSION='6.2.0';
 const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44'];
 let schemaReady=null;
+async function addColumnIfMissing(env,table,column,ddl){
+  const columns=(await env.DB.prepare(`PRAGMA table_info('${table}')`).all()).results||[];
+  if(columns.some(x=>x.name===column))return;
+  try{await env.DB.prepare(ddl).run();}catch(error){if(!/duplicate column/i.test(String(error?.message||error)))throw error;}
+}
 async function ensureAdditiveSchema(env){
   if(!schemaReady){
     schemaReady=(async()=>{
       await env.DB.prepare('CREATE TABLE IF NOT EXISTS asset_catalog(id TEXT PRIMARY KEY,parent TEXT NOT NULL,path TEXT NOT NULL)').run();
       await env.DB.prepare('CREATE INDEX IF NOT EXISTS asset_parent ON asset_catalog(parent)').run();
-      const qualityColumns=(await env.DB.prepare("PRAGMA table_info('quality_events')").all()).results||[];
-      if(!qualityColumns.some(x=>x.name==='unit'))await env.DB.prepare('ALTER TABLE quality_events ADD COLUMN unit TEXT').run();
+      await addColumnIfMissing(env,'quality_events','unit','ALTER TABLE quality_events ADD COLUMN unit TEXT');
     })().catch(error=>{schemaReady=null;throw error;});
   }
   return schemaReady;
