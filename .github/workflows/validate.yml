@@ -48,6 +48,8 @@ jobs:
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
+      - name: Validate D1 SQL placeholder bindings
+        run: node scripts/validate-sql-bindings.mjs
       - name: Validate backend authorization policy
         run: node scripts/validate-authz.mjs
       - name: Production Worker health check
@@ -65,6 +67,9 @@ jobs:
           echo "$body" | grep -Fq 'period-aware-dashboard-v34'
           echo "$body" | grep -Fq 'workflow-reconciliation-v51'
           echo "$body" | grep -Fq 'mirror-reconciliation-v52'
+          echo "$body" | grep -Fq 'plan-authority-v53'
+          echo "$body" | grep -Fq 'runtime-signoff-v54'
+          echo "$body" | grep -Fq 'runtime-invariants-v55'
       - name: Production D1 readiness check
         run: |
           tmp=$(mktemp)
@@ -128,10 +133,13 @@ jobs:
           echo "$r18" | grep -Fq '/workflow-health'
           echo "$r18" | grep -Fq 'Source Mirror Consistency'
           echo "$r18" | grep -Fq '/mirror-health'
+          echo "$r18" | grep -Fq 'Shopfloor Invariants'
+          echo "$r18" | grep -Fq '/runtime-invariants'
           r20=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/machine-governance-v20.js)
           echo "$r20" | grep -Fq 'machine'
           r21=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/support-recovery-v21.js)
           echo "$r21" | grep -Fq 'Dukungan & Pemulihan'
+          echo "$r21" | grep -Fq 'workflow + mirror + shopfloor invariant'
           r22=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/uat-release-edit-v17.js)
           echo "$r22" | grep -Fq 'uatNative'
           r23=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-polish-v23.js)
@@ -179,7 +187,7 @@ jobs:
           echo "$runtime" | grep -Fq 'Data belum dapat dimuat'
       - name: Production protected endpoint check
         run: |
-          for endpoint in me approvals role-dashboard shopfloor/plans workflow-health mirror-health; do
+          for endpoint in me approvals role-dashboard shopfloor/plans workflow-health mirror-health runtime-invariants; do
             tmp=$(mktemp)
             code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' "https://oee-collaboraction.offsetbmj.workers.dev/api/$endpoint")
             cat "$tmp"
