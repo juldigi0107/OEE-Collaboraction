@@ -7,12 +7,15 @@ const admin=read('frontend/admin-depth-v37.js');
 const form=read('frontend/transaction-form-v38.js');
 const hmi=read('frontend/hmi-dialogs-v40.js');
 const hmi60=read('frontend/hmi-operation-safety-v60.js');
+const governanceEdit=read('frontend/data-governance-edit-v16.js');
 const moduleTable=read('frontend/module-table-v25.js');
 const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
 const lifecycle=read('backend/release-v46-data-lifecycle.mjs');
+const liveRegister=read('backend/release-v49-live-register.mjs');
 const process59=read('backend/release-v59-process-capability.mjs');
 const telemetry61=read('backend/release-v61-telemetry-freshness.mjs');
+const calendar62=read('backend/release-v62-work-calendar.mjs');
 const runtime=read('frontend/operational-control-runtime-v31.js');
 const worker=read('backend/worker-production.mjs');
 const checks=[
@@ -64,8 +67,15 @@ const checks=[
  ['automatic Finish requires trusted start and end counter',telemetry61.includes('startTrusted&&endTrusted')&&telemetry61.includes('Actual Qty wajib diisi manual')&&telemetry61.includes('lineage-nya tidak authoritative')],
  ['counter trust column additive',worker.includes("counter_start_trusted','ALTER TABLE production_runs ADD COLUMN counter_start_trusted INTEGER NOT NULL DEFAULT 0")],
  ['telemetry capability fingerprinted',worker.includes('telemetry-freshness-v61')&&worker.includes('hmi-operation-safety-v60')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,moduleTable,lifecycle,process59,telemetry61].join('\n')))]
+ ['work calendar endpoint and fingerprint wired',worker.includes('handleWorkCalendarV62')&&worker.includes('work-calendar-v62')&&calendar62.includes("'/api/work-calendar/context'")],
+ ['calendar timezone is explicit and never defaulted',governanceEdit.includes('Zona waktu operasional')&&governanceEdit.includes("timezone:f.get('timezone').trim()")&&calendar62.includes('IANA timezone')],
+ ['shift windows reject overlap and runtime mismatch',calendar62.includes('Window Shift 1–3 saling overlap')&&calendar62.includes('di luar window shift')&&calendar62.includes('Planning Released berada pada Shift')],
+ ['work date column is additive and audited',worker.includes("work_date','ALTER TABLE production_runs ADD COLUMN work_date TEXT")&&calendar62.includes('WORK_CALENDAR_APPLIED')],
+ ['HMI presents governed work calendar',hmi60.includes('Tanggal kerja')&&hmi60.includes('Shift aktif')&&hmi60.includes('workday_cutoff')&&hmi60.includes('loadWorkCalendar')],
+ ['live registers preserve governed work date',liveRegister.includes("date=clean(r.work_date)||safeDate")&&liveRegister.includes('work_date:clean(r.work_date)')&&liveRegister.includes('r.work_date,r.shift,r.group_name')],
+ ['group rotation is not fabricated',governanceEdit.includes('Group rotation tetap mengikuti planning')&&!calendar62.includes('group=A')&&!calendar62.includes('group_model||')],
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, and storage guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, work-calendar, work-date lineage, and storage guards checked.`);
