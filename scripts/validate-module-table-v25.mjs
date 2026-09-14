@@ -11,6 +11,7 @@ const planning39=read('backend/release-v39-planning-safety.mjs');
 const machine20=read('backend/release-v20-machine-governance.mjs');
 const quality44=read('backend/release-v44-quality-unit.mjs');
 const kpi45=read('backend/release-v45-kpi-semantics.mjs');
+const live49=read('backend/release-v49-live-register.mjs');
 const support21=read('backend/release-v21-support.mjs');
 const worker=read('backend/worker-production.mjs');
 const init=read('backend/init-schema.sql');
@@ -22,6 +23,7 @@ const checks=[
  ['v25 CSS active',index.includes('module-table-v25.css')],
  ['all business modules covered',modules.every(m=>js.includes(`${m}:`))],
  ['source traceability presented',js.includes("p.source_sheet")&&js.includes("p.source_record")&&js.includes('D1 operasional')],
+ ['HMI operational source distinguished',js.includes("system==='HMI'?'HMI operasional'")&&js.includes('source_entity_id')&&js.includes('mirror read-only')],
  ['unit preservation communicated',js.includes('Satuan dan sumber dipertahankan')&&js.includes('tidak menggabungkan unit berbeda')],
  ['production fields are source values',js.includes("col('Total output'")&&js.includes("col('Good output'")&&!js.includes('p.total-p.good')],
  ['quality keeps unit explicit',js.includes("col('Satuan',p=>txt(p.unit))")&&js.includes("col('Reject'")&&js.includes("col('Diperiksa'")],
@@ -49,6 +51,13 @@ const checks=[
  ['PDS register does not force rupiah',js.includes('currency belum tercatat')&&js.includes('amount(first(p.cost,p.actual_cost),p.currency)')&&!js.includes("'Rp '+fmt")],
  ['PDS dashboard groups cost by currency',kpi45.includes("GROUP BY COALESCE(NULLIF(upper(trim(json_extract(payload,'$.currency'))),''),'__MISSING__')")&&kpi45.includes('Agregasi hanya dalam mata uang yang sama')],
  ['PDS legacy cost is not aggregated without currency',kpi45.includes('Biaya tanpa currency')&&kpi45.includes('tidak dijumlahkan sampai mata uangnya direkonsiliasi')],
+ ['live register deterministic IDs',live49.includes('live:${type}:${id}')&&live49.includes("source_system:'HMI'")&&live49.includes('source_entity_id:id')],
+ ['live register mirrors four governed histories',['production_run','downtime','quality','maintenance'].every(x=>live49.includes(`'${x}'`))],
+ ['live register mirrors are backend read-only',live49.includes("id.startsWith('live:')")&&live49.includes('mirror read-only dari workflow HMI')],
+ ['live register approval status stays synchronized',live49.includes("signal.path==='/api/approvals/decide'")&&live49.includes("statusLabel(a?.status)")],
+ ['live register backfill is idempotent',live49.includes('backfillLiveRegistersV49')&&live49.includes('NOT EXISTS(SELECT 1 FROM entries')&&worker.includes('backfillLiveRegistersV49(env,50)')],
+ ['quality early-response is mirrored',worker.includes('qualityUnitResponse.clone()')&&worker.includes('afterLiveRegisterV49(liveSignal')],
+ ['live mirror UI is locked',form38.includes("String(row?.id||'').startsWith('live:')")&&form38.includes('Mirror read-only')&&form38.includes('Source authority')],
  ['fresh schema has no seeded superadmin',!init.includes("'seed-superadmin'")&&!init.includes("INSERT OR IGNORE INTO users")],
  ['release manifest exposes quality coverage',support21.includes('qualityCoverage')&&support21.includes('aggregation_policy')&&support21.includes('data_coverage')],
  ['release manifest exposes production unit coverage',support21.includes('productionUnitCoverage')&&support21.includes('production_units')&&support21.includes('run legacy tidak ditebak')],
@@ -66,4 +75,4 @@ const checks=[
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Module, unit-lineage, currency-safe PDS, KPI-semantics, approval, release-coverage, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
+console.log(`Module, governed HMI mirror, unit-lineage, currency-safe PDS, KPI-semantics, approval, release-coverage, and media validation OK — ${checks.length} guards checked.`);
