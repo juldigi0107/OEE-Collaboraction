@@ -27,6 +27,8 @@ jobs:
         run: node scripts/validate-release-v10.mjs
       - name: Validate final release blueprint
         run: node scripts/validate-release-final.mjs
+      - name: Validate release polish v23
+        run: node scripts/validate-release-v23.mjs
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
@@ -55,8 +57,8 @@ jobs:
           html=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/)
           echo "$html" | grep -Fq 'BMJ OEE Platform | Packaging Offset'
           echo "$html" | grep -Fq 'id="app"'
-          for asset in role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js; do echo "$html" | grep -Fq "$asset"; done
-          for asset in release-v10.css release-v11.css role-dashboard-v12.css workflow-v13.css governance-v14.css data-governance-v16.css uat-release-v17.css release-status-v18.css support-recovery-v21.css; do curl --fail --silent --show-error --location --max-time 20 -o /dev/null "https://oee-collaboraction.offsetbmj.workers.dev/$asset"; done
+          for asset in role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js release-polish-v23.js; do echo "$html" | grep -Fq "$asset"; done
+          for asset in release-v10.css release-v11.css role-dashboard-v12.css workflow-v13.css governance-v14.css data-governance-v16.css uat-release-v17.css release-status-v18.css support-recovery-v21.css release-polish-v23.css; do curl --fail --silent --show-error --location --max-time 20 -o /dev/null "https://oee-collaboraction.offsetbmj.workers.dev/$asset"; done
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
       - name: Production field display publish guard check
@@ -77,6 +79,7 @@ jobs:
           echo "$r11" | grep -Fq 'Close Maintenance'
           r12=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/role-dashboard-v12.js)
           echo "$r12" | grep -Fq '/role-dashboard?department='
+          echo "$r12" | grep -Fq 'Konteks data'
           r13=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/workflow-v13.js)
           echo "$r13" | grep -Fq 'Released / Siap Produksi'
           r14=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/governance-v14.js)
@@ -91,9 +94,13 @@ jobs:
           r20=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/machine-governance-v20.js)
           echo "$r20" | grep -Fq 'machine'
           r21=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/support-recovery-v21.js)
-          echo "$r21" | grep -Fq 'Support'
+          echo "$r21" | grep -Fq 'Dukungan & Pemulihan'
           r22=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/uat-release-edit-v17.js)
           echo "$r22" | grep -Fq 'uatNative'
+          r23=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-polish-v23.js)
+          echo "$r23" | grep -Fq 'rp23RowForm'
+          echo "$r23" | grep -Fq 'Belum ada sheet sumber'
+          echo "$r23" | grep -Fq "'webp'"
       - name: Production protected endpoint check
         run: |
           for endpoint in me approvals role-dashboard shopfloor/plans; do
