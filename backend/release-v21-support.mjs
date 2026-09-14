@@ -18,7 +18,7 @@ async function tableCounts(db){
  const specs=[['users','users','active=1'],['sources','sources'],['sheets','sheets'],['record_chunks','record_chunks'],['entries','entries','deleted=0'],['source_files','source_files'],['audit','audit'],['machine_registry','machine_registry','active=1'],['production_runs','production_runs'],['downtime_events','downtime_events'],['maintenance_calls','maintenance_calls'],['quality_events','quality_events'],['approvals','approvals']];
  const rows=[];for(const [key,table,where] of specs)rows.push({key,count:await count(db,table,where||'1=1')});return rows;
 }
-function selectedSetting(key){return /^(DATA_GOVERNANCE\.|UAT_RELEASE\.|RELEASE_READINESS\.|DISPLAY_LAYOUT\.|brand$)/.test(key);}
+function selectedSetting(key){return /^(DATA_GOVERNANCE\.|OPERATIONAL_CONTROL\.|UAT_RELEASE\.|RELEASE_READINESS\.|DISPLAY_LAYOUT\.|brand$)/.test(key);}
 export async function handleSupportV21(req,env,buildVersion){
  const path=new URL(req.url).pathname;if(req.method!=='GET'||path!=='/api/release-manifest')return null;
  const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const pf=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(pf?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);if(u.role!=='superadmin')return out(req,env,{error:'Release Manifest khusus Superadmin'},403);
@@ -28,13 +28,15 @@ export async function handleSupportV21(req,env,buildVersion){
  const activeUsers=await all(env.DB,"SELECT role,department,COUNT(*) count FROM users WHERE active=1 GROUP BY role,department ORDER BY role,department");
  const pendingApprovals=await count(env.DB,'approvals',"status='PENDING'"),openDowntime=await count(env.DB,'downtime_events',"status='OPEN'"),openMaintenance=await count(env.DB,'maintenance_calls',"status<>'CLOSED'");
  const governance=settings.filter(x=>x.key.startsWith('DATA_GOVERNANCE.')).map(x=>({key:x.key,approved:x.value?.approved===true,updated_at:x.value?.updated_at||null}));
+ const operationalControl=settings.filter(x=>x.key.startsWith('OPERATIONAL_CONTROL.')).map(x=>({key:x.key,approved:x.value?.approved===true,item_count:Array.isArray(x.value?.items)?x.value.items.length:0,updated_at:x.value?.updated_at||null}));
+ const delivery=settings.find(x=>x.key==='OPERATIONAL_CONTROL.delivery_plan')?.value||{},deliveryOpen=Array.isArray(delivery.items)?delivery.items.filter(x=>!['closed','not_applicable'].includes(String(x.status||'').toLowerCase())).length:0;
  const uat=settings.filter(x=>x.key.startsWith('UAT_RELEASE.')).map(x=>({key:x.key,status:x.value?.status||'not_started',owner:x.value?.owner||'',evidence_present:!!String(x.value?.evidence||'').trim(),updated_at:x.value?.updated_at||null}));
  return out(req,env,{
   manifest_type:'configuration_and_release_manifest',
   disclaimer:'Manifest ini bukan full backup D1 dan tidak dapat menggantikan prosedur export/restore database Cloudflare.',
   generated_at:new Date().toISOString(),service:'OEE Collaboraction',build_version:buildVersion,storage:'D1-only',r2:false,
   runtime:{database_binding:'DB',schema:'ready',frontend_assets:'Worker assets + GitHub Pages'},
-  operational:{pending_approvals:pendingApprovals,open_downtime:openDowntime,open_maintenance_calls:openMaintenance},
-  table_counts:await tableCounts(env.DB),governance,uat,active_users:activeUsers,integrations,sources,settings
+  operational:{pending_approvals:pendingApprovals,open_downtime:openDowntime,open_maintenance_calls:openMaintenance,delivery_open_actions:deliveryOpen},
+  table_counts:await tableCounts(env.DB),governance,operational_control:operationalControl,uat,active_users:activeUsers,integrations,sources,settings
  });
 }
