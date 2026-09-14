@@ -43,7 +43,7 @@ const checks=[
  ['quality schema preserves unit',init.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')&&realtimeSchema.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')],
  ['planning form captures target unit',form38.includes('function planningUnit')&&form38.includes("input.name='unit'")&&form38.includes('Wajib saat Released')],
  ['released planning requires authoritative unit',planning39.includes('approvedFgUnit')&&planning39.includes('Satuan target atau FG Unit authoritative')&&planning39.includes("unit_source='DATA_GOVERNANCE.fg_unit'")],
- ['start PRO persists governed unit',machine20.includes('kpiConfig')&&machine20.includes('Satuan output belum ditetapkan')&&machine20.includes('source,unit) VALUES')],
+ ['start PRO persists governed unit',machine20.includes('kpiConfig')&&machine20.includes("const unit=cleanUnit(pp.unit||kpi?.fg_unit)")&&machine20.includes('Satuan output belum ditetapkan')&&machine20.includes('source,unit,plan_id) SELECT')&&machine20.includes("'hmi-governed',?,? WHERE NOT EXISTS")],
  ['start PRO uses one governed path',machine20.includes("return canonicalStart(req,env,cfg,kpi)")],
  ['HMI displays run unit and legacy warning',hmi.includes('productionUnitContext')&&hmi.includes('PRO legacy ini belum memiliki satuan output')&&hmi.includes('Satuan target:')],
  ['production unit additive migration is race safe',worker.includes("addColumnIfMissing(env,'production_runs','unit'")&&worker.includes("'/api/shopfloor/start'")],
