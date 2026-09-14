@@ -45,6 +45,10 @@ const checks=[
  ['HMI displays run unit and legacy warning',hmi.includes('productionUnitContext')&&hmi.includes('PRO legacy ini belum memiliki satuan output')&&hmi.includes('Satuan target:')],
  ['production unit additive migration is race safe',worker.includes("addColumnIfMissing(env,'production_runs','unit'")&&worker.includes("'/api/shopfloor/start'")],
  ['fresh production schemas preserve unit',init.includes("version INTEGER NOT NULL DEFAULT 1,unit TEXT")&&realtimeSchema.includes("version INTEGER NOT NULL DEFAULT 1,unit TEXT")],
+ ['PDS form separates cost and currency',form38.includes('function developmentCurrency')&&form38.includes("input.name='currency'")&&form38.includes('tidak otomatis dianggap IDR')],
+ ['PDS register does not force rupiah',js.includes('currency belum tercatat')&&js.includes('amount(first(p.cost,p.actual_cost),p.currency)')&&!js.includes("'Rp '+fmt")],
+ ['PDS dashboard groups cost by currency',kpi45.includes("GROUP BY COALESCE(NULLIF(upper(trim(json_extract(payload,'$.currency'))),''),'__MISSING__')")&&kpi45.includes('Agregasi hanya dalam mata uang yang sama')],
+ ['PDS legacy cost is not aggregated without currency',kpi45.includes('Biaya tanpa currency')&&kpi45.includes('tidak dijumlahkan sampai mata uangnya direkonsiliasi')],
  ['fresh schema has no seeded superadmin',!init.includes("'seed-superadmin'")&&!init.includes("INSERT OR IGNORE INTO users")],
  ['release manifest exposes quality coverage',support21.includes('qualityCoverage')&&support21.includes('aggregation_policy')&&support21.includes('data_coverage')],
  ['release manifest exposes embedded media coverage',support21.includes('mediaCoverage')&&support21.includes('embedded_assets')&&support21.includes("status:total>0?'catalogued':'not_backfilled'")],
@@ -55,10 +59,9 @@ const checks=[
  ['non-QC dashboard delegates to KPI semantics',quality44.includes("handleKpiSemanticsV45")&&quality44.includes('if(qc)return qc')],
  ['maintenance live formula not overclaimed',kpi45.includes('Durasi perbaikan rata-rata · live')&&kpi45.includes('Run hours per UPDT · live')&&kpi45.includes('tidak diklaim sebagai MTTR resmi')],
  ['maintenance governance definitions surfaced',kpi45.includes('Baseline MTTR resmi:')&&kpi45.includes('Baseline MTBF resmi:')],
- ['PDS currency not hardcoded authoritative',kpi45.includes('Satuan mata uang mengikuti sumber')&&kpi45.includes("'Nilai biaya tercatat',''")],
  ['project average is explicitly unweighted',kpi45.includes('bukan weighted portfolio progress')],
  ['register horizon is explicit',kpi45.includes('Cakupan seluruh register D1 terpetakan')&&kpi45.includes('Seluruh register hasil produksi terpetakan')]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Module, quality-unit, production-unit, KPI-semantics, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
+console.log(`Module, quality-unit, production-unit, currency-safe PDS, KPI-semantics, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
