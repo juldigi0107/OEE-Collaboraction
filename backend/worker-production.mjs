@@ -10,9 +10,10 @@ import {handleHmiSafetyV40} from './release-v40-hmi-safety.mjs';
 import {handleDisplaySafetyV42} from './release-v42-display-safety.mjs';
 import {handleQualityUnitV44} from './release-v44-quality-unit.mjs';
 import {handleDataLifecycleV46,runLifecycleHousekeepingV46} from './release-v46-data-lifecycle.mjs';
+import {handleQueryPerformanceV47} from './release-v47-query-performance.mjs';
 
 const BUILD_VERSION='6.2.0';
-const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47'];
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47','query-performance-v47'];
 let schemaReady=null;
 async function addColumnIfMissing(env,table,column,ddl){
   const columns=(await env.DB.prepare(`PRAGMA table_info('${table}')`).all()).results||[];
@@ -68,6 +69,8 @@ export default {
     if(hmiSafetyResponse)return hmiSafetyResponse;
     const qualityUnitResponse=await handleQualityUnitV44(req,env);
     if(qualityUnitResponse)return qualityUnitResponse;
+    const queryResponse=await handleQueryPerformanceV47(req,env);
+    if(queryResponse)return queryResponse;
     const releaseResponse=await handleReleaseV11(req,env);
     if(releaseResponse)return releaseResponse;
     const signal=await captureReleaseV11(req);
