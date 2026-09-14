@@ -12,6 +12,7 @@ function validTime(v){return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(clean(v));}
 function minuteOf(v){const [h,m]=clean(v).split(':').map(Number);return h*60+m;}
 function validTimezone(tz){try{new Intl.DateTimeFormat('en-US',{timeZone:clean(tz)}).format(new Date());return !!clean(tz);}catch{return false;}}
 function inWindow(minute,start,end){return start<end?minute>=start&&minute<end:minute>=start||minute<end;}
+function planDate(v){const m=clean(v).match(/^(\d{4}-\d{2}-\d{2})/);return m?.[1]||'';}
 function validateCalendarConfig(v){
  if(v?.approved!==true)return null;
  const required=['timezone','group_model','workday_cutoff','s1_start','s1_end','s2_start','s2_end','s3_start','s3_end'];for(const k of required)if(!clean(v?.[k]))return `Kalender shift belum lengkap: ${k}`;
@@ -36,6 +37,7 @@ async function guardStart(req,env){
  const u=await auth(req,env);if(!u)return null;let body;try{body=await req.clone().json();}catch{return null;}const planId=clean(body?.plan_id);if(!planId)return null;
  const row=await one(env.DB,"SELECT payload FROM entries WHERE id=? AND module='planning' AND deleted=0",planId);if(!row)return null;const plan=parse(row.payload,{});
  if(!ctx.shift)return json(req,env,{error:'Waktu saat ini tidak menghasilkan Shift authoritative. Start PRO ditahan sampai kalender diperbaiki.'},409);
+ const scheduled=planDate(plan.work_date||plan.date);if(!scheduled)return json(req,env,{error:'Planning Released belum memiliki tanggal kerja/eksekusi yang valid'},409);if(scheduled!==ctx.work_date)return json(req,env,{error:`Planning Released berlaku untuk tanggal kerja ${scheduled}, sedangkan Work Calendar saat ini ${ctx.work_date}`},409);
  const planShift=normalizeShift(plan.shift),requestShift=normalizeShift(body.shift);if(planShift&&planShift!==ctx.shift)return json(req,env,{error:`Planning Released berada pada Shift ${planShift}, sedangkan kalender runtime menunjukkan Shift ${ctx.shift} untuk tanggal kerja ${ctx.work_date}`},409);if(requestShift&&requestShift!==ctx.shift)return json(req,env,{error:`Shift pada request (${requestShift}) tidak sama dengan kalender runtime (Shift ${ctx.shift})`},409);
  return null;
 }
@@ -48,4 +50,4 @@ export async function handleWorkCalendarV62(req,env){
 }
 export async function captureWorkCalendarStartV62(req,env){if(req.method!=='POST'||new URL(req.url).pathname!=='/api/shopfloor/start')return null;const cfg=await calendar(env),ctx=deriveContext(cfg);if(!ctx.approved||!ctx.runtime_ready||!ctx.shift)return null;const u=await auth(req,env);if(!u)return null;let body={};try{body=await req.clone().json();}catch{}return {user_id:u.id,plan_id:clean(body.plan_id),work_date:ctx.work_date,shift:ctx.shift,timezone:ctx.timezone,local_time:ctx.local_time};}
 export async function afterWorkCalendarStartV62(signal,response,env){if(!signal||!response?.ok)return;let body={};try{body=await response.clone().json();}catch{}const id=clean(body?.id);if(!id)return;const run=await one(env.DB,'SELECT machine_id FROM production_runs WHERE id=?',id);if(!run)return;await env.DB.batch([env.DB.prepare('UPDATE production_runs SET work_date=?,shift=? WHERE id=?').bind(signal.work_date,signal.shift,id),env.DB.prepare('UPDATE machine_state SET shift=? WHERE machine_id=?').bind(signal.shift,run.machine_id),env.DB.prepare('INSERT INTO audit(id,user_id,action,entity_id,before_json,after_json) VALUES(?,?,?,?,?,?)').bind(crypto.randomUUID(),signal.user_id,'WORK_CALENDAR_APPLIED',id,null,JSON.stringify({plan_id:signal.plan_id,work_date:signal.work_date,shift:signal.shift,timezone:signal.timezone,local_time:signal.local_time}))]);}
-export const WorkCalendarV62={deriveContext,normalizeShift,validateCalendarConfig};
+export const WorkCalendarV62={deriveContext,normalizeShift,validateCalendarConfig,planDate};
