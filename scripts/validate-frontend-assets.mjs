@@ -55,9 +55,22 @@ else{
   for(const [name,marker] of guards)if(!runtime.includes(marker))errors.push(`Data Context v32 guard hilang: ${name}`);
 }
 
+/* Public release flows must use application dialogs, not browser-native prompt/confirm. */
+const release11Path=path.join(root,'release-v11.js'),release23Path=path.join(root,'release-polish-v23.js');
+if(!fs.existsSync(release11Path))errors.push('release-v11.js tidak ditemukan');
+else{
+  const release11=fs.readFileSync(release11Path,'utf8');
+  if(!release11.includes('closeDowntimeDialog')||!release11.includes('closeDowntimeForm'))errors.push('End Downtime belum memakai dialog aplikasi release');
+}
+if(!fs.existsSync(release23Path))errors.push('release-polish-v23.js tidak ditemukan');
+else{
+  const release23=fs.readFileSync(release23Path,'utf8');
+  if(!release23.includes('archiveRowDialog')||!release23.includes('rp23DeleteConfirm'))errors.push('Archive delete belum memakai dialog aplikasi release');
+}
+
 if(errors.length){
   console.error('\nFrontend asset validation FAILED');
   for(const e of errors)console.error(`- ${e}`);
   process.exit(1);
 }
-console.log(`Frontend asset validation OK — ${checked.size} active files/references checked + Data Context v32 guards.`);
+console.log(`Frontend asset validation OK — ${checked.size} active files/references checked + release UX/data guards.`);
