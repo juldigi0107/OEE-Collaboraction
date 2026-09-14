@@ -7,6 +7,7 @@ const admin=read('frontend/admin-depth-v37.js');
 const form=read('frontend/transaction-form-v38.js');
 const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
+const lifecycle=read('backend/release-v46-data-lifecycle.mjs');
 const runtime=read('frontend/operational-control-runtime-v31.js');
 const worker=read('backend/worker-production.mjs');
 const checks=[
@@ -30,12 +31,17 @@ const checks=[
  ['display lifecycle inventory',admin.includes('Lifecycle Display Mesin')&&admin.includes('Tanpa mesin')],
  ['import preflight snapshot',admin.includes('Snapshot sebelum impor')&&admin.includes('D1-only')&&admin.includes('existing tidak dihapus/ditimpa')],
  ['approval aging',admin.includes('Pending tertua')&&admin.includes('production_run')&&admin.includes('downtime')&&admin.includes('quality')],
+ ['storage lifecycle UI',admin.includes('Storage Health & Data Lifecycle')&&admin.includes('Ephemeral housekeeping aktif')&&admin.includes('tidak ada purge otomatis')],
+ ['storage lifecycle endpoint wired',worker.includes('handleDataLifecycleV46')&&worker.includes('data-lifecycle-v46')&&lifecycle.includes("'/api/storage-health'")],
+ ['ephemeral housekeeping only',lifecycle.includes('DELETE FROM sessions WHERE expires<=?')&&lifecycle.includes('DELETE FROM login_attempts WHERE until_ts<?')&&!lifecycle.includes('DELETE FROM machine_minute_snapshot')&&!lifecycle.includes('DELETE FROM audit')],
+ ['business retention is monitor only',lifecycle.includes("operational:'monitor_only'")&&lifecycle.includes("business_history:'no_automatic_delete'")&&lifecycle.includes("retention:'preserve'")],
+ ['scheduled lifecycle cleanup active',worker.includes('runLifecycleHousekeepingV46')&&worker.includes('ctx.waitUntil(runLifecycleHousekeepingV46(env))')],
  ['transaction required rules mirror backend',form.includes("production:['title','date','machine','total','good','planned','runtime','speed']")&&form.includes("batch:['title','date','machine','pro','input_batch','output_batch','qty','good','reject','nc','unit']")],
  ['PPIC signed values preserved',form.includes('Signed value')&&form.includes('reversal')],
  ['production OEE preview is explicitly non-authoritative',form.includes('Preview kalkulasi')&&form.includes('backend')],
  ['checklist uses controlled yes/no',form.includes('Ya / Siap')&&form.includes('Tidak / Belum')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form].join('\n')))]
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,lifecycle].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth validation OK — ${checks.length} operational safety, page, admin, and transaction guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, and storage guards checked.`);
