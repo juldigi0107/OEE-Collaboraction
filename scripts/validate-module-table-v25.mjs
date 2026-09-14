@@ -7,6 +7,7 @@ const hmi=read('frontend/hmi-dialogs-v40.js');
 const admin37=read('frontend/admin-depth-v37.js');
 const source41=read('frontend/source-depth-v41.js');
 const quality44=read('backend/release-v44-quality-unit.mjs');
+const kpi45=read('backend/release-v45-kpi-semantics.mjs');
 const support21=read('backend/release-v21-support.mjs');
 const worker=read('backend/worker-production.mjs');
 const init=read('backend/init-schema.sql');
@@ -40,8 +41,14 @@ const checks=[
  ['support UI surfaces data coverage',admin37.includes('Coverage integritas data')&&admin37.includes('QC legacy tanpa satuan')&&admin37.includes('Embedded child asset')],
  ['D1 builder extracts embedded OOXML media',builder.includes("'/media/' in n")&&builder.includes("asset_catalog")&&builder.includes('embedded_assets')],
  ['source detail uses authenticated asset catalog',source41.includes("api('/assets?source='")&&source41.includes("'/api/media/'")&&source41.includes('assets.slice(0,12)')],
- ['source media preserves original authority',source41.includes('Workbook atau presentation asli tetap menjadi source authority')]
+ ['source media preserves original authority',source41.includes('Workbook atau presentation asli tetap menjadi source authority')],
+ ['non-QC dashboard delegates to KPI semantics',quality44.includes("handleKpiSemanticsV45")&&quality44.includes('if(qc)return qc')],
+ ['maintenance live formula not overclaimed',kpi45.includes('Durasi perbaikan rata-rata · live')&&kpi45.includes('Run hours per UPDT · live')&&kpi45.includes('tidak diklaim sebagai MTTR resmi')],
+ ['maintenance governance definitions surfaced',kpi45.includes('Baseline MTTR resmi:')&&kpi45.includes('Baseline MTBF resmi:')],
+ ['PDS currency not hardcoded authoritative',kpi45.includes('Satuan mata uang mengikuti sumber')&&kpi45.includes("'Nilai biaya tercatat',''")],
+ ['project average is explicitly unweighted',kpi45.includes('bukan weighted portfolio progress')],
+ ['register horizon is explicit',kpi45.includes('Cakupan seluruh register D1 terpetakan')&&kpi45.includes('Seluruh register hasil produksi terpetakan')]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Module, quality-unit, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
+console.log(`Module, quality-unit, KPI-semantics, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
