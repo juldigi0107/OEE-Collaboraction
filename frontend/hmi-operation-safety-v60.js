@@ -6,6 +6,8 @@
  const telemetryRow=code=>(telemetry.machines||[]).find(x=>norm(x.code)===norm(code));
  async function loadTelemetry(){try{telemetry=await api('/telemetry-status');}catch{telemetry={generated_at:null,freshness_seconds:180,machines:[]};}return telemetry;}
  async function loadWorkCalendar(force=false){if(!force&&Date.now()-calendarLoadedAt<30000)return workCalendar;try{workCalendar=await api('/work-calendar/context');calendarLoadedAt=Date.now();}catch{workCalendar={approved:false,runtime_ready:false,reason:'Konteks kalender kerja belum dapat dimuat'};}return workCalendar;}
+ function formatOperationalDateTime(ts){const d=ts instanceof Date?ts:new Date(ts);if(Number.isNaN(d.getTime()))return '—';if(workCalendar.runtime_ready&&workCalendar.timezone){try{return d.toLocaleString('id-ID',{timeZone:workCalendar.timezone,dateStyle:'medium',timeStyle:'medium'});}catch{}}return d.toLocaleString('id-ID')+' · waktu browser';}
+ function paintOperationalClock(){const clock=document.querySelector('.live-clock');if(!clock)return;const strong=clock.querySelector('strong'),span=clock.querySelector('span'),d=new Date();if(workCalendar.runtime_ready&&workCalendar.timezone){try{if(strong)strong.textContent=d.toLocaleTimeString('id-ID',{timeZone:workCalendar.timezone,hour:'2-digit',minute:'2-digit',second:'2-digit'});if(span)span.textContent=d.toLocaleDateString('id-ID',{timeZone:workCalendar.timezone,weekday:'long',day:'2-digit',month:'long',year:'numeric'});clock.title=`Waktu operasional · ${workCalendar.timezone}`;clock.dataset.timeAuthority='work-calendar';return;}catch{}}clock.title='Waktu perangkat/browser · Work Calendar belum runtime-ready';clock.dataset.timeAuthority='browser';if(span&&!/browser/i.test(span.textContent))span.textContent+=' · browser';}
  function blockForReselect(requested,fallback){
   if(view!=='shopfloor')return;hmiMachine=SENTINEL;
   document.querySelectorAll('[data-machine]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false');});
@@ -21,7 +23,7 @@
   const box=document.createElement('div');box.className=workCalendar.runtime_ready?'v36-hmi-context v62-work-calendar':'notice v62-work-calendar';
   if(workCalendar.runtime_ready){box.innerHTML=`<div><span>Tanggal kerja</span><strong>${esc(workCalendar.work_date||'—')}</strong></div><div><span>Shift aktif</span><strong>${workCalendar.shift?`Shift ${esc(workCalendar.shift)}`:'Di luar window'}</strong></div><div><span>Zona waktu</span><strong>${esc(workCalendar.timezone||'—')}</strong></div><div><span>Cut-off</span><strong>${esc(workCalendar.workday_cutoff||'—')}</strong><small>${esc(workCalendar.group_model||'model group belum dicatat')}</small></div>`;const shift=document.querySelector('#startRun [name="shift"]');if(shift&&workCalendar.shift&&[...shift.options].some(o=>String(o.value)===String(workCalendar.shift))){shift.value=String(workCalendar.shift);shift.title='Shift mengikuti kalender kerja authoritative. Backend akan menolak planning yang tidak cocok.';}}
   else box.textContent=workCalendar.approved?`Kalender shift sudah disahkan tetapi belum siap dipakai runtime: ${workCalendar.reason||'timezone/window belum valid'}. Start PRO belum memakai kalender ini sampai baseline diperbaiki.`:'Kalender shift & tanggal kerja belum authoritative. Start PRO masih mengikuti planning; selesaikan Data Governance sebelum final operational sign-off.';
-  anchor.insertAdjacentElement('afterend',box);
+  anchor.insertAdjacentElement('afterend',box);paintOperationalClock();
  }
  function maskSelectedTelemetry(){
   if(view!=='shopfloor'||hmiMachine===SENTINEL)return;const s=telemetryRow(hmiMachine),trusted=!!s?.telemetry_trusted,live=document.querySelector('.live-metrics');
@@ -44,5 +46,5 @@
   shopfloor=async function(...args){const requested=String(hmiMachine||''),explicitBefore=!!requested&&requested!==SENTINEL,out=await baseShopfloorV60(...args),fallback=String(hmiMachine||'');await Promise.all([loadTelemetry(),loadWorkCalendar()]);if(requested===SENTINEL||explicitBefore&&!machineExists(requested)||explicitBefore&&norm(fallback)!==norm(requested))blockForReselect(requested===SENTINEL?'mesin sebelumnya':requested,fallback===SENTINEL?'':fallback);else maskSelectedTelemetry();paintWorkCalendar();return out;};
  }
  if(typeof liveMachines==='function'){const baseLiveV60=liveMachines;liveMachines=async function(...args){const out=await baseLiveV60(...args);await loadTelemetry();maskMachineWall();return out;};}
- window.HMIOperationSafetyV60={blockForReselect,machineExists,loadTelemetry,loadWorkCalendar,paintWorkCalendar,maskSelectedTelemetry,maskMachineWall,get telemetry(){return telemetry;},get workCalendar(){return workCalendar;}};
+ window.HMIOperationSafetyV60={blockForReselect,machineExists,loadTelemetry,loadWorkCalendar,paintWorkCalendar,paintOperationalClock,formatOperationalDateTime,maskSelectedTelemetry,maskMachineWall,get telemetry(){return telemetry;},get workCalendar(){return workCalendar;}};
 })();
