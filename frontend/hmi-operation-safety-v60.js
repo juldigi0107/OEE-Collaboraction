@@ -4,7 +4,7 @@
  const norm=v=>String(v||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
  const normShift=v=>{const s=String(v||'').trim().toUpperCase().replace(/\s+/g,'');const d=s.match(/(?:SHIFT|S)?([123])$/)?.[1];if(d)return d;if(['I','II','III'].includes(s))return String(['I','II','III'].indexOf(s)+1);return '';};
  const normGroup=v=>{const s=String(v||'').trim().toUpperCase().replace(/\s+/g,'');const g=s.match(/(?:GROUP|GRUP|G)?([ABCD])$/)?.[1];return g||'';};
- let telemetry={generated_at:null,freshness_seconds:180,machines:[]},workCalendar={approved:false,runtime_ready:false},calendarLoadedAt=0;
+ let telemetry={generated_at:null,freshness_seconds:180,machines:[]},workCalendar={approved:false,runtime_ready:false},calendarLoadedAt=0,latestPlans=[];
  const telemetryRow=code=>(telemetry.machines||[]).find(x=>norm(x.code)===norm(code));
  async function loadTelemetry(){try{telemetry=await api('/telemetry-status');}catch{telemetry={generated_at:null,freshness_seconds:180,machines:[]};}return telemetry;}
  async function loadWorkCalendar(force=false){if(!force&&Date.now()-calendarLoadedAt<30000)return workCalendar;try{workCalendar=await api('/work-calendar/context');calendarLoadedAt=Date.now();}catch{workCalendar={approved:false,runtime_ready:false,reason:'Konteks kalender kerja belum dapat dimuat'};}return workCalendar;}
@@ -49,10 +49,10 @@
   const baseDraw=()=>{const raw=String(actual?.value||'').trim(),save=$('#v40FinishSave');if(save&&raw==='')save.disabled=true;};actual?.addEventListener('input',baseDraw);baseDraw();
  }
  if(typeof finishDialog==='function'){const baseFinishV60=finishDialog;finishDialog=function(run){const out=baseFinishV60(run);queueMicrotask(()=>decorateFinish(run));return out;};}
- if(typeof bindHmiActions==='function'){const baseBindV60=bindHmiActions;bindHmiActions=function(active,m,down,call,plans){const out=baseBindV60(active,m,down,call,plans);if(!active)queueMicrotask(()=>bindPlanningCalendarGate(plans));return out;};}
+ if(typeof bindHmiActions==='function'){const baseBindV60=bindHmiActions;bindHmiActions=function(active,m,down,call,plans){latestPlans=Array.isArray(plans)?plans:[];return baseBindV60(active,m,down,call,plans);};}
  if(typeof shopfloor==='function'){
   const baseShopfloorV60=shopfloor;
-  shopfloor=async function(...args){const requested=String(hmiMachine||''),explicitBefore=!!requested&&requested!==SENTINEL,out=await baseShopfloorV60(...args),fallback=String(hmiMachine||'');await Promise.all([loadTelemetry(),loadWorkCalendar()]);if(requested===SENTINEL||explicitBefore&&!machineExists(requested)||explicitBefore&&norm(fallback)!==norm(requested))blockForReselect(requested===SENTINEL?'mesin sebelumnya':requested,fallback===SENTINEL?'':fallback);else maskSelectedTelemetry();paintWorkCalendar();bindPlanningCalendarGate([]);return out;};
+  shopfloor=async function(...args){const requested=String(hmiMachine||''),explicitBefore=!!requested&&requested!==SENTINEL,out=await baseShopfloorV60(...args),fallback=String(hmiMachine||'');await Promise.all([loadTelemetry(),loadWorkCalendar()]);if(requested===SENTINEL||explicitBefore&&!machineExists(requested)||explicitBefore&&norm(fallback)!==norm(requested))blockForReselect(requested===SENTINEL?'mesin sebelumnya':requested,fallback===SENTINEL?'':fallback);else maskSelectedTelemetry();paintWorkCalendar();bindPlanningCalendarGate(latestPlans);return out;};
  }
  if(typeof liveMachines==='function'){const baseLiveV60=liveMachines;liveMachines=async function(...args){const out=await baseLiveV60(...args);await loadTelemetry();maskMachineWall();return out;};}
  window.HMIOperationSafetyV60={blockForReselect,machineExists,loadTelemetry,loadWorkCalendar,bindPlanningCalendarGate,paintWorkCalendar,paintOperationalClock,formatOperationalDateTime,maskSelectedTelemetry,maskMachineWall,get telemetry(){return telemetry;},get workCalendar(){return workCalendar;}};
