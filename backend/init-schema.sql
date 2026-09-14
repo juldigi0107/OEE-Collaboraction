@@ -1,5 +1,6 @@
 -- OEE COLLABORACTION - BMJ PACKAGING OFFSET
--- Initial D1 schema: core + realtime. Safe to run repeatedly because all DDL uses IF NOT EXISTS and seed rows use INSERT OR IGNORE.
+-- Initial D1 schema: core + realtime. Safe for fresh environments.
+-- No user credential is seeded. First Superadmin must be created through the protected bootstrap flow.
 
 CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,username TEXT UNIQUE NOT NULL,name TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('superadmin','admin','user')),department TEXT NOT NULL,permissions TEXT NOT NULL DEFAULT '[]',password_hash TEXT NOT NULL,salt TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires INTEGER NOT NULL);
@@ -8,8 +9,6 @@ CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT,action TEXT,en
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL,department TEXT NOT NULL DEFAULT 'PROJECT');
 CREATE TABLE IF NOT EXISTS password_flags(user_id TEXT PRIMARY KEY,must_change INTEGER NOT NULL DEFAULT 1);
 INSERT OR IGNORE INTO settings VALUES('brand','{"name":"OEE COLLABORACTION - BMJ PACKAGING OFFSET","tagline":"Intelligent Platform © 2026 IDJ","plant":"BMJ Packaging Offset"}','PROJECT');
-INSERT OR IGNORE INTO users(id,username,name,role,department,permissions,password_hash,salt,active) VALUES('seed-superadmin','superadmin','Superadmin','superadmin','PROJECT','[]','6a0f50586935de199de7293026746c36de15b95d6222eb60b307fcb768117f04','bmj-oee-2026-superadmin-bootstrap',1);
-INSERT OR IGNORE INTO password_flags(user_id,must_change) VALUES('seed-superadmin',1);
 CREATE TABLE IF NOT EXISTS sources(id TEXT PRIMARY KEY,name TEXT NOT NULL,path TEXT,department TEXT NOT NULL,kind TEXT NOT NULL,sha256 TEXT,bytes INTEGER);
 CREATE TABLE IF NOT EXISTS sheets(id TEXT PRIMARY KEY,source_id TEXT NOT NULL,name TEXT NOT NULL,department TEXT NOT NULL,rows INTEGER NOT NULL DEFAULT 0,cols INTEGER NOT NULL DEFAULT 0,meta TEXT NOT NULL DEFAULT '{}');
 CREATE INDEX IF NOT EXISTS sheets_department ON sheets(department,source_id,name);
@@ -37,7 +36,7 @@ CREATE TABLE IF NOT EXISTS downtime_events(id TEXT PRIMARY KEY,run_id TEXT,machi
 CREATE INDEX IF NOT EXISTS downtime_open ON downtime_events(status,start_ts);
 CREATE TABLE IF NOT EXISTS maintenance_calls(id TEXT PRIMARY KEY,machine_id TEXT NOT NULL,run_id TEXT,downtime_id TEXT,priority TEXT NOT NULL DEFAULT 'NORMAL',requested_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,acknowledged_ts TEXT,closed_ts TEXT,requested_by TEXT,acknowledged_by TEXT,status TEXT NOT NULL DEFAULT 'OPEN',note TEXT);
 CREATE INDEX IF NOT EXISTS maintenance_calls_status ON maintenance_calls(status,requested_ts);
-CREATE TABLE IF NOT EXISTS quality_events(id TEXT PRIMARY KEY,run_id TEXT,machine_id TEXT NOT NULL,event_type TEXT NOT NULL DEFAULT 'NG',sample_qty REAL,good_qty REAL,reject_qty REAL,decision TEXT,note TEXT,created_by TEXT,created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS quality_events(id TEXT PRIMARY KEY,run_id TEXT,machine_id TEXT NOT NULL,event_type TEXT NOT NULL DEFAULT 'NG',sample_qty REAL,good_qty REAL,reject_qty REAL,decision TEXT,note TEXT,created_by TEXT,created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT);
 CREATE TABLE IF NOT EXISTS approvals(id TEXT PRIMARY KEY,entity_type TEXT NOT NULL,entity_id TEXT NOT NULL,step TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'PENDING',requested_by TEXT,decided_by TEXT,requested_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,decided_ts TEXT,note TEXT);
 CREATE UNIQUE INDEX IF NOT EXISTS approvals_entity_step ON approvals(entity_type,entity_id,step);
 CREATE TABLE IF NOT EXISTS integration_connections(id TEXT PRIMARY KEY,system TEXT NOT NULL,mode TEXT NOT NULL DEFAULT 'REST',base_url TEXT,secret_env TEXT,enabled INTEGER NOT NULL DEFAULT 0,poll_minutes INTEGER NOT NULL DEFAULT 5,last_sync TEXT,last_status TEXT,last_message TEXT,config TEXT NOT NULL DEFAULT '{}');
