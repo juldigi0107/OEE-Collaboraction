@@ -76,8 +76,9 @@ const checks=[
  ['governed downtime requires approved reason',hasAll(oc31runtime,['select.required=true','readOnly=true','Belum ada reason',"dept.value='PROD'"])],
  ['data context preserves semantic boundaries',hasAll(oc31runtime,['Multi-unit terdeteksi','reversal candidate','Periode mengikuti tanggal transaksi','Source authority belum disahkan',"process:'quality'",'Process parameter berada pada domain Quality','timestamp operasional hanya fallback'])],
  ['stale department state guarded',hasAll(resilience33,['!sheets.some(s=>s.id===activeSheet)','Belum ada sheet sumber','retryDept'])],
- ['common image previews supported',hasAll(resilience33,["['jpg','jpeg','webp','gif']","kind==='svg'?'png'"])],
+ ['native image previews use correct MIME',hasAll(resilience33,["jpg:'image/jpeg'","webp:'image/webp'","gif:'image/gif'","svg:'image/svg+xml'","/api/files/",'arrayBuffer()'])],
  ['dashboard derives period from source cells',hasAll(dashboard34,['excelEpoch','toDate','periode berasal dari cell tanggal sumber','Trend OEE ${esc(lastPeriod.label)}'])],
+ ['production exposes release capability fingerprint',hasAll(production,['RELEASE_FINGERPRINT','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','release_fingerprint:RELEASE_FINGERPRINT'])],
  ['D1 only architecture',wrangler.includes('[[d1_databases]]')&&!wrangler.includes('[[r2_buckets]]')],
  ['no prototype language in active release UI',!/\b(prototype|mockup|dummy|lorem ipsum|data demo|contoh data)\b/i.test(active)]
 ];
