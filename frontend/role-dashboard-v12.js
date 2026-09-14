@@ -20,7 +20,7 @@
     if(content.querySelector('.role-data-context'))return;
     const headingEl=content.querySelector('.heading');if(!headingEl)return;
     const context=document.createElement('div');context.className='role-data-context';
-    context.innerHTML='<div><strong>Konteks historis</strong><span>Snapshot workbook ditampilkan sesuai periode transaksi/cell sumber</span></div><div><strong>Operasional</strong><span>KPI department: D1 dan event live yang tersedia</span></div><div><strong>Aturan periode</strong><span>Tanggal transaksi/tanggal kerja menjadi acuan; nama file tidak dijadikan periode</span></div>';
+    context.innerHTML='<div><strong>Konteks data historis</strong><span>Snapshot workbook ditampilkan sesuai periode transaksi/cell sumber</span></div><div><strong>Operasional</strong><span>KPI department: D1 dan event live yang tersedia</span></div><div><strong>Aturan periode</strong><span>Tanggal transaksi/tanggal kerja menjadi acuan; nama file tidak dijadikan periode</span></div>';
     headingEl.insertAdjacentElement('afterend',context);
   }
   async function renderRoleOperationalKpi(dept){
