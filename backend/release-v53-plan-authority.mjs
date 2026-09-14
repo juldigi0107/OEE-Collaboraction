@@ -6,6 +6,8 @@ const parse=(v,f={})=>{try{return typeof v==='string'?JSON.parse(v):v||f}catch{r
 const clean=v=>String(v??'').trim();
 const normMachine=v=>clean(v).toUpperCase().replace(/[^A-Z0-9]/g,'');
 const cleanCode=v=>clean(v).toUpperCase().replace(/[^A-Z0-9_.-]/g,'').slice(0,64);
+const normShift=v=>{const s=clean(v).toUpperCase().replace(/\s+/g,'');const d=s.match(/(?:SHIFT|S)?([123])$/)?.[1];if(d)return d;if(['I','II','III'].includes(s))return String(['I','II','III'].indexOf(s)+1);return '';};
+const normGroup=v=>{const s=clean(v).toUpperCase().replace(/\s+/g,'');return s.match(/(?:GROUP|GRUP|G)?([ABCD])$/)?.[1]||'';};
 const allowedOrigin=(req,env)=>{const origin=req.headers.get('Origin')||'';const allow=String(env.ALLOWED_ORIGIN||'').split(',').map(x=>x.trim()).filter(Boolean);return origin&&allow.some(x=>origin===x||origin.startsWith(x+'/'))?origin:'';};
 const out=(req,env,status,error)=>{const origin=allowedOrigin(req,env);return new Response(JSON.stringify({error}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{})}});};
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
@@ -14,6 +16,8 @@ const allowed=u=>u?.role==='superadmin'||(u?.role==='admin'&&u.department==='PRO
 async function machineConfig(env){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.machine_aliases'"),cfg=parse(row?.value,{});return cfg?.approved===true?cfg:null;}
 function canonical(cfg,raw){if(!cfg)return cleanCode(raw);const input=normMachine(raw);if(!input)return '';for(const row of cfg.items||[]){for(const code of [row?.canonical,...(Array.isArray(row?.aliases)?row.aliases:[])])if(normMachine(code)===input)return cleanCode(row.canonical);}return cleanCode(raw);}
 const sameText=(a,b)=>clean(a).toUpperCase()===clean(b).toUpperCase();
+const sameShift=(a,b)=>{const x=normShift(a),y=normShift(b);return x&&y?x===y:sameText(a,b);};
+const sameGroup=(a,b)=>{const x=normGroup(a),y=normGroup(b);return x&&y?x===y:sameText(a,b);};
 const hasValue=v=>v!==undefined&&v!==null&&String(v).trim()!=='';
 function sameNumber(a,b){const x=Number(a),y=Number(b);return Number.isFinite(x)&&Number.isFinite(y)&&Math.abs(x-y)<=1e-9*Math.max(1,Math.abs(x),Math.abs(y));}
 export async function handlePlanAuthorityV53(req,env){
@@ -27,7 +31,7 @@ export async function handlePlanAuthorityV53(req,env){
  const cfg=await machineConfig(env),planMachine=canonical(cfg,plan.machine),requestMachine=canonical(cfg,body.machine);if(requestMachine&&planMachine&&requestMachine!==planMachine)return out(req,env,409,'Mesin pada request tidak sama dengan canonical machine Planning Released');
  if(hasValue(body.material)&&!sameText(body.material,plan.material))return out(req,env,409,'Material pada request tidak sama dengan Material Planning Released');
  if(hasValue(body.planned_qty)&&!sameNumber(body.planned_qty,plan.target))return out(req,env,409,'Target Qty pada request tidak sama dengan Target Qty Planning Released');
- if(hasValue(plan.shift)&&hasValue(body.shift)&&!sameText(body.shift,plan.shift))return out(req,env,409,'Shift pada request tidak sama dengan Shift Planning Released');
- if(hasValue(plan.group)&&hasValue(body.group)&&!sameText(body.group,plan.group))return out(req,env,409,'Group pada request tidak sama dengan Group Planning Released');
+ if(hasValue(plan.shift)&&hasValue(body.shift)&&!sameShift(body.shift,plan.shift))return out(req,env,409,'Shift pada request tidak sama dengan Shift Planning Released');
+ if(hasValue(plan.group)&&hasValue(body.group)&&!sameGroup(body.group,plan.group))return out(req,env,409,'Group pada request tidak sama dengan Group Planning Released');
  return null;
 }
