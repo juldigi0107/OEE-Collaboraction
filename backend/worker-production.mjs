@@ -34,7 +34,7 @@ export default {
   async fetch(req,env,ctx){
     const path=new URL(req.url).pathname;
     if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false,release_fingerprint:RELEASE_FINGERPRINT}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
-    if(['/api/assets','/api/import-data','/api/readiness','/api/shopfloor/quality','/api/role-dashboard','/api/shopfloor/start'].includes(path))await ensureAdditiveSchema(env);
+    if(['/api/assets','/api/import-data','/api/readiness','/api/release-manifest','/api/approvals','/api/shopfloor/quality','/api/role-dashboard','/api/shopfloor/start','/api/realtime/overview'].includes(path))await ensureAdditiveSchema(env);
     const supportResponse=await handleSupportV21(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);
     if(supportResponse)return supportResponse;
     const planningSafetyResponse=await handlePlanningSafetyV39(req,env);
