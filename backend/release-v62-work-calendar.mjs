@@ -18,7 +18,7 @@ function validateCalendarConfig(v){
  if(!validTimezone(v.timezone))return 'Zona waktu kalender shift harus berupa IANA timezone yang valid, misalnya Asia/Jakarta';
  for(const k of ['workday_cutoff','s1_start','s1_end','s2_start','s2_end','s3_start','s3_end'])if(!validTime(v[k]))return `Format waktu tidak valid: ${k}`;
  const windows=[[v.s1_start,v.s1_end],[v.s2_start,v.s2_end],[v.s3_start,v.s3_end]].map(([a,b])=>[minuteOf(a),minuteOf(b)]);if(windows.some(([a,b])=>a===b))return 'Jam mulai dan selesai shift tidak boleh sama';
- for(let minute=0;minute<1440;minute++){const hits=windows.filter(([a,b])=>inWindow(minute,a,b)).length;if(hits>1)return 'Window Shift 1–3 saling overlap; perbaiki kalender sebelum disahkan';}
+ for(let minute=0;minute<1440;minute++){const hits=windows.filter(([a,b])=>inWindow(minute,a,b)).length;if(hits>1)return 'Window Shift 1–3 saling overlap; perbaiki kalender sebelum disahkan';if(hits===0)return 'Window Shift 1–3 memiliki gap; kalender authoritative harus menentukan shift untuk seluruh 24 jam';}
  return null;
 }
 function zonedParts(date,tz){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date),o={};for(const p of parts)if(p.type!=='literal')o[p.type]=p.value;return {year:Number(o.year),month:Number(o.month),day:Number(o.day),hour:Number(o.hour),minute:Number(o.minute),second:Number(o.second)};}
@@ -26,16 +26,16 @@ function isoDate(y,m,d){return new Date(Date.UTC(y,m-1,d)).toISOString().slice(0
 function previousDate(y,m,d){return new Date(Date.UTC(y,m-1,d)-86400000).toISOString().slice(0,10);}
 function normalizeShift(v){const s=clean(v).toUpperCase().replace(/\s+/g,'');const digit=s.match(/(?:SHIFT|S)?([123])$/)?.[1];if(digit)return digit;if(['I','II','III'].includes(s))return String(['I','II','III'].indexOf(s)+1);return '';}
 function deriveContext(v,date=new Date()){
- const approved=v?.approved===true,timezone=clean(v?.timezone),runtimeReady=approved&&validTimezone(timezone)&&['workday_cutoff','s1_start','s1_end','s2_start','s2_end','s3_start','s3_end'].every(k=>validTime(v?.[k]));
- if(!runtimeReady)return {approved,configured:Object.keys(v||{}).length>0,runtime_ready:false,timezone:timezone||null,reason:approved?'Timezone atau window shift belum valid':'Kalender shift belum disahkan'};
+ const approved=v?.approved===true,timezone=clean(v?.timezone),validationError=approved?validateCalendarConfig(v):null,runtimeReady=approved&&!validationError;
+ if(!runtimeReady)return {approved,configured:Object.keys(v||{}).length>0,runtime_ready:false,timezone:timezone||null,reason:approved?(validationError||'Kalender shift belum valid'):'Kalender shift belum disahkan'};
  const p=zonedParts(date,timezone),minute=p.hour*60+p.minute,cutoff=minuteOf(v.workday_cutoff),windows=[['1',minuteOf(v.s1_start),minuteOf(v.s1_end)],['2',minuteOf(v.s2_start),minuteOf(v.s2_end)],['3',minuteOf(v.s3_start),minuteOf(v.s3_end)]],matches=windows.filter(([,a,b])=>inWindow(minute,a,b)),shift=matches.length===1?matches[0][0]:null,workDate=minute<cutoff?previousDate(p.year,p.month,p.day):isoDate(p.year,p.month,p.day);
- return {approved:true,configured:true,runtime_ready:true,timezone,local_date:isoDate(p.year,p.month,p.day),local_time:`${String(p.hour).padStart(2,'0')}:${String(p.minute).padStart(2,'0')}:${String(p.second).padStart(2,'0')}`,work_date:workDate,shift,group_model:clean(v.group_model)||null,workday_cutoff:v.workday_cutoff,windows:{'1':{start:v.s1_start,end:v.s1_end},'2':{start:v.s2_start,end:v.s2_end},'3':{start:v.s3_start,end:v.s3_end}},reason:shift?null:'Waktu sekarang berada di luar window Shift 1–3 yang disahkan'};
+ return {approved:true,configured:true,runtime_ready:true,timezone,local_date:isoDate(p.year,p.month,p.day),local_time:`${String(p.hour).padStart(2,'0')}:${String(p.minute).padStart(2,'0')}:${String(p.second).padStart(2,'0')}`,work_date:workDate,shift,group_model:clean(v.group_model)||null,workday_cutoff:v.workday_cutoff,windows:{'1':{start:v.s1_start,end:v.s1_end},'2':{start:v.s2_start,end:v.s2_end},'3':{start:v.s3_start,end:v.s3_end}},reason:shift?null:'Kalender shift tidak menghasilkan satu Shift aktif; periksa baseline'};
 }
 async function guardStart(req,env){
  const cfg=await calendar(env),ctx=deriveContext(cfg);if(!ctx.approved||!ctx.runtime_ready)return null;
  const u=await auth(req,env);if(!u)return null;let body;try{body=await req.clone().json();}catch{return null;}const planId=clean(body?.plan_id);if(!planId)return null;
  const row=await one(env.DB,"SELECT payload FROM entries WHERE id=? AND module='planning' AND deleted=0",planId);if(!row)return null;const plan=parse(row.payload,{});
- if(!ctx.shift)return json(req,env,{error:'Waktu saat ini berada di luar window shift yang disahkan. Start PRO ditahan sampai kalender diperbaiki atau shift aktif.'},409);
+ if(!ctx.shift)return json(req,env,{error:'Waktu saat ini tidak menghasilkan Shift authoritative. Start PRO ditahan sampai kalender diperbaiki.'},409);
  const planShift=normalizeShift(plan.shift),requestShift=normalizeShift(body.shift);if(planShift&&planShift!==ctx.shift)return json(req,env,{error:`Planning Released berada pada Shift ${planShift}, sedangkan kalender runtime menunjukkan Shift ${ctx.shift} untuk tanggal kerja ${ctx.work_date}`},409);if(requestShift&&requestShift!==ctx.shift)return json(req,env,{error:`Shift pada request (${requestShift}) tidak sama dengan kalender runtime (Shift ${ctx.shift})`},409);
  return null;
 }
