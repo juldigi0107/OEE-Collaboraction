@@ -49,13 +49,16 @@ jobs:
       - name: Production Worker health check
         run: |
           curl --fail --location --max-time 20 --show-error https://oee-collaboraction.offsetbmj.workers.dev/api/health
-      - name: Production build version check
+      - name: Production build version and fingerprint check
         run: |
           body=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/api/version)
           echo "$body"
           echo "$body" | grep -Fq '"version":"6.2.0"'
           echo "$body" | grep -Fq '"storage":"D1-only"'
           echo "$body" | grep -Fq '"r2":false'
+          echo "$body" | grep -Fq 'operational-control-v31'
+          echo "$body" | grep -Fq 'release-resilience-v33'
+          echo "$body" | grep -Fq 'period-aware-dashboard-v34'
       - name: Production D1 readiness check
         run: |
           tmp=$(mktemp)
@@ -154,7 +157,10 @@ jobs:
           echo "$r31" | grep -Fq "process:'quality'"
           r33=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-resilience-v33.js)
           echo "$r33" | grep -Fq 'Belum ada sheet sumber'
-          echo "$r33" | grep -Fq "['jpg','jpeg','webp','gif']"
+          echo "$r33" | grep -Fq "webp:'image/webp'"
+          echo "$r33" | grep -Fq "svg:'image/svg+xml'"
+          echo "$r33" | grep -Fq '/api/files/'
+          echo "$r33" | grep -Fq 'arrayBuffer()'
           r34=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/dashboard-period-v34.js)
           echo "$r34" | grep -Fq 'excelEpoch'
           echo "$r34" | grep -Fq 'periode berasal dari cell tanggal sumber'
