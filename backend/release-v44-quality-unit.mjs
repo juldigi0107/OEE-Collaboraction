@@ -1,3 +1,4 @@
+import {handleReleaseV11} from './release-v11.mjs';
 const enc=new TextEncoder();
 const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(String(s||''))));
@@ -40,10 +41,17 @@ async function qcDashboard(req,env,u,url){
  const historical=Number((await one(env.DB,"SELECT COUNT(*) n FROM entries WHERE module='quality' AND deleted=0"))?.n||0);metrics.push(metric('records','Register QC historis',historical,'','Transaksi terpetakan','Unit historis tetap mengikuti payload sumber'));
  return out(req,env,{department:'QC',generated_at:now(),metrics});
 }
+async function approvalList(req,env){
+ const response=await handleReleaseV11(req,env);if(!response||!response.ok)return response;let data;try{data=await response.clone().json();}catch{return response;}const rows=Array.isArray(data?.rows)?data.rows:[],ids=[...new Set(rows.filter(x=>x.entity_type==='quality'&&x.entity_id).map(x=>x.entity_id))];if(!ids.length)return out(req,env,data,response.status);
+ const placeholders=ids.map(()=>'?').join(','),unitRows=await all(env.DB,`SELECT id,lower(trim(unit)) unit FROM quality_events WHERE id IN (${placeholders})`,...ids),map=new Map(unitRows.map(x=>[x.id,clean(x.unit)]));
+ for(const a of rows){if(a.entity_type!=='quality')continue;const unit=map.get(a.entity_id)||'';a.entity={...(a.entity||{}),unit,unit_status:unit?'known':'legacy_missing'};}
+ return out(req,env,data,response.status);
+}
 export async function handleQualityUnitV44(req,env){
- const url=new URL(req.url),path=url.pathname;if(!((req.method==='POST'&&path==='/api/shopfloor/quality')||(req.method==='GET'&&path==='/api/role-dashboard')))return null;
- const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
+ const url=new URL(req.url),path=url.pathname,qualityPostRoute=req.method==='POST'&&path==='/api/shopfloor/quality',dashboardRoute=req.method==='GET'&&path==='/api/role-dashboard',approvalRoute=req.method==='GET'&&path==='/api/approvals';if(!qualityPostRoute&&!dashboardRoute&&!approvalRoute)return null;
  await ensureQualityUnit(env.DB);
- if(req.method==='POST')return qualityPost(req,env,u);
+ if(approvalRoute)return approvalList(req,env);
+ const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
+ if(qualityPostRoute)return qualityPost(req,env,u);
  return qcDashboard(req,env,u,url);
 }
