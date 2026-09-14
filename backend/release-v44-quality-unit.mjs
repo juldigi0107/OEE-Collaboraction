@@ -14,7 +14,7 @@ async function auth(req,env){const token=(req.headers.get('Authorization')||'').
 const allow=(u,dept,action)=>u?.role==='superadmin'||(u?.role==='admin'&&u.department===dept&&J(u.permissions).includes(action));
 let schemaPromise=null;
 async function ensureQualityUnit(db){
- if(!schemaPromise)schemaPromise=(async()=>{const info=(await db.prepare("PRAGMA table_info('quality_events')").all()).results||[];if(!info.some(x=>x.name==='unit'))await db.prepare('ALTER TABLE quality_events ADD COLUMN unit TEXT').run();})().catch(e=>{schemaPromise=null;throw e;});
+ if(!schemaPromise)schemaPromise=(async()=>{const info=(await db.prepare("PRAGMA table_info('quality_events')").all()).results||[];if(info.some(x=>x.name==='unit'))return;try{await db.prepare('ALTER TABLE quality_events ADD COLUMN unit TEXT').run();}catch(e){if(!/duplicate column/i.test(String(e?.message||e)))throw e;}})().catch(e=>{schemaPromise=null;throw e;});
  return schemaPromise;
 }
 function unitOf(v){return clean(v).toLowerCase().replace(/\s+/g,' ').slice(0,24);}
