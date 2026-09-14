@@ -18,7 +18,56 @@ function expected(row){
 }
 function differs(payload,want){if(!want)return false;return Object.entries(want).some(([k,v])=>(payload[k]??null)!==(v??null));}
 function apply(payload,want){const next={...payload};for(const [k,v] of Object.entries(want||{})){if(v===null){delete next[k];continue;}next[k]=v;}return next;}
-async function lineageRows(env,limit=500){return all(env.DB,"SELECT r.id run_id,r.plan_id,r.status run_status,r.start_ts,r.end_ts,e.payload plan_payload,e.version plan_version,a.status approval_status,a.decided_ts,a.note approval_note FROM production_runs r LEFT JOIN entries e ON e.id=r.plan_id AND e.module='planning' AND e.deleted=0 LEFT JOIN approvals a ON a.entity_type='production_run' AND a.entity_id=r.id AND a.step='FINAL_VERIFY' WHERE trim(COALESCE(r.plan_id,''))<>'' AND NOT EXISTS (SELECT 1 FROM production_runs newer WHERE newer.plan_id=r.plan_id AND (COALESCE(newer.end_ts,newer.start_ts)>COALESCE(r.end_ts,r.start_ts) OR (COALESCE(newer.end_ts,newer.start_ts)=COALESCE(r.end_ts,r.start_ts) AND newer.id>r.id))) ORDER BY COALESCE(r.end_ts,r.start_ts) DESC LIMIT ?",Math.max(1,Math.min(1000,Number(limit)||500)));}
+async function lineageRows(env,limit=500){
+ const sql=`SELECT r.id run_id,r.plan_id,r.status run_status,r.start_ts,r.end_ts,e.payload plan_payload,e.version plan_version,a.status approval_status,a.decided_ts,a.note approval_note
+ FROM production_runs r
+ LEFT JOIN entries e ON e.id=r.plan_id AND e.module='planning' AND e.deleted=0
+ LEFT JOIN approvals a ON a.entity_type='production_run' AND a.entity_id=r.id AND a.step='FINAL_VERIFY'
+ WHERE trim(COALESCE(r.plan_id,''))<>''
+ AND NOT EXISTS (
+   SELECT 1 FROM production_runs newer
+   WHERE newer.plan_id=r.plan_id
+   AND (COALESCE(newer.end_ts,newer.start_ts)>COALESCE(r.end_ts,r.start_ts)
+     OR (COALESCE(newer.end_ts,newer.start_ts)=COALESCE(r.end_ts,r.start_ts) AND newer.id>r.id))
+ )
+ ORDER BY CASE
+   WHEN e.id IS NULL THEN 0
+   WHEN r.status='RUNNING' AND (
+     COALESCE(json_extract(e.payload,'$.status'),'')<>'Dimulai'
+     OR COALESCE(json_extract(e.payload,'$.active_run_id'),'')<>r.id
+     OR COALESCE(json_extract(e.payload,'$.finished_run_id'),'')<>''
+     OR COALESCE(json_extract(e.payload,'$.verification_status'),'')<>''
+   ) THEN 0
+   WHEN r.status='FINISHED' AND COALESCE(a.status,'PENDING')='APPROVED' AND (
+     COALESCE(json_extract(e.payload,'$.status'),'')<>'Terverifikasi'
+     OR COALESCE(json_extract(e.payload,'$.active_run_id'),'')<>''
+     OR COALESCE(json_extract(e.payload,'$.finished_run_id'),'')<>r.id
+     OR COALESCE(json_extract(e.payload,'$.verified_run_id'),'')<>r.id
+     OR COALESCE(json_extract(e.payload,'$.verification_status'),'')<>'APPROVED'
+     OR COALESCE(json_extract(e.payload,'$.verified_ts'),'')<>COALESCE(a.decided_ts,'')
+     OR COALESCE(json_extract(e.payload,'$.verification_note'),'')<>COALESCE(a.note,'')
+   ) THEN 0
+   WHEN r.status='FINISHED' AND COALESCE(a.status,'PENDING')='REJECTED' AND (
+     COALESCE(json_extract(e.payload,'$.status'),'')<>'Selesai'
+     OR COALESCE(json_extract(e.payload,'$.active_run_id'),'')<>''
+     OR COALESCE(json_extract(e.payload,'$.finished_run_id'),'')<>r.id
+     OR COALESCE(json_extract(e.payload,'$.verified_run_id'),'')<>''
+     OR COALESCE(json_extract(e.payload,'$.verification_status'),'')<>'REJECTED'
+     OR COALESCE(json_extract(e.payload,'$.verification_note'),'')<>COALESCE(a.note,'')
+   ) THEN 0
+   WHEN r.status='FINISHED' AND COALESCE(a.status,'PENDING') NOT IN ('APPROVED','REJECTED') AND (
+     COALESCE(json_extract(e.payload,'$.status'),'')<>'Selesai'
+     OR COALESCE(json_extract(e.payload,'$.active_run_id'),'')<>''
+     OR COALESCE(json_extract(e.payload,'$.finished_run_id'),'')<>r.id
+     OR COALESCE(json_extract(e.payload,'$.verified_run_id'),'')<>''
+     OR COALESCE(json_extract(e.payload,'$.verification_status'),'')<>'PENDING'
+     OR COALESCE(json_extract(e.payload,'$.verification_note'),'')<>''
+   ) THEN 0
+   ELSE 1 END,
+   COALESCE(r.end_ts,r.start_ts) DESC
+ LIMIT ?`;
+ return all(env.DB,sql,Math.max(1,Math.min(1000,Number(limit)||500)));
+}
 export async function reconcileWorkflowLineageV51(env,limit=150){
  const rows=await lineageRows(env,limit);let checked=0,updated=0,orphaned=0;
  for(const row of rows){checked++;if(row.plan_payload==null){orphaned++;continue;}const payload=parse(row.plan_payload),want=expected(row);if(!differs(payload,want))continue;const next=apply(payload,want),result=await env.DB.prepare("UPDATE entries SET payload=?,version=version+1,updated=CURRENT_TIMESTAMP WHERE id=? AND module='planning' AND deleted=0 AND version=?").bind(JSON.stringify(next),row.plan_id,Number(row.plan_version||1)).run();if(Number(result?.meta?.changes||0)>0)updated++;}
@@ -27,7 +76,7 @@ export async function reconcileWorkflowLineageV51(env,limit=150){
 export async function workflowHealthV51(env){
  const rows=await lineageRows(env,500);let mismatches=0,orphaned=0;for(const row of rows){if(row.plan_payload==null){orphaned++;continue;}if(differs(parse(row.plan_payload),expected(row)))mismatches++;}
  const linked=Number((await one(env.DB,"SELECT COUNT(*) n FROM production_runs WHERE trim(COALESCE(plan_id,''))<>''"))?.n||0),multi=Number((await one(env.DB,"SELECT COUNT(*) n FROM (SELECT plan_id FROM production_runs WHERE trim(COALESCE(plan_id,''))<>'' GROUP BY plan_id HAVING COUNT(*)>1)"))?.n||0),pending=Number((await one(env.DB,"SELECT COUNT(*) n FROM approvals WHERE entity_type='production_run' AND step='FINAL_VERIFY' AND status='PENDING'"))?.n||0);
- return {generated_at:new Date().toISOString(),ready:orphaned===0&&mismatches===0,linked_runs:linked,checked_runs:rows.length,lineage_mismatches:mismatches,orphaned_plan_links:orphaned,multi_run_plans:multi,pending_production_verification:pending,note:'Rekonsiliasi memakai run terbaru per Planning. Multi-run plan tetap dilaporkan untuk audit karena rerun terkontrol dapat mempertahankan lineage plan yang sama.'};
+ return {generated_at:new Date().toISOString(),ready:orphaned===0&&mismatches===0,linked_runs:linked,checked_runs:rows.length,lineage_mismatches:mismatches,orphaned_plan_links:orphaned,multi_run_plans:multi,pending_production_verification:pending,note:'Rekonsiliasi memakai run terbaru per Planning dan memprioritaskan mismatch/orphan sebelum record konsisten. Multi-run plan tetap dilaporkan untuk audit.'};
 }
 export async function handleWorkflowReconciliationV51(req,env){
  const url=new URL(req.url);if(req.method!=='GET'||url.pathname!=='/api/workflow-health')return null;const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const pf=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(pf?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);if(u.role!=='superadmin')return out(req,env,{error:'Workflow Health khusus Superadmin'},403);return out(req,env,await workflowHealthV51(env));
