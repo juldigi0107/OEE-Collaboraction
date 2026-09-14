@@ -23,3 +23,18 @@
  }
  window.HMIDialogsV40={downtimeCloseDialog,maintenanceCallDialog,qualityDialog:qualityDialogV40,finishDialog:finishDialogV40,productionUnitContext};
 })();
+
+/* Barcode/PRO selection hardening — exact, unique, fail-safe. */
+(()=>{
+ const scanKey=v=>String(v||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+ function enhanceBarcodeExact(){
+  const original=$('#barcodePlanScan'),select=$('#planChoice'),hint=$('#barcodePlanHint');if(!original||!select||!hint||original.dataset.exactScan==='1')return;
+  const input=original.cloneNode(true);input.dataset.exactScan='1';input.setAttribute('aria-label','Scan Plan ID atau PRO Released');input.placeholder='Scan Plan ID / PRO exact lalu Enter';original.replaceWith(input);
+  const clear=(message,cls='scan-warn')=>{select.value='';select.dispatchEvent(new Event('change',{bubbles:true}));hint.textContent=message;hint.className=cls;};
+  const choose=o=>{select.value=o.value;select.dispatchEvent(new Event('change',{bubbles:true}));hint.textContent='Planning Released cocok exact: '+o.textContent.trim();hint.className='scan-ok';};
+  const resolve=()=>{const key=scanKey(input.value);if(!key)return clear('Scan Plan ID atau PRO Released secara lengkap.');const options=[...select.options].filter(o=>o.value),idMatches=options.filter(o=>scanKey(o.value)===key);if(idMatches.length===1)return choose(idMatches[0]);if(idMatches.length>1)return clear('Plan ID ambigu. Tidak ada planning yang dipilih otomatis.');const proMatches=options.filter(o=>scanKey(o.dataset.pro)===key);if(proMatches.length===1)return choose(proMatches[0]);if(proMatches.length>1)return clear('PRO cocok ke lebih dari satu Planning Released pada mesin ini. Pilih planning secara manual.');return clear('Tidak ada Planning Released dengan Plan ID / PRO exact tersebut. Periksa barcode atau minta PPIC merilis planning.');};
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();resolve();}});input.addEventListener('change',resolve);hint.textContent='Exact scan aktif · primary key: Plan ID atau PRO Released. Material tidak dipakai sebagai barcode key.';
+ }
+ if(typeof shopfloor==='function'){const baseShopfloorBarcode=shopfloor;shopfloor=async function(...args){const out=await baseShopfloorBarcode(...args);queueMicrotask(enhanceBarcodeExact);return out;};}
+ window.HMIBarcodeExactV40={enhanceBarcodeExact,scanKey};
+})();
