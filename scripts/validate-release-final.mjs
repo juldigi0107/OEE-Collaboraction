@@ -18,10 +18,12 @@ const uatEdit=read('frontend/uat-release-edit-v17.js');
 const release18=read('frontend/release-status-v18.js');
 const back=read('backend/release-v11.mjs');
 const security=read('backend/release-v15-security.mjs');
+const governance19=read('backend/release-v19-governance.mjs');
 const production=read('backend/worker-production.mjs');
 const realtime=read('backend/realtime.mjs');
 const wrangler=read('wrangler.toml');
 const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,uatCore,uatView,uatEdit,release18].join('\n');
+const governanceCall=production.indexOf('const governanceResponse=await handleGovernanceV19');
 const securityCall=production.indexOf('const securityResponse=await handleSecurityV15');
 const releaseCall=production.indexOf('const releaseResponse=await handleReleaseV11');
 const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js'];
@@ -41,6 +43,7 @@ const checks=[
  ['downtime root cause gate',back.includes('Root cause / tindakan wajib diisi')],
  ['maintenance acknowledge and closure gate',back.includes("c.status!=='ACKNOWLEDGED'")&&r11.includes('Close Maintenance')],
  ['rejection reason gate',back.includes('Alasan wajib diisi untuk penolakan')],
+ ['governance guard precedes operational guards',governanceCall>=0&&securityCall>=0&&releaseCall>=0&&governanceCall<securityCall&&securityCall<releaseCall],
  ['permission gate before workflow lookup',securityCall>=0&&releaseCall>=0&&securityCall<releaseCall&&security.includes('Tidak memiliki izin verifikasi')],
  ['UPDT escalation automation',realtime.includes("class='UPDT'")&&realtime.includes("'+10 minutes'")],
  ['audit sensitive-value redaction',r14.includes('(password|hash|salt|token|secret|credential)')],
@@ -49,10 +52,14 @@ const checks=[
  ['data governance five baselines',['kpi_definitions','machine_aliases','shift_calendar','source_authority','join_grain'].every(x=>dgCore.includes(x))],
  ['data governance business presentation',dgView.includes('Definisi Data & KPI')&&dgView.includes('Belum disahkan')&&dgView.includes('Perlu keputusan owner')],
  ['data governance uses controlled config path',dgEdit.includes("navigate('settings')")&&dgEdit.includes("f.elements.key.value=key")&&!dgEdit.includes("api('/settings'")],
+ ['backend governance approval completeness',governance19.includes('Baseline KPI belum lengkap')&&governance19.includes('Canonical machine tidak boleh kosong')&&governance19.includes('Kalender shift belum lengkap')&&governance19.includes('Sumber authoritative belum ditetapkan')&&governance19.includes('Join grain wajib')],
+ ['backend governance restricted to superadmin',governance19.includes("u.role!=='superadmin'")&&governance19.includes('hanya dapat disahkan oleh Superadmin')],
  ['UAT seven release gates',['UAT_RELEASE.roles','UAT_RELEASE.devices','UAT_RELEASE.data','UAT_RELEASE.display','UAT_RELEASE.recovery','UAT_RELEASE.integrations','UAT_RELEASE.signoff'].every(x=>uatCore.includes(x))],
  ['UAT starts unverified',uatEdit.includes("status:'not_started'")&&!uatEdit.includes("status:'passed'")],
  ['UAT evidence and blockers',uatView.includes('Evidence')&&uatView.includes('Blocker')&&uatEdit.includes("evidence:''")&&uatEdit.includes("blocker:''")],
  ['UAT requires data governance and release gates',uatView.includes('dgDone')&&uatView.includes('done===rows.length')],
+ ['backend UAT evidence enforcement',governance19.includes('PIC wajib diisi')&&governance19.includes('Evidence atau alasan wajib diisi')&&governance19.includes('Blocker wajib dijelaskan')],
+ ['backend final signoff integrity',governance19.includes('Tanggal go-live wajib diisi')&&governance19.includes('Final sign-off belum lengkap')],
  ['dashboard warns until governance approved',release18.includes('KPI lintas sumber belum final')&&release18.includes("s.dgDone<s.dg.length")],
  ['authoritative source badge requires approval',release18.includes('DG16.approved(a)')&&release18.includes('Authoritative')],
  ['release control links governance and UAT',release18.includes("navigate('data-governance')")&&release18.includes("navigate('uat-release')")],
