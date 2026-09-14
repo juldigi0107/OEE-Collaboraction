@@ -11,6 +11,7 @@ const checks=[
  ['backend whitelist mirrored',Object.keys({sources:1,sheets:1,documents:1,record_chunks:1,entries:1,source_files:1,source_file_chunks:1,asset_catalog:1}).every(k=>js.includes(k+':'))],
  ['20 row batch guard',js.includes('rows.length>20')],
  ['450 KB guard',js.includes('size>450000')],
+ ['base64 chunk preflight',js.includes('validB64')&&js.includes('bukan payload base64 yang valid')],
  ['explicit confirmation before run',js.includes('ic30Confirm')&&js.includes('Saya sudah memeriksa ringkasan paket')],
  ['idempotent result presentation',js.includes('Sudah ada / dilewati')&&js.includes('data existing tidak dihapus atau ditimpa')],
  ['backend still insert-or-ignore',backend.includes('INSERT OR IGNORE INTO ${b.table}')],
