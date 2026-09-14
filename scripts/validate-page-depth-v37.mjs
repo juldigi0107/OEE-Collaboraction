@@ -6,6 +6,7 @@ const page=read('frontend/page-depth-v36.js');
 const admin=read('frontend/admin-depth-v37.js');
 const form=read('frontend/transaction-form-v38.js');
 const hmi=read('frontend/hmi-dialogs-v40.js');
+const hmi60=read('frontend/hmi-operation-safety-v60.js');
 const moduleTable=read('frontend/module-table-v25.js');
 const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
@@ -14,7 +15,7 @@ const process59=read('backend/release-v59-process-capability.mjs');
 const runtime=read('frontend/operational-control-runtime-v31.js');
 const worker=read('backend/worker-production.mjs');
 const checks=[
- ['v35-v40 JS active',['operational-safety-v35.js','page-depth-v36.js','admin-depth-v37.js','transaction-form-v38.js','hmi-dialogs-v40.js'].every(x=>index.includes(x))],
+ ['v35-v60 JS active',['operational-safety-v35.js','page-depth-v36.js','admin-depth-v37.js','transaction-form-v38.js','hmi-dialogs-v40.js','hmi-operation-safety-v60.js'].every(x=>index.includes(x))],
  ['v35-v40 CSS active',['operational-safety-v35.css','page-depth-v36.css','admin-depth-v37.css','transaction-form-v38.css','hmi-dialogs-v40.css'].every(x=>index.includes(x))],
  ['backend safety wired',worker.includes('handleOperationalSafetyV35')&&worker.includes('operational-safety-v35')],
  ['canonical trigger scope authority remains v19',governance.includes('machine_scope harus * atau canonical machine yang sudah disahkan')&&governance.includes('canonicalMachines')],
@@ -52,8 +53,11 @@ const checks=[
  ['barcode scan uses exact plan ID or PRO',hmi.includes('exactScan')&&hmi.includes('idMatches')&&hmi.includes('proMatches')&&hmi.includes('Plan ID atau PRO Released')],
  ['barcode scan never uses material fuzzy match',!hmi.includes('dataset.material')&&hmi.includes('Material tidak dipakai sebagai barcode key')],
  ['ambiguous barcode fails closed',hmi.includes('PRO cocok ke lebih dari satu Planning Released')&&hmi.includes("select.value=''")&&hmi.includes('Tidak ada Planning Released dengan Plan ID / PRO exact')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,moduleTable,lifecycle,process59].join('\n')))]
+ ['HMI stale machine selection fails closed',hmi60.includes("SENTINEL='__RESELECT_REQUIRED__'")&&hmi60.includes('tidak lagi tersedia pada overview')&&hmi60.includes('Pilih mesin secara eksplisit')],
+ ['HMI stale machine locks mutation controls',hmi60.includes('#startRun input')&&hmi60.includes('.hmi-actions button')&&hmi60.includes("data-operation-locked','machine-reselect")],
+ ['HMI explicit machine selection remains possible',hmi60.includes("document.querySelectorAll('[data-machine]')")&&hmi60.includes('machineExists')],
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,moduleTable,lifecycle,process59].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, and storage guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, HMI fail-closed, and storage guards checked.`);
