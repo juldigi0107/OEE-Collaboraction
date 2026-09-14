@@ -37,6 +37,8 @@ jobs:
         run: node scripts/validate-settings-v27.mjs
       - name: Validate access governance v28
         run: node scripts/validate-access-v28.mjs
+      - name: Validate display lifecycle v29
+        run: node scripts/validate-display-v29.mjs
       - name: Validate Worker modules
         run: |
           for f in backend/*.mjs edge-agent/*.mjs scripts/*.mjs; do echo "Checking $f"; node --check "$f"; done
@@ -62,7 +64,7 @@ jobs:
           grep -Fq '"schema":"ready"' "$tmp"
       - name: Production frontend and BMJ asset smoke check
         run: |
-          js_assets="role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js release-polish-v23.js module-table-v25.js archive-semantic-v26.js settings-polish-v27.js access-governance-v28.js"
+          js_assets="role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js release-polish-v23.js module-table-v25.js archive-semantic-v26.js settings-polish-v27.js access-governance-v28.js display-lifecycle-v29.js"
           ready=0
           for attempt in $(seq 1 12); do
             html=$(curl --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/ || true)
@@ -79,7 +81,7 @@ jobs:
             sleep 5
           done
           test "$ready" = "1"
-          for asset in release-v10.css release-v11.css role-dashboard-v12.css workflow-v13.css governance-v14.css data-governance-v16.css uat-release-v17.css release-status-v18.css support-recovery-v21.css release-polish-v23.css module-table-v25.css archive-semantic-v26.css settings-polish-v27.css access-governance-v28.css; do curl --fail --silent --show-error --location --max-time 20 -o /dev/null "https://oee-collaboraction.offsetbmj.workers.dev/$asset"; done
+          for asset in release-v10.css release-v11.css role-dashboard-v12.css workflow-v13.css governance-v14.css data-governance-v16.css uat-release-v17.css release-status-v18.css support-recovery-v21.css release-polish-v23.css module-table-v25.css archive-semantic-v26.css settings-polish-v27.css access-governance-v28.css display-lifecycle-v29.css; do curl --fail --silent --show-error --location --max-time 20 -o /dev/null "https://oee-collaboraction.offsetbmj.workers.dev/$asset"; done
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/logo-bmj-source.webp
           curl --fail --silent --show-error --location --max-time 20 -o /dev/null https://oee-collaboraction.offsetbmj.workers.dev/assets/hero-bmj-photo.jpg
       - name: Production field display publish guard check
@@ -136,6 +138,10 @@ jobs:
           echo "$r28" | grep -Fq 'Daftar akses pengguna'
           echo "$r28" | grep -Fq 'Admin Department'
           echo "$r28" | grep -Fq 'View only'
+          r29=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/display-lifecycle-v29.js)
+          echo "$r29" | grep -Fq 'Layout Mesin Baru'
+          echo "$r29" | grep -Fq 'Duplikat dibuat sebagai Draft tanpa assignment mesin'
+          echo "$r29" | grep -Fq 'Salin Link Display'
           runtime=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/runtime-polish-v6.js)
           echo "$runtime" | grep -Fq 'Memuat data operasional'
           echo "$runtime" | grep -Fq 'Data belum dapat dimuat'
