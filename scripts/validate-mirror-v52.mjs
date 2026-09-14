@@ -5,6 +5,7 @@ const mirror=read('backend/release-v52-mirror-reconciliation.mjs');
 const live=read('backend/release-v49-live-register.mjs');
 const lifecycle=read('backend/release-v46-data-lifecycle.mjs');
 const release=read('frontend/release-status-v18.js');
+const support=read('frontend/support-recovery-v21.js');
 const checks=[
  ['v52 wired into production',worker.includes("handleMirrorReconciliationV52")&&worker.includes("mirror-reconciliation-v52")&&worker.includes('reconcileLiveMirrorsV52(env,80)')],
  ['mirror health protected',mirror.includes("url.pathname!=='/api/mirror-health'")&&mirror.includes("u.role!=='superadmin'")&&mirror.includes('Mirror Health khusus Superadmin')],
@@ -18,6 +19,8 @@ const checks=[
  ['release control surfaces mirror consistency',release.includes("api('/mirror-health')")&&release.includes('Source Mirror Consistency')&&release.includes('Mirror hilang')&&release.includes('Mirror stale')],
  ['runtime health can downgrade final release',release.includes('function downgradeRuntime')&&release.includes("badge.textContent='Belum final'")&&release.includes("if(!ready)downgradeRuntime('Workflow")&&release.includes("if(!ready)downgradeRuntime('Register mirror")],
  ['runtime health fails closed when unavailable',release.includes("catch(e){downgradeRuntime('Workflow Health tidak dapat diverifikasi')")&&release.includes("catch(e){downgradeRuntime('Mirror Health tidak dapat diverifikasi')")&&release.includes('Status ini diperlakukan sebagai blocker release sampai health endpoint kembali dapat dibaca.')],
- ['no prototype language',!/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([mirror,live,release].join('\n'))]
+ ['recovery center surfaces runtime health',support.includes('Runtime consistency sebelum recovery/change')&&support.includes('workflow=m.workflow_health')&&support.includes('mirror=m.mirror_health')&&support.includes('storage=m.storage_health')&&support.includes('Blocker change/release')],
+ ['recovery center does not fake backup',support.includes('Manifest konfigurasi bukan backup D1')&&support.includes('jangan anggap runtime konsisten')],
+ ['no prototype language',!/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([mirror,live,release,support].join('\n'))]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}console.log(`Mirror v52 validation OK — ${checks.length} source-of-truth, reconciliation, fail-closed, and release-gate guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}console.log(`Mirror v52 validation OK — ${checks.length} source-of-truth, reconciliation, fail-closed, recovery-evidence, and release-gate guards checked.`);
