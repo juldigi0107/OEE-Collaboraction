@@ -12,6 +12,7 @@ const moduleTable=read('frontend/module-table-v25.js');
 const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
 const runtimeSignoff=read('backend/release-v54-runtime-signoff.mjs');
+const invariants55=read('backend/release-v55-runtime-invariants.mjs');
 const lifecycle=read('backend/release-v46-data-lifecycle.mjs');
 const liveRegister=read('backend/release-v49-live-register.mjs');
 const process59=read('backend/release-v59-process-capability.mjs');
@@ -76,10 +77,13 @@ const checks=[
  ['work date column is additive and audited',worker.includes("work_date','ALTER TABLE production_runs ADD COLUMN work_date TEXT")&&calendar62.includes('WORK_CALENDAR_APPLIED')],
  ['HMI presents governed work calendar',hmi60.includes('Tanggal kerja')&&hmi60.includes('Shift aktif')&&hmi60.includes('workday_cutoff')&&hmi60.includes('loadWorkCalendar')],
  ['live registers preserve governed work date',liveRegister.includes("date=clean(r.work_date)||safeDate")&&liveRegister.includes('work_date:clean(r.work_date)')&&liveRegister.includes('r.work_date,r.shift,r.group_name')],
- ['final UAT requires runtime-ready work calendar',runtimeSignoff.includes("WorkCalendarV62")&&runtimeSignoff.includes('workCalendar?.runtime_ready!==true')&&runtimeSignoff.includes('work_calendar:workCalendar')],
+ ['final UAT requires runtime-ready work calendar',runtimeSignoff.includes('WorkCalendarV62')&&runtimeSignoff.includes('workCalendar?.runtime_ready!==true')&&runtimeSignoff.includes('work_calendar:workCalendar')],
+ ['runtime invariants detect missing work-date lineage',invariants55.includes('missing_work_date_lineage')&&invariants55.includes('workDateLineage')&&invariants55.includes("source LIKE 'hmi%'")],
+ ['work-date reconciliation starts only after baseline effective timestamp',invariants55.includes('calendarEffective')&&invariants55.includes('start_ts>=?')&&invariants55.includes('baseline_updated_at:effective')],
+ ['work-date reconciliation is deterministic and audited',invariants55.includes('WorkCalendarV62.deriveContext(cfg,d)')&&invariants55.includes('WORK_CALENDAR_RECONCILED')&&invariants55.includes("work_date IS NULL OR trim(work_date)=''"))],
  ['group rotation is not fabricated',governanceEdit.includes('Group rotation tetap mengikuti planning')&&!calendar62.includes('group=A')&&!calendar62.includes('group_model||')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62,runtimeSignoff].join('\n')))]
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62,runtimeSignoff,invariants55].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, work-calendar, work-date lineage, final-signoff, and storage guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, work-calendar, deterministic work-date reconciliation, final-signoff, and storage guards checked.`);
