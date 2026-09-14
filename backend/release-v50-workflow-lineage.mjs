@@ -22,8 +22,8 @@ export async function handleWorkflowLineageV50(req,env){
  const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const pf=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(pf?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);if(!allow(u,'MTC','update'))return out(req,env,{error:'Khusus Maintenance yang memiliki izin update'},403);
  let body;try{body=await req.clone().json();}catch{return out(req,env,{error:'Payload Maintenance Close tidak valid'},400);}const id=clean(body.id),resolution=clean(body.note);if(!id)return out(req,env,{error:'Maintenance Call wajib dipilih'},400);if(!resolution)return out(req,env,{error:'Tindakan penyelesaian wajib diisi sebelum Maintenance Close'},400);
  const c=await one(env.DB,'SELECT status,note FROM maintenance_calls WHERE id=?',id);if(!c)return out(req,env,{error:'Maintenance Call tidak ditemukan'},404);if(c.status!=='ACKNOWLEDGED')return out(req,env,{error:'Maintenance Call harus di-acknowledge sebelum ditutup'},409);
- await run(env.DB,"UPDATE maintenance_calls SET status='CLOSED',closed_ts=CURRENT_TIMESTAMP,acknowledged_by=COALESCE(acknowledged_by,?),resolution_note=? WHERE id=?",u.id,resolution,id);
- return out(req,env,{ok:true,id,request_note_preserved:!!clean(c.note),resolution_recorded:true});
+ const result=await run(env.DB,"UPDATE maintenance_calls SET status='CLOSED',closed_ts=CURRENT_TIMESTAMP,acknowledged_by=COALESCE(acknowledged_by,?),resolution_note=? WHERE id=? AND status='ACKNOWLEDGED'",u.id,resolution,id);if(Number(result?.meta?.changes||0)!==1)return out(req,env,{error:'Maintenance Call sudah ditutup atau diproses oleh request lain'},409);
+ return out(req,env,{ok:true,id,request_note_preserved:!!clean(c.note),resolution_recorded:true,concurrency_guard:'atomic_status_transition'});
 }
 export async function afterWorkflowLineageV50(signal,response,env){
  if(!signal||!response?.ok)return;let body={};try{body=await response.clone().json();}catch{}
