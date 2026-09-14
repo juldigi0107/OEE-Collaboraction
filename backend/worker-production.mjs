@@ -4,9 +4,10 @@ import {handleSecurityV15} from './release-v15-security.mjs';
 import {handleGovernanceV19} from './release-v19-governance.mjs';
 import {handleMachineGovernanceV20} from './release-v20-machine-governance.mjs';
 import {handleSupportV21} from './release-v21-support.mjs';
+import {handleOperationalSafetyV35} from './release-v35-operational-safety.mjs';
 
 const BUILD_VERSION='6.2.0';
-const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34'];
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35'];
 let schemaReady=null;
 async function ensureAdditiveSchema(env){
   if(!schemaReady){
@@ -27,6 +28,8 @@ export default {
     if(supportResponse)return supportResponse;
     const machineGovernanceResponse=await handleMachineGovernanceV20(req,env);
     if(machineGovernanceResponse)return machineGovernanceResponse;
+    const operationalSafetyResponse=await handleOperationalSafetyV35(req,env);
+    if(operationalSafetyResponse)return operationalSafetyResponse;
     const governanceResponse=await handleGovernanceV19(req,env);
     if(governanceResponse)return governanceResponse;
     const securityResponse=await handleSecurityV15(req,env);
