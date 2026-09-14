@@ -1,9 +1,9 @@
-/* BMJ OEE Admin Depth v37 — release-control context for settings, displays, import, and approvals. */
+/* BMJ OEE Admin Depth v37 — release-control context for settings, displays, import, approvals, and support. */
 (()=>{
  const parse=v=>{try{return typeof v==='string'?JSON.parse(v):v||{}}catch{return {}}};
  const pass=v=>v?.approved===true||['passed','not_applicable'].includes(v?.status);
  const baseRenderV37=render;
- render=async function(...args){const out=await baseRenderV37(...args);queueMicrotask(()=>{enhanceStatic();if(view==='approvals')approvalAging().catch(()=>{});});return out;};
+ render=async function(...args){const out=await baseRenderV37(...args);queueMicrotask(()=>{enhanceStatic();if(view==='approvals'){approvalAging().catch(()=>{});approvalUnits().catch(()=>{});}if(view==='support-recovery')supportCoverage().catch(()=>{});});return out;};
  function enhanceStatic(){if(view==='settings')settingsDepth();if(view==='import')importDepth();}
  function settingsDepth(){
   const root=$('#content');if(!root||root.querySelector('.v37-settings-summary'))return;
@@ -24,5 +24,11 @@
  async function approvalAging(){
   const root=$('#content');if(!root||root.querySelector('.v37-approval-aging'))return;const data=await api('/approvals'),pending=(data.rows||[]).filter(x=>x.status==='PENDING'),now=Date.now(),ages=pending.map(x=>Math.max(0,now-new Date(x.requested_ts).getTime())).filter(Number.isFinite),oldest=ages.length?Math.max(...ages):0;const hours=oldest/3600000;const types={production_run:0,downtime:0,quality:0};pending.forEach(x=>{if(types[x.entity_type]!==undefined)types[x.entity_type]++;});const bar=document.createElement('div');bar.className='v37-approval-aging';bar.innerHTML=`<div><span>Pending tertua</span><strong>${pending.length?(hours<24?fmt(hours,1)+' jam':fmt(hours/24,1)+' hari'):'—'}</strong></div><div><span>Hasil produksi</span><strong>${fmt(types.production_run)}</strong></div><div><span>Downtime</span><strong>${fmt(types.downtime)}</strong></div><div><span>Quality</span><strong>${fmt(types.quality)}</strong></div>`;const kpis=root.querySelector('.approval-kpis');kpis?.insertAdjacentElement('afterend',bar);
  }
- window.AdminDepthV37={settingsDepth,displayDepth,importDepth,approvalAging};
+ async function approvalUnits(){
+  const root=$('#content');if(!root||root.dataset.v37Units)return;const data=await api('/approvals'),pending=(data.rows||[]).filter(x=>x.status==='PENDING'),history=(data.rows||[]).filter(x=>x.status!=='PENDING').slice(0,100),bodies=[...root.querySelectorAll('section.panel .release-table tbody')];[[pending,bodies[0]],[history,bodies[1]]].forEach(([list,body])=>{if(!body)return;[...body.querySelectorAll('tr')].forEach((tr,i)=>{const a=list[i];if(a?.entity_type!=='quality')return;const cell=tr.children[3],unit=String(a.entity?.unit||'').trim();if(!cell||cell.querySelector('.v37-quality-unit'))return;const note=document.createElement('small');note.className='v37-quality-unit';note.textContent=unit?`Satuan inspeksi: ${unit}`:'Satuan inspeksi: legacy / belum tersedia';cell.append(note);});});root.dataset.v37Units='1';
+ }
+ async function supportCoverage(){
+  const root=$('#content');if(!root||root.querySelector('.v37-data-coverage'))return;const m=await api('/release-manifest'),q=m.data_coverage?.quality_units||{},media=m.data_coverage?.embedded_media||{},units=Array.isArray(q.units)?q.units:[];const box=document.createElement('section');box.className='panel v37-data-coverage';box.innerHTML=`<div class="release-section-head"><div><h2>Coverage integritas data</h2><p>Kesiapan data baru dan gap legacy yang tidak boleh disamarkan saat handover.</p></div></div><div class="v37-preflight-grid"><div><span>QC dengan satuan</span><strong>${q.with_unit==null?'—':fmt(q.with_unit)}</strong><small>dari ${q.total==null?'—':fmt(q.total)} live event</small></div><div><span>QC legacy tanpa satuan</span><strong>${q.missing_unit==null?'—':fmt(q.missing_unit)}</strong><small>tidak masuk agregasi lintas unit</small></div><div><span>Embedded child asset</span><strong>${media.embedded_assets==null?'—':fmt(media.embedded_assets)}</strong><small>${esc(media.status||'belum diverifikasi')}</small></div><div><span>Source dengan child media</span><strong>${media.parent_sources==null?'—':fmt(media.parent_sources)}</strong><small>${media.web_previewable_assets==null?'—':fmt(media.web_previewable_assets)} web-previewable</small></div></div><div class="sr21-note"><strong>Unit QC:</strong> ${units.length?units.map(x=>`${esc(x.unit)} (${fmt(x.events)})`).join(' · '):'belum ada unit live yang tercatat'}<br>${esc(media.note||'')}</div>`;const grid=root.querySelector('.sr21-grid'),hero=root.querySelector('.sr21-hero');(grid||hero)?.insertAdjacentElement(grid?'beforebegin':'afterend',box);
+ }
+ window.AdminDepthV37={settingsDepth,displayDepth,importDepth,approvalAging,approvalUnits,supportCoverage};
 })();
