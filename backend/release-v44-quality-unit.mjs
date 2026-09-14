@@ -28,7 +28,7 @@ async function qualityPost(req,env,u){
  const sample=Number(b.sample_qty||0),good=Number(b.good_qty||0),reject=Number(b.reject_qty||0);if([sample,good,reject].some(x=>!Number.isFinite(x)||x<0)||good+reject>sample)return out(req,env,{error:'Qty sampling tidak valid'},400);
  const event=clean(b.event_type||'NG').toUpperCase(),decision=clean(b.decision).toUpperCase();if(!['NG','QC_SAMPLE','RECHECK'].includes(event))return out(req,env,{error:'Jenis Quality Event tidak valid'},400);if(decision&&!['HOLD','RELEASE','REWORK','REJECT'].includes(decision))return out(req,env,{error:'Keputusan Quality Event tidak valid'},400);if(clean(b.note).length>1000)return out(req,env,{error:'Catatan Quality Event terlalu panjang'},400);
  const id=uid(),approval=uid(),ts=now();await env.DB.batch([
-  env.DB.prepare('INSERT INTO quality_events(id,run_id,machine_id,event_type,sample_qty,good_qty,reject_qty,decision,note,created_by,created_ts,unit) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(id,r.id,r.machine_id,event,sample,good,reject,decision||null,clean(b.note)||null,u.id,ts,unit),
+  env.DB.prepare('INSERT INTO quality_events(id,run_id,machine_id,event_type,sample_qty,good_qty,reject_qty,decision,note,created_by,created_ts,unit) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(id,r.id,r.machine_id,event,sample,good,reject,decision||null,clean(b.note)||null,u.id,ts,unit),
   env.DB.prepare("INSERT INTO approvals(id,entity_type,entity_id,step,status,requested_by,requested_ts) VALUES(?,'quality',?,'QC_VERIFY','PENDING',?,?) ON CONFLICT(entity_type,entity_id,step) DO NOTHING").bind(approval,id,u.id,ts)
  ]);
  return out(req,env,{ok:true,id,unit,verification:'PENDING'});
