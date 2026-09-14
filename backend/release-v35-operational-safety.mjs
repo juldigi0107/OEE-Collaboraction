@@ -14,16 +14,11 @@ export async function handleOperationalSafetyV35(req,env){
  if(clean(body?.key)!=='OPERATIONAL_CONTROL.machine_triggers')return null;
  const value=J(body.value,{});if(value.approved!==true)return null;
  const user=await auth(req,env);if(!user)return null;if(user.role!=='superadmin')return out(req,env,403,'Machine Trigger hanya dapat disahkan oleh Superadmin');
- const aliasRow=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.machine_aliases'"),aliases=J(aliasRow?.value,{});
- if(aliases.approved!==true)return out(req,env,400,'Canonical machine/alias harus disahkan sebelum Machine Trigger diaktifkan');
- const canonical=new Set((aliases.items||[]).map(x=>norm(x?.canonical)).filter(Boolean));
  const active=(Array.isArray(value.items)?value.items:[]).filter(x=>x?.enabled!==false),seen=new Set();
  for(let i=0;i<active.length;i++){
   const row=active[i],scope=clean(row.machine_scope),n=i+1;
-  if(!scope)return out(req,env,400,`Machine Trigger baris ${n}: machine scope wajib diisi`);
-  if(scope!=='*'&&!canonical.has(norm(scope)))return out(req,env,400,`Machine Trigger baris ${n}: machine scope ${scope} bukan canonical machine yang disahkan`);
-  const key=[norm(scope),norm(row.rule_name),clean(row.source_tag),clean(row.operator),clean(row.compare_value)].join('|');
-  if(seen.has(key))return out(req,env,400,`Machine Trigger baris ${n}: rule duplikat pada scope yang sama`);seen.add(key);
+  const signature=[norm(scope),norm(row.rule_name),clean(row.source_tag),clean(row.operator),clean(row.compare_value),clean(row.event_type),clean(row.action)].join('|');
+  if(seen.has(signature))return out(req,env,400,`Machine Trigger baris ${n}: rule duplikat pada scope/kondisi yang sama`);seen.add(signature);
  }
  return null;
 }
