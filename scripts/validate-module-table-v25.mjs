@@ -4,10 +4,14 @@ const index=read('frontend/index.html');
 const js=read('frontend/module-table-v25.js');
 const css=read('frontend/module-table-v25.css');
 const hmi=read('frontend/hmi-dialogs-v40.js');
+const admin37=read('frontend/admin-depth-v37.js');
+const source41=read('frontend/source-depth-v41.js');
 const quality44=read('backend/release-v44-quality-unit.mjs');
+const support21=read('backend/release-v21-support.mjs');
 const worker=read('backend/worker-production.mjs');
 const init=read('backend/init-schema.sql');
 const realtimeSchema=read('backend/realtime-schema.sql');
+const builder=read('scripts/build-d1-free.py');
 const modules=['production','downtime','quality','maintenance','confirmation','planning','development','batch','checklist','logbook','process','energy','master','project'];
 const checks=[
  ['v25 JS active',index.includes('module-table-v25.js')],
@@ -26,10 +30,18 @@ const checks=[
  ['live quality requires explicit unit',hmi.includes('name="unit" required')&&hmi.includes('dashboard tidak menjumlahkan unit berbeda')],
  ['quality dashboard groups by unit',quality44.includes("GROUP BY COALESCE(NULLIF(lower(trim(unit)),''),'__missing__')")&&quality44.includes('Kuantitas ditampilkan per unit')],
  ['legacy quality rows remain unrelabelled',quality44.includes('Event lama tanpa satuan')&&quality44.includes('Dikeluarkan dari agregasi qty per unit')],
+ ['approval reviewers receive quality unit',quality44.includes("path==='/api/approvals'")&&quality44.includes('unit_status')&&quality44.includes("entity_type==='quality'")],
+ ['approval UI surfaces inspection unit',admin37.includes('Satuan inspeksi:')&&admin37.includes('legacy / belum tersedia')],
  ['quality v44 wired before legacy release handler',worker.includes('handleQualityUnitV44')&&worker.indexOf('const qualityUnitResponse=await handleQualityUnitV44')<worker.indexOf('const releaseResponse=await handleReleaseV11')],
  ['quality schema preserves unit',init.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')&&realtimeSchema.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')],
- ['fresh schema has no seeded superadmin',!init.includes("'seed-superadmin'")&&!init.includes("INSERT OR IGNORE INTO users")]
+ ['fresh schema has no seeded superadmin',!init.includes("'seed-superadmin'")&&!init.includes("INSERT OR IGNORE INTO users")],
+ ['release manifest exposes quality coverage',support21.includes('qualityCoverage')&&support21.includes('aggregation_policy')&&support21.includes('data_coverage')],
+ ['release manifest exposes embedded media coverage',support21.includes('mediaCoverage')&&support21.includes('embedded_assets')&&support21.includes("status:total>0?'catalogued':'not_backfilled'")],
+ ['support UI surfaces data coverage',admin37.includes('Coverage integritas data')&&admin37.includes('QC legacy tanpa satuan')&&admin37.includes('Embedded child asset')],
+ ['D1 builder extracts embedded OOXML media',builder.includes("'/media/' in n")&&builder.includes("asset_catalog")&&builder.includes('embedded_assets')],
+ ['source detail uses authenticated asset catalog',source41.includes("api('/assets?source='")&&source41.includes("'/api/media/'")&&source41.includes('assets.slice(0,12)')],
+ ['source media preserves original authority',source41.includes('Workbook atau presentation asli tetap menjadi source authority')]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Module table and quality-unit validation OK — ${checks.length} presentation/data-integrity guards checked.`);
+console.log(`Module, quality-unit, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
