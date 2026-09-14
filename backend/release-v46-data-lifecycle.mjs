@@ -11,9 +11,17 @@ const allowedOrigin=(req,env)=>{const origin=req.headers.get('Origin')||'';const
 const out=(req,env,value,status=200)=>{const origin=allowedOrigin(req,env);return new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{})}});};
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
 async function safeStat(db,sql,...args){try{return await one(db,sql,...args)||{};}catch{return {};}}
+async function pragmaNumber(db,name){try{const row=await one(db,`PRAGMA ${name}`);if(!row)return null;const raw=row[name]??Object.values(row)[0],n=Number(raw);return Number.isFinite(n)?n:null;}catch{return null;}}
+const MIB=1024*1024,SOFT_BUDGET=450*MIB,ARCHITECTURE_CEILING=500*MIB;
+async function capacityHealth(db){
+ const [pageCount,pageSize,freePages]=await Promise.all([pragmaNumber(db,'page_count'),pragmaNumber(db,'page_size'),pragmaNumber(db,'freelist_count')]);
+ if(pageCount===null||pageSize===null)return {available:false,status:'unknown',soft_budget_bytes:SOFT_BUDGET,architecture_ceiling_bytes:ARCHITECTURE_CEILING,note:'SQLite page metrics tidak tersedia pada runtime ini; kapasitas tetap harus dipantau dari Cloudflare D1.'};
+ const free=Math.max(0,freePages||0),allocated=Math.max(0,pageCount*pageSize),active=Math.max(0,(pageCount-free)*pageSize),ratio=SOFT_BUDGET>0?allocated/SOFT_BUDGET:null,status=allocated>=SOFT_BUDGET?'critical':allocated>=SOFT_BUDGET*.85?'warning':'ok';
+ return {available:true,status,page_count:pageCount,page_size:pageSize,free_pages:free,allocated_bytes:allocated,active_page_estimate_bytes:active,soft_budget_bytes:SOFT_BUDGET,architecture_ceiling_bytes:ARCHITECTURE_CEILING,soft_budget_usage_ratio:ratio,headroom_to_soft_budget_bytes:Math.max(0,SOFT_BUDGET-allocated),headroom_to_architecture_ceiling_bytes:Math.max(0,ARCHITECTURE_CEILING-allocated),policy:'application_capacity_guard',note:'450 MiB adalah soft-budget aplikasi dan 500 MiB adalah ceiling arsitektur proyek. Ini bukan pembacaan quota plan provider; data bisnis tidak dipurge otomatis.'};
+}
 export async function storageHealthV46(env){
  const now=Date.now(),staleLoginBefore=now-86400000;
- const [sessions,attempts,snapshots,events,logs,audit,runs,quality]=await Promise.all([
+ const [sessions,attempts,snapshots,events,logs,audit,runs,quality,capacity]=await Promise.all([
   safeStat(env.DB,'SELECT COUNT(*) total,SUM(CASE WHEN expires<=? THEN 1 ELSE 0 END) expired,MIN(expires) oldest_expiry FROM sessions',now),
   safeStat(env.DB,'SELECT COUNT(*) total,SUM(CASE WHEN until_ts<? THEN 1 ELSE 0 END) stale,MIN(until_ts) oldest_until FROM login_attempts',staleLoginBefore),
   safeStat(env.DB,'SELECT COUNT(*) total,MIN(bucket_ts) oldest,MAX(bucket_ts) newest FROM machine_minute_snapshot'),
@@ -21,11 +29,13 @@ export async function storageHealthV46(env){
   safeStat(env.DB,'SELECT COUNT(*) total,MIN(started_ts) oldest,MAX(started_ts) newest FROM integration_sync_log'),
   safeStat(env.DB,'SELECT COUNT(*) total FROM audit'),
   safeStat(env.DB,'SELECT COUNT(*) total,MIN(start_ts) oldest,MAX(COALESCE(end_ts,start_ts)) newest FROM production_runs'),
-  safeStat(env.DB,'SELECT COUNT(*) total,MIN(created_ts) oldest,MAX(created_ts) newest FROM quality_events')
+  safeStat(env.DB,'SELECT COUNT(*) total,MIN(created_ts) oldest,MAX(created_ts) newest FROM quality_events'),
+  capacityHealth(env.DB)
  ]);
  return {
   generated_at:new Date().toISOString(),
   policy:{ephemeral:'auto_cleanup',operational:'monitor_only',business_history:'no_automatic_delete'},
+  capacity,
   ephemeral:{sessions:{total:Number(sessions.total||0),expired:Number(sessions.expired||0)},login_attempts:{total:Number(attempts.total||0),stale:Number(attempts.stale||0),stale_after_hours:24}},
   growth:[
    {table:'machine_minute_snapshot',label:'Minute snapshot mesin',count:Number(snapshots.total||0),oldest:snapshots.oldest||null,newest:snapshots.newest||null,retention:'monitor_only'},
