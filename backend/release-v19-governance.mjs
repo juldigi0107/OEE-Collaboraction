@@ -53,8 +53,8 @@ function validateOperational(key,v){
   for(let i=0;i<items.length;i++){const r=items[i],n=i+1;if(!clean(r.code)||!clean(r.label))return `Loss-Time baris ${n}: code dan deskripsi wajib diisi`;if(!['PDT','UPDT','COJ'].includes(clean(r.class).toUpperCase()))return `Loss-Time baris ${n}: class harus PDT, UPDT, atau COJ`;if(!['PROD','MTC','QC','PPIC','PDS','PROJECT'].includes(clean(r.owner_department).toUpperCase()))return `Loss-Time baris ${n}: owner department tidak valid`;if(!clean(r.source_ref))return `Loss-Time baris ${n}: referensi sumber wajib diisi`;}
  }
  if(key.endsWith('machine_triggers')){
-  const active=items.filter(r=>r.enabled!==false);if(!active.length)return 'Minimal satu Machine Trigger aktif wajib ditetapkan';const events=new Set(['STATE','HEARTBEAT','COUNTER','ALARM','JOB']),ops=new Set(['eq','ne','gt','gte','lt','lte','truthy','falsy']);
-  for(let i=0;i<active.length;i++){const r=active[i],n=i+1;if(!clean(r.rule_name)||!clean(r.source_tag)||!clean(r.owner))return `Machine Trigger baris ${n}: rule, source tag, dan owner wajib diisi`;if(!ops.has(clean(r.operator)))return `Machine Trigger baris ${n}: operator tidak valid`;if(!events.has(clean(r.event_type).toUpperCase()))return `Machine Trigger baris ${n}: event type tidak valid`;}
+  const active=items.filter(r=>r.enabled!==false);if(!active.length)return 'Minimal satu Machine Trigger aktif wajib ditetapkan';const events=new Set(['STATE','HEARTBEAT','COUNTER','ALARM','JOB']),ops=new Set(['eq','ne','gt','gte','lt','lte','truthy','falsy']),states=new Set(['RUNNING','IDLE','PDT','UPDT','COJ','OFFLINE']);
+  for(let i=0;i<active.length;i++){const r=active[i],n=i+1,type=clean(r.event_type).toUpperCase();if(!clean(r.rule_name)||!clean(r.source_tag)||!clean(r.owner))return `Machine Trigger baris ${n}: rule, source tag, dan owner wajib diisi`;if(!ops.has(clean(r.operator)))return `Machine Trigger baris ${n}: operator tidak valid`;if(!events.has(type))return `Machine Trigger baris ${n}: event type tidak valid`;if(type==='STATE'&&!states.has(clean(r.action).toUpperCase()))return `Machine Trigger baris ${n}: action STATE harus RUNNING, IDLE, PDT, UPDT, COJ, atau OFFLINE`;}
  }
  if(key.endsWith('field_ownership')){
   if(!items.length)return 'Field Ownership belum diisi';const domains=new Set(items.map(r=>clean(r.domain).toLowerCase()));for(const d of ['production','quality','maintenance','ppic','development','master'])if(!domains.has(d))return `Field Ownership belum mencakup domain ${d}`;
@@ -66,9 +66,25 @@ function validateOperational(key,v){
  }
  return null;
 }
+async function saved(env,key){const row=await one(env.DB,'SELECT value FROM settings WHERE key=?',key);return parse(row?.value);}
+async function baselineApproved(env,key){return (await saved(env,key)).approved===true;}
+async function validateDependencies(env,key,value){
+ if(key==='OPERATIONAL_CONTROL.cycle_targets'&&value.approved===true&&!await baselineApproved(env,'DATA_GOVERNANCE.machine_aliases'))return 'Canonical machine/alias harus disahkan sebelum Cycle Target menjadi baseline';
+ if(key==='OPERATIONAL_CONTROL.machine_triggers'&&value.approved===true&&!await baselineApproved(env,'DATA_GOVERNANCE.machine_aliases'))return 'Canonical machine/alias harus disahkan sebelum Machine Trigger diaktifkan';
+ if(key==='OPERATIONAL_CONTROL.field_ownership'&&value.approved===true&&!await baselineApproved(env,'DATA_GOVERNANCE.source_authority'))return 'Source Authority harus disahkan sebelum Field Ownership menjadi baseline';
+ if(key==='UAT_RELEASE.signoff'&&value.status==='passed'){
+  for(const k of ['kpi_definitions','machine_aliases','shift_calendar','source_authority','join_grain'])if(!await baselineApproved(env,'DATA_GOVERNANCE.'+k))return `Final UAT menunggu Data Governance: ${k}`;
+  for(const k of ['cycle_targets','loss_time_classification','machine_triggers','field_ownership'])if(!await baselineApproved(env,'OPERATIONAL_CONTROL.'+k))return `Final UAT menunggu Standar Operasional: ${k}`;
+ }
+ if(key==='OPERATIONAL_CONTROL.delivery_plan'&&value.approved===true){
+  const signoff=await saved(env,'UAT_RELEASE.signoff');if(signoff.status!=='passed')return 'Delivery Plan baru dapat dikunci setelah Final UAT berstatus Lulus';
+  for(const k of ['cycle_targets','loss_time_classification','machine_triggers','field_ownership'])if(!await baselineApproved(env,'OPERATIONAL_CONTROL.'+k))return `Delivery Plan menunggu Standar Operasional: ${k}`;
+ }
+ return null;
+}
 export async function handleGovernanceV19(req,env){
  if(req.method!=='PUT'||new URL(req.url).pathname!=='/api/settings')return null;
  let body;try{body=await req.clone().json();}catch{return null;}const key=clean(body?.key),isDG=key.startsWith('DATA_GOVERNANCE.'),isUAT=key.startsWith('UAT_RELEASE.'),isOC=key.startsWith('OPERATIONAL_CONTROL.');if(!isDG&&!isUAT&&!isOC)return null;
  const u=await auth(req,env);if(!u)return null;if(u.role!=='superadmin')return out(req,env,403,'Baseline governance, UAT, dan Standar Operasional hanya dapat disahkan oleh Superadmin');
- const value=parse(body.value),error=isDG?validateGovernance(key,value):isUAT?validateUAT(key,value):validateOperational(key,value);return error?out(req,env,400,error):null;
+ const value=parse(body.value);let error=isDG?validateGovernance(key,value):isUAT?validateUAT(key,value):validateOperational(key,value);if(!error)error=await validateDependencies(env,key,value);return error?out(req,env,400,error):null;
 }
