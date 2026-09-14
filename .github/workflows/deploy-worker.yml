@@ -36,8 +36,10 @@ jobs:
             echo "$body" | grep -Fq 'operational-control-v31' || ok=0
             echo "$body" | grep -Fq 'release-resilience-v33' || ok=0
             echo "$body" | grep -Fq 'period-aware-dashboard-v34' || ok=0
+            echo "$body" | grep -Fq 'workflow-reconciliation-v51' || ok=0
+            echo "$body" | grep -Fq 'mirror-reconciliation-v52' || ok=0
             if [ "$ok" = "1" ]; then
-              echo "Cloudflare production verified: $expected + release fingerprint"
+              echo "Cloudflare production verified: $expected + v51/v52 release fingerprint"
               exit 0
             fi
             sleep 5
