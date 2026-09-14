@@ -1,0 +1,12 @@
+/* Archive Detail v43 */
+.v43-row-context,.v43-file-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.v43-row-context>div,.v43-file-grid>div{border:1px solid #dfe8ee;border-radius:12px;padding:11px 12px;background:#fff}
+.v43-row-context span,.v43-file-grid span{display:block;font-size:11px;color:#607584}
+.v43-row-context strong,.v43-file-grid strong{display:block;margin-top:4px;font-size:13px;overflow-wrap:anywhere}
+.v43-business-label{display:block;margin-bottom:4px;font-size:12px;font-weight:700;color:#087abe}
+.v43-file-context{border:1px solid #dfe8ee;border-radius:16px;padding:16px;margin-bottom:16px;background:#f8fbfd}
+.v43-file-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:14px}
+.v43-file-head strong{display:block;font-size:18px;margin-top:3px}
+.v43-file-head small{display:block;margin-top:3px;color:#607584;overflow-wrap:anywhere}
+.v43-file-context>p{margin:8px 0 0;color:#607584;font-size:12px;line-height:1.5}
+@media(max-width:760px){.v43-row-context,.v43-file-grid{grid-template-columns:1fr}.v43-file-head{display:block}}
