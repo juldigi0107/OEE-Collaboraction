@@ -16,7 +16,13 @@ export async function handleDashboardProjectionV58(req,env){
  const url=new URL(req.url);if(req.method!=='GET'||url.pathname!=='/api/dashboard')return null;
  const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);if((await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id))?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
  const names=['OEE Printing (2)','OEE AP','OEE FG'],series=[];
- for(const name of names){const sheet=await one(env.DB,"SELECT id,name FROM sheets WHERE department='PROD' AND name=?",name);if(!sheet)continue;const rows=await all(env.DB,archiveCTE+' SELECT row_num,payload FROM combined WHERE deleted=0 ORDER BY row_num',sheet.id,sheet.id);series.push({name,sheet_id:sheet.id,rows:rows.map(r=>({row:r.row_num,cells:projectedCells(r.payload)}))});}
- const stats=await one(env.DB,"SELECT count(*) sheets,sum(rows) rows,sum(json_extract(meta,'$.errors')) errors,sum(json_extract(meta,'$.missing_cache')) missing_cache FROM sheets")||{};
- return out(req,env,{series,stats,projection:['A','J','K'],projection_policy:'Dashboard mengirim hanya cell yang dipakai untuk tanggal, komponen dan trend OEE; arsip lengkap tetap tersedia pada ruang kerja sumber.'});
+ for(const name of names){
+  const sheet=await one(env.DB,"SELECT id,name FROM sheets WHERE department='PROD' AND name=?",name);
+  if(!sheet){series.push({name,sheet_id:null,rows:[],source_status:'missing'});continue;}
+  const rows=await all(env.DB,archiveCTE+' SELECT row_num,payload FROM combined WHERE deleted=0 ORDER BY row_num',sheet.id,sheet.id);
+  series.push({name,sheet_id:sheet.id,rows:rows.map(r=>({row:r.row_num,cells:projectedCells(r.payload)})),source_status:'available'});
+ }
+ const rawStats=await one(env.DB,"SELECT count(*) sheets,sum(rows) rows,sum(json_extract(meta,'$.errors')) errors,sum(json_extract(meta,'$.missing_cache')) missing_cache FROM sheets")||{};
+ const stats={sheets:Number(rawStats.sheets||0),rows:Number(rawStats.rows||0),errors:Number(rawStats.errors||0),missing_cache:Number(rawStats.missing_cache||0)};
+ return out(req,env,{series,stats,projection:['A','J','K'],projection_policy:'Dashboard mengirim hanya cell yang dipakai untuk tanggal, komponen dan trend OEE; slot proses tetap stabil bila sumber belum tersedia; arsip lengkap tetap tersedia pada ruang kerja sumber.'});
 }
