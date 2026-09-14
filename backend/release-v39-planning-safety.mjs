@@ -13,8 +13,11 @@ const perms=u=>J(u?.permissions,[]);
 const allowPpic=(u,action)=>u?.role==='superadmin'||(u?.role==='admin'&&u.department==='PPIC'&&perms(u).includes(action));
 const allowProd=(u,action)=>u?.role==='superadmin'||(u?.role==='admin'&&u.department==='PROD'&&perms(u).includes(action));
 async function approvedFgUnit(env){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.kpi_definitions'"),cfg=J(row?.value,{});return cfg?.approved===true?clean(cfg.fg_unit).toLowerCase():'';}
+async function shiftGovernance(env){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.shift_calendar'"),cfg=J(row?.value,{});if(cfg?.approved!==true)return {approved:false,require_shift:false,require_group:false,group_model:''};const model=clean(cfg.group_model),fourGroup=/(?:^|\D)4(?:\D|$).*group|group.*(?:^|\D)4(?:\D|$)/i.test(model)||/^4\s*group/i.test(model);return {approved:true,require_shift:true,require_group:fourGroup,group_model:model};}
+const validShift=v=>['1','2','3'].includes(clean(v).toUpperCase().replace(/^SHIFT\s*/,'').trim());
+const validGroup=v=>['A','B','C','D'].includes(clean(v).toUpperCase().replace(/^(GROUP|GRUP)\s*/,'').trim());
 function baseProblem(p){if(clean(p?.status)!=='Released')return '';for(const k of ['pro','machine','material','date'])if(!clean(p?.[k]))return `Planning Released wajib memiliki ${k}`;const target=Number(p?.target);if(!Number.isFinite(target)||target<=0)return 'Planning Released wajib memiliki Target Qty lebih dari nol';return '';}
-async function validateReleased(env,p,fgUnit=''){const problem=baseProblem(p);if(problem)return problem;if(clean(p?.status)!=='Released')return '';const unit=clean(p?.unit).toLowerCase()||clean(fgUnit).toLowerCase()||await approvedFgUnit(env);if(!clean(unit))return 'Planning Released wajib memiliki Satuan target atau FG Unit authoritative yang sudah disahkan';if(!/^[a-z0-9%/._ -]{1,24}$/i.test(unit))return 'Satuan target Planning Released tidak valid';return '';}
+async function validateReleased(env,p,fgUnit=''){const problem=baseProblem(p);if(problem)return problem;if(clean(p?.status)!=='Released')return '';const unit=clean(p?.unit).toLowerCase()||clean(fgUnit).toLowerCase()||await approvedFgUnit(env);if(!clean(unit))return 'Planning Released wajib memiliki Satuan target atau FG Unit authoritative yang sudah disahkan';if(!/^[a-z0-9%/._ -]{1,24}$/i.test(unit))return 'Satuan target Planning Released tidak valid';const shiftCfg=await shiftGovernance(env);if(shiftCfg.require_shift&&!validShift(p?.shift))return 'Planning Released wajib memiliki Shift 1, 2, atau 3 karena Kalender Shift sudah authoritative';if(shiftCfg.require_group&&!validGroup(p?.group))return `Planning Released wajib memiliki Group A, B, C, atau D karena model operasi ${shiftCfg.group_model||'4 group'} sudah disahkan`;return '';}
 async function passwordGate(env,u){return !!(await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id))?.must_change;}
 export async function handlePlanningSafetyV39(req,env){
  const url=new URL(req.url),path=url.pathname,method=req.method;
@@ -34,3 +37,4 @@ export async function handlePlanningSafetyV39(req,env){
  }
  return null;
 }
+export const PlanningSafetyV39={shiftGovernance,validShift,validGroup,validateReleased};
