@@ -2,7 +2,6 @@ import fs from 'node:fs';
 const read=p=>fs.readFileSync(p,'utf8');
 const index=read('frontend/index.html');
 const core=read('frontend/app-core.js');
-const shop=read('frontend/shopfloor.js');
 const field=read('frontend/field-display-v8.js');
 const r10=read('frontend/release-v10.js');
 const r11=read('frontend/release-v11.js');
@@ -12,6 +11,7 @@ const r14=read('frontend/governance-v14.js');
 const dgCore=read('frontend/data-governance-core-v16.js');
 const dgView=read('frontend/data-governance-view-v16.js');
 const dgEdit=read('frontend/data-governance-edit-v16.js');
+const machine20ui=read('frontend/machine-governance-v20.js');
 const uatCore=read('frontend/uat-release-core-v17.js');
 const uatView=read('frontend/uat-release-view-v17.js');
 const uatEdit=read('frontend/uat-release-edit-v17.js');
@@ -19,14 +19,16 @@ const release18=read('frontend/release-status-v18.js');
 const back=read('backend/release-v11.mjs');
 const security=read('backend/release-v15-security.mjs');
 const governance19=read('backend/release-v19-governance.mjs');
+const machine20=read('backend/release-v20-machine-governance.mjs');
 const production=read('backend/worker-production.mjs');
 const realtime=read('backend/realtime.mjs');
 const wrangler=read('wrangler.toml');
-const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,uatCore,uatView,uatEdit,release18].join('\n');
+const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,machine20ui,uatCore,uatView,uatEdit,release18].join('\n');
+const machineCall=production.indexOf('const machineGovernanceResponse=await handleMachineGovernanceV20');
 const governanceCall=production.indexOf('const governanceResponse=await handleGovernanceV19');
 const securityCall=production.indexOf('const securityResponse=await handleSecurityV15');
 const releaseCall=production.indexOf('const releaseResponse=await handleReleaseV11');
-const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js'];
+const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','machine-governance-v20.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js'];
 const checks=[
  ['release bundles active',bundles.every(x=>index.includes(x))],
  ['core department modules',['confirmation','planning','production','downtime','quality','maintenance','development','checklist','logbook','process','energy','master','project','batch'].every(x=>core.includes(x))],
@@ -43,7 +45,7 @@ const checks=[
  ['downtime root cause gate',back.includes('Root cause / tindakan wajib diisi')],
  ['maintenance acknowledge and closure gate',back.includes("c.status!=='ACKNOWLEDGED'")&&r11.includes('Close Maintenance')],
  ['rejection reason gate',back.includes('Alasan wajib diisi untuk penolakan')],
- ['governance guard precedes operational guards',governanceCall>=0&&securityCall>=0&&releaseCall>=0&&governanceCall<securityCall&&securityCall<releaseCall],
+ ['machine governance precedes release guards',machineCall>=0&&governanceCall>=0&&securityCall>=0&&releaseCall>=0&&machineCall<governanceCall&&governanceCall<securityCall&&securityCall<releaseCall],
  ['permission gate before workflow lookup',securityCall>=0&&releaseCall>=0&&securityCall<releaseCall&&security.includes('Tidak memiliki izin verifikasi')],
  ['UPDT escalation automation',realtime.includes("class='UPDT'")&&realtime.includes("'+10 minutes'")],
  ['audit sensitive-value redaction',r14.includes('(password|hash|salt|token|secret|credential)')],
@@ -54,6 +56,12 @@ const checks=[
  ['data governance uses controlled config path',dgEdit.includes("navigate('settings')")&&dgEdit.includes("f.elements.key.value=key")&&!dgEdit.includes("api('/settings'")],
  ['backend governance approval completeness',governance19.includes('Baseline KPI belum lengkap')&&governance19.includes('Canonical machine tidak boleh kosong')&&governance19.includes('Kalender shift belum lengkap')&&governance19.includes('Sumber authoritative belum ditetapkan')&&governance19.includes('Join grain wajib')],
  ['backend governance restricted to superadmin',governance19.includes("u.role!=='superadmin'")&&governance19.includes('hanya dapat disahkan oleh Superadmin')],
+ ['approved machine aliases gate runtime',machine20.includes("c?.approved===true")&&machine20.includes("DATA_GOVERNANCE.machine_aliases")],
+ ['canonical Start PRO validates plan equivalence',machine20.includes('planCode=canonical(cfg,pp.machine)')&&machine20.includes('planCode!==code')&&machine20.includes("pp.status!=='Released'")],
+ ['canonical Edge preserves source machine',machine20.includes('source_machine_code')&&machine20.includes("ingestMachineEvents(env,mapped,'machine-edge-governed')")],
+ ['canonical start audit trace',machine20.includes('SHOPFLOOR_START_CANONICAL')&&machine20.includes('source_machine:b.machine')&&machine20.includes('planning_machine:pp.machine')],
+ ['frontend planning alias adapter gated by approval',machine20ui.includes('DG16.approved(c)')&&machine20ui.includes("startsWith('/shopfloor/plans')")],
+ ['frontend adapter preserves source machine in response clone',machine20ui.includes('p.source_machine=original')&&machine20ui.includes('return {...row,payload:JSON.stringify(p)}')],
  ['UAT seven release gates',['UAT_RELEASE.roles','UAT_RELEASE.devices','UAT_RELEASE.data','UAT_RELEASE.display','UAT_RELEASE.recovery','UAT_RELEASE.integrations','UAT_RELEASE.signoff'].every(x=>uatCore.includes(x))],
  ['UAT starts unverified',uatEdit.includes("status:'not_started'")&&!uatEdit.includes("status:'passed'")],
  ['UAT evidence and blockers',uatView.includes('Evidence')&&uatView.includes('Blocker')&&uatEdit.includes("evidence:''")&&uatEdit.includes("blocker:''")],
