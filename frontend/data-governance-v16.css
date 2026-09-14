@@ -1,0 +1,4 @@
+/* Data Governance Center v16 */
+.dg16-status{display:inline-flex;padding:5px 10px;border-radius:999px;font-size:.75rem;font-weight:800}
+.dg16-status.ok{background:#e9f8f0;color:#16704b}
+.dg16-status.pending{background:#fff4df;color:#93620a}
