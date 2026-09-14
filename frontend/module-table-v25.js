@@ -6,7 +6,7 @@
  const first=(...v)=>v.find(has);
  const txt=v=>esc(has(v)?v:'—');
  const num=(v,d=1)=>{const n=Number(v);return has(v)&&Number.isFinite(n)?fmt(n,d):'—';};
- const money=v=>{const n=Number(v);return has(v)&&Number.isFinite(n)?'Rp '+fmt(n):'—';};
+ const amount=(v,currency)=>{const n=Number(v);if(!has(v)||!Number.isFinite(n))return '—';const c=String(currency||'').trim();return `${fmt(n)}<small>${c?esc(c):'currency belum tercatat'}</small>`;};
  const pair=(a,b)=>`${txt(a)}${has(b)?`<small>${txt(b)}</small>`:''}`;
  const quantity=(v,unit)=>`${num(v)}${has(unit)?`<small>${txt(unit)}</small>`:''}`;
  const duration=p=>has(first(p.minutes,p.runtime_minutes,p.repair_minutes))?num(first(p.minutes,p.runtime_minutes,p.repair_minutes))+' menit':has(p.hours)?num(p.hours,2)+' jam':'—';
@@ -27,7 +27,7 @@
   maintenance:[commonDate,col('Mesin',p=>txt(first(p.machine,p.machine_code))),col('Notifikasi',p=>txt(first(p.notification,p.notification_id))),col('Kategori',p=>txt(first(p.category,p.type))),col('Durasi perbaikan',p=>duration(p),'v25-num'),col('Tindakan korektif',p=>txt(first(p.action,p.corrective_action,p.root_cause))),statusCol,sourceCol],
   confirmation:[commonDate,col('PRO / Material',p=>pair(first(p.pro,p.PRO),first(p.material,p.material_no))),col('Konfirmasi / Counter',p=>pair(first(p.confirmation,p.confirmation_no),p.counter)),col('Yield',p=>num(first(p.qty,p.yield)),'v25-num'),col('Scrap',p=>num(p.scrap),'v25-num'),col('Jam',p=>num(p.hours,2),'v25-num'),col('Satuan',p=>txt(p.unit)),statusCol,sourceCol],
   planning:[commonDate,commonMachine,col('Material',p=>txt(first(p.material,p.material_no))),col('Target',p=>quantity(first(p.target,p.planned_qty),p.unit),'v25-num'),col('Shift / Group',p=>pair(p.shift,p.group)),statusCol,sourceCol],
-  development:[commonDate,col('Material / item',p=>txt(first(p.material,p.item))),col('Kategori trial',p=>txt(first(p.category,p.trial_type))),col('Durasi trial',p=>duration(p),'v25-num'),col('Biaya aktual',p=>money(first(p.cost,p.actual_cost)),'v25-num'),statusCol,sourceCol],
+  development:[commonDate,col('Material / item',p=>txt(first(p.material,p.item))),col('Kategori trial',p=>txt(first(p.category,p.trial_type))),col('Durasi trial',p=>duration(p),'v25-num'),col('Biaya aktual',p=>amount(first(p.cost,p.actual_cost),p.currency),'v25-num'),statusCol,sourceCol],
   batch:[commonDate,col('PRO',p=>txt(first(p.pro,p.PRO))),col('Batch input',p=>txt(p.input_batch)),col('Batch output',p=>txt(p.output_batch)),col('Qty input',p=>num(p.qty),'v25-num'),col('Good / NC / Reject',p=>`${num(first(p.good,p.good_qty))} / ${num(p.nc)} / ${num(first(p.reject,p.reject_qty))}`,'v25-num'),col('Satuan',p=>txt(p.unit)),statusCol,sourceCol],
   checklist:[commonDate,commonMachine,col('Material',p=>boolLabel(p.material)),col('QC',p=>boolLabel(p.qc)),col('Safety',p=>boolLabel(p.safety)),col('Tools & area',p=>boolLabel(p.tools)),statusCol,sourceCol],
   logbook:[commonDate,commonMachine,col('Pekerjaan / tindak lanjut',p=>txt(first(p.action,p.title,p.note))),statusCol,sourceCol],
