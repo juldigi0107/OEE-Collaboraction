@@ -27,7 +27,7 @@ else{
     requireFile(rel,'index.html');
     if(/\.(?:css|js)$/i.test(rel))entryFiles.add(rel);
   }
-  for(const required of ['workspace.css','visual-v4.css','display-editor-v5.css','runtime-polish-v6.css','role-ux-v7.css','field-display-v8.css','app-core.js','visual-v4.js','display-editor-v5.js','runtime-polish-v6.js','role-ux-v7.js','field-display-v8.js']){
+  for(const required of ['workspace.css','visual-v4.css','display-editor-v5.css','runtime-polish-v6.css','role-ux-v7.css','field-display-v8.css','experience-v64.css','app-core.js','visual-v4.js','display-editor-v5.js','runtime-polish-v6.js','role-ux-v7.js','field-display-v8.js','experience-v64.js']){
     if(!html.includes(required))errors.push(`index.html belum memuat ${required}`);
   }
 }
@@ -39,6 +39,27 @@ for(const rel of entryFiles){
   if(!fs.existsSync(full))continue;
   const content=fs.readFileSync(full,'utf8');
   for(const m of content.matchAll(/assets\/[A-Za-z0-9._/-]+/g))requireFile(m[0],rel);
+}
+
+/* Experience v64 is a release requirement, not an optional skin. */
+const experiencePath=path.join(root,'experience-v64.js'),experienceCssPath=path.join(root,'experience-v64.css');
+if(!fs.existsSync(experiencePath))errors.push('experience-v64.js tidak ditemukan');
+else{
+  const experience=fs.readFileSync(experiencePath,'utf8');
+  const guards=[
+    ['operational briefing','Kinerja yang jelas.'],
+    ['department hub','Department Hub'],
+    ['compact sidebar route',"dataset.view='departments'"],
+    ['role-aware context','role-dashboard?department='],
+    ['data integrity disclosure','Data integrity & source attention'],
+    ['source-preserving zero policy','nilai kosong/error tidak dipaksa menjadi nol']
+  ];
+  for(const [name,marker] of guards)if(!experience.includes(marker))errors.push(`Experience v64 guard hilang: ${name}`);
+}
+if(!fs.existsSync(experienceCssPath))errors.push('experience-v64.css tidak ditemukan');
+else{
+  const experienceCss=fs.readFileSync(experienceCssPath,'utf8');
+  for(const marker of ['.briefing-hero','.process-strip','.department-hub-v64','.sidebar-backdrop','prefers-reduced-motion'])if(!experienceCss.includes(marker))errors.push(`Experience v64 style guard hilang: ${marker}`);
 }
 
 /* v32 interpretation semantics live inside the already-active operational runtime. */
