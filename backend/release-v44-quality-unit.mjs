@@ -43,9 +43,9 @@ async function qcDashboard(req,env,u,url){
  return out(req,env,{department:'QC',generated_at:now(),metrics});
 }
 async function approvalList(req,env){
- const response=await handleReleaseV11(req,env);if(!response||!response.ok)return response;let data;try{data=await response.clone().json();}catch{return response;}const rows=Array.isArray(data?.rows)?data.rows:[],ids=[...new Set(rows.filter(x=>x.entity_type==='quality'&&x.entity_id).map(x=>x.entity_id))];if(!ids.length)return out(req,env,data,response.status);
- const placeholders=ids.map(()=>'?').join(','),unitRows=await all(env.DB,`SELECT id,lower(trim(unit)) unit FROM quality_events WHERE id IN (${placeholders})`,...ids),map=new Map(unitRows.map(x=>[x.id,clean(x.unit)]));
- for(const a of rows){if(a.entity_type!=='quality')continue;const unit=map.get(a.entity_id)||'';a.entity={...(a.entity||{}),unit,unit_status:unit?'known':'legacy_missing'};}
+ const response=await handleReleaseV11(req,env);if(!response||!response.ok)return response;let data;try{data=await response.clone().json();}catch{return response;}const rows=Array.isArray(data?.rows)?data.rows:[],qualityIds=[...new Set(rows.filter(x=>x.entity_type==='quality'&&x.entity_id).map(x=>x.entity_id))],runIds=[...new Set(rows.filter(x=>x.entity_type==='production_run'&&x.entity_id).map(x=>x.entity_id))];if(!qualityIds.length&&!runIds.length)return out(req,env,data,response.status);
+ const qualityMap=new Map(),runMap=new Map();if(qualityIds.length){const placeholders=qualityIds.map(()=>'?').join(','),unitRows=await all(env.DB,`SELECT id,lower(trim(unit)) unit FROM quality_events WHERE id IN (${placeholders})`,...qualityIds);unitRows.forEach(x=>qualityMap.set(x.id,clean(x.unit)));}if(runIds.length){const placeholders=runIds.map(()=>'?').join(','),unitRows=await all(env.DB,`SELECT id,lower(trim(unit)) unit FROM production_runs WHERE id IN (${placeholders})`,...runIds);unitRows.forEach(x=>runMap.set(x.id,clean(x.unit)));}
+ for(const a of rows){if(a.entity_type==='quality'){const unit=qualityMap.get(a.entity_id)||'';a.entity={...(a.entity||{}),unit,unit_status:unit?'known':'legacy_missing'};}if(a.entity_type==='production_run'){const unit=runMap.get(a.entity_id)||'';a.entity={...(a.entity||{}),unit,unit_status:unit?'known':'legacy_missing'};}}
  return out(req,env,data,response.status);
 }
 export async function handleQualityUnitV44(req,env){
