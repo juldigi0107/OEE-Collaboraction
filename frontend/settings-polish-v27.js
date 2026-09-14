@@ -8,8 +8,6 @@
   ['RELEASE_READINESS.','Tata Kelola & Readiness','governance']
  ];
  const roleName=()=>user?.role==='superadmin'?'Superadmin':user?.role==='admin'?'Admin Department':'Viewer';
- const valueKind=v=>{if(typeof v==='number')return 'number';if(typeof v==='boolean')return 'boolean';if(v&&typeof v==='object')return 'json';return 'text';};
- const safeValue=s=>{try{return typeof s?.value==='string'?JSON.parse(s.value):s?.value;}catch{return s?.value;}};
  const parse=(kind,raw)=>{if(kind==='number'){const n=Number(raw);if(raw===''||!Number.isFinite(n))throw Error('Nilai angka belum valid.');return n;}if(kind==='boolean')return raw==='true';if(kind==='json'){try{return JSON.parse(raw||'{}')}catch{throw Error('JSON lanjutan belum valid.')}}return String(raw??'');};
  function dedicated(key){return reserved.find(([prefix])=>String(key||'').startsWith(prefix));}
  function renderValue(host,kind,value=''){
@@ -24,7 +22,16 @@
   const box=document.createElement('div');box.className='v27-shortcuts';box.innerHTML='<div><strong>Editor khusus</strong><span>Gunakan halaman khusus untuk konfigurasi terstruktur agar validasi bisnis tetap aktif.</span></div><div class="v27-shortcut-actions"><button type="button" data-v27-view="data-governance">Definisi Data & KPI</button><button type="button" data-v27-view="uat-release">UAT & Go-Live</button><button type="button" data-v27-view="governance">Tata Kelola & Readiness</button></div>';panel.prepend(box);box.querySelectorAll('[data-v27-view]').forEach(b=>b.onclick=()=>navigate(b.dataset.v27View));
  }
  function labelExisting(panel){
-  panel.querySelectorAll('details').forEach(d=>{if(d.dataset.v27)return;d.dataset.v27='1';const summary=d.querySelector('summary'),pre=d.querySelector('pre');if(!summary)return;const raw=summary.textContent||'',parts=raw.split('·').map(x=>x.trim()),key=parts[0]||'Parameter',dept=parts[1]||user?.department||'';summary.textContent='';const name=document.createElement('strong');name.textContent=key;const meta=document.createElement('span');meta.textContent=(departments[dept]||dept)+' · nilai tersimpan';summary.append(name,meta);if(pre){pre.classList.add('v27-stored-value');pre.setAttribute('aria-label','Nilai tersimpan untuk '+key);}}
+  panel.querySelectorAll('details').forEach(d=>{
+   if(d.dataset.v27)return;
+   d.dataset.v27='1';
+   const summary=d.querySelector('summary'),pre=d.querySelector('pre');if(!summary)return;
+   const raw=summary.textContent||'',parts=raw.split('·').map(x=>x.trim()),key=parts[0]||'Parameter',dept=parts[1]||user?.department||'';
+   summary.textContent='';
+   const name=document.createElement('strong');name.textContent=key;
+   const meta=document.createElement('span');meta.textContent=(departments[dept]||dept)+' · nilai tersimpan';
+   summary.append(name,meta);
+   if(pre){pre.classList.add('v27-stored-value');pre.setAttribute('aria-label','Nilai tersimpan untuk '+key);}
   });
  }
  function enhanceSettingsV27(){
