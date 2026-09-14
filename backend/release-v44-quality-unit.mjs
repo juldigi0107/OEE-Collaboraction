@@ -1,4 +1,5 @@
 import {handleReleaseV11} from './release-v11.mjs';
+import {handleKpiSemanticsV45} from './release-v45-kpi-semantics.mjs';
 const enc=new TextEncoder();
 const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(String(s||''))));
@@ -53,5 +54,6 @@ export async function handleQualityUnitV44(req,env){
  if(approvalRoute)return approvalList(req,env);
  const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
  if(qualityPostRoute)return qualityPost(req,env,u);
- return qcDashboard(req,env,u,url);
+ const qc=await qcDashboard(req,env,u,url);if(qc)return qc;
+ return handleKpiSemanticsV45(req,env);
 }
