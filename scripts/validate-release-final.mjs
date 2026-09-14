@@ -22,6 +22,7 @@ const oc31core=read('frontend/operational-control-core-v31.js');
 const oc31view=read('frontend/operational-control-view-v31.js');
 const oc31edit=read('frontend/operational-control-edit-v31.js');
 const oc31runtime=read('frontend/operational-control-runtime-v31.js');
+const resilience33=read('frontend/release-resilience-v33.js');
 const back=read('backend/release-v11.mjs');
 const security=read('backend/release-v15-security.mjs');
 const governance19=read('backend/release-v19-governance.mjs');
@@ -30,13 +31,13 @@ const supportBackend21=read('backend/release-v21-support.mjs');
 const production=read('backend/worker-production.mjs');
 const realtime=read('backend/realtime.mjs');
 const wrangler=read('wrangler.toml');
-const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,machine20ui,uatCore,uatView,uatEdit,release18,support21,oc31core,oc31view,oc31edit,oc31runtime].join('\n');
+const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,machine20ui,uatCore,uatView,uatEdit,release18,support21,oc31core,oc31view,oc31edit,oc31runtime,resilience33].join('\n');
 const supportCall=production.indexOf('const supportResponse=await handleSupportV21');
 const machineCall=production.indexOf('const machineGovernanceResponse=await handleMachineGovernanceV20');
 const governanceCall=production.indexOf('const governanceResponse=await handleGovernanceV19');
 const securityCall=production.indexOf('const securityResponse=await handleSecurityV15');
 const releaseCall=production.indexOf('const releaseResponse=await handleReleaseV11');
-const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','machine-governance-v20.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js','support-recovery-v21.js','operational-control-core-v31.js','operational-control-view-v31.js','operational-control-edit-v31.js','operational-control-runtime-v31.js'];
+const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','machine-governance-v20.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js','support-recovery-v21.js','operational-control-core-v31.js','operational-control-view-v31.js','operational-control-edit-v31.js','operational-control-runtime-v31.js','release-resilience-v33.js'];
 const checks=[
  ['release bundles active',bundles.every(x=>index.includes(x))],
  ['core department modules',['confirmation','planning','production','downtime','quality','maintenance','development','checklist','logbook','process','energy','master','project','batch'].every(x=>core.includes(x))],
@@ -96,7 +97,10 @@ const checks=[
  ['approved edge triggers enforce machine scope',machine20.includes("scope!=='*'")&&machine20.includes('next.trigger_scope=scope')&&machine20.includes('trigger_rules_matched')],
  ['HMI standard card uses approved cycle baseline',oc31runtime.includes('OC31.approved(cfg)')&&oc31runtime.includes('Standard Proses')&&oc31runtime.includes('cycle_seconds')],
  ['HMI cycle matching fails safe on material ambiguity',oc31runtime.includes('cycleDecision')&&oc31runtime.includes('ambiguous_material')&&oc31runtime.includes('material_context_required')&&oc31runtime.includes('Belum dapat dipilih otomatis')],
- ['downtime preset uses approved loss baseline',oc31runtime.includes('Pilih reason code yang disahkan')&&oc31runtime.includes('lossFor(klass)')],
+ ['governed downtime requires approved baseline reason',oc31runtime.includes('select.required=true')&&oc31runtime.includes('readOnly=true')&&oc31runtime.includes('Belum ada reason')&&oc31runtime.includes("dept.value='PROD'")],
+ ['data context preserves units periods reversal and source authority',oc31runtime.includes('Multi-unit terdeteksi')&&oc31runtime.includes('reversal candidate')&&oc31runtime.includes('Periode mengikuti tanggal transaksi')&&oc31runtime.includes('Source authority belum disahkan')],
+ ['resilience resets stale department sheet',resilience33.includes('!sheets.some(s=>s.id===activeSheet)')&&resilience33.includes('Belum ada sheet sumber')&&resilience33.includes('retryDept')],
+ ['resilience previews common browser image kinds',resilience33.includes("['jpg','jpeg','webp','gif']")&&resilience33.includes("kind==='svg'?'png'"))],
  ['D1 only configuration',wrangler.includes('[[d1_databases]]')&&!/\[\[r2_buckets\]\]/.test(wrangler)],
  ['no prototype language in active release UI',!/\b(prototype|mockup|dummy|lorem ipsum|data demo|contoh data)\b/i.test(active)]
 ];
