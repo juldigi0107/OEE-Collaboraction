@@ -41,9 +41,23 @@ for(const rel of entryFiles){
   for(const m of content.matchAll(/assets\/[A-Za-z0-9._/-]+/g))requireFile(m[0],rel);
 }
 
+/* v32 interpretation semantics live inside the already-active operational runtime. */
+const runtimePath=path.join(root,'operational-control-runtime-v31.js');
+if(!fs.existsSync(runtimePath))errors.push('operational-control-runtime-v31.js tidak ditemukan');
+else{
+  const runtime=fs.readFileSync(runtimePath,'utf8');
+  const guards=[
+    ['source authority context','Source authority belum disahkan'],
+    ['PPIC reversal context','reversal candidate'],
+    ['QC multi-unit context','Multi-unit terdeteksi'],
+    ['period policy','Periode mengikuti tanggal transaksi']
+  ];
+  for(const [name,marker] of guards)if(!runtime.includes(marker))errors.push(`Data Context v32 guard hilang: ${name}`);
+}
+
 if(errors.length){
   console.error('\nFrontend asset validation FAILED');
   for(const e of errors)console.error(`- ${e}`);
   process.exit(1);
 }
-console.log(`Frontend asset validation OK — ${checked.size} active files/references checked.`);
+console.log(`Frontend asset validation OK — ${checked.size} active files/references checked + Data Context v32 guards.`);
