@@ -69,11 +69,15 @@ const checks=[
  ['source detail uses authenticated asset catalog',source41.includes("api('/assets?source='")&&source41.includes("'/api/media/'")&&source41.includes('assets.slice(0,12)')],
  ['source media preserves original authority',source41.includes('Workbook atau presentation asli tetap menjadi source authority')],
  ['non-QC dashboard delegates to KPI semantics',quality44.includes("handleKpiSemanticsV45")&&quality44.includes('if(qc)return qc')],
- ['maintenance live formula not overclaimed',kpi45.includes('Durasi perbaikan rata-rata · live')&&kpi45.includes('Run hours per UPDT · live')&&kpi45.includes('tidak diklaim sebagai MTTR resmi')],
- ['maintenance governance definitions surfaced',kpi45.includes('Baseline MTTR resmi:')&&kpi45.includes('Baseline MTBF resmi:')],
+ ['maintenance rolling window labels are explicit',kpi45.includes('Repair duration rata-rata · closure 30d')&&kpi45.includes('Elapsed production hours per UPDT · 30d')&&kpi45.includes('Baseline KPI belum disahkan')],
+ ['maintenance run hours are clipped to window boundary',kpi45.includes("CASE WHEN end_ts<datetime('now')")&&kpi45.includes('CASE WHEN start_ts>${window}')&&kpi45.includes("end_ts>${window}")],
+ ['maintenance repair metric uses closure timestamp',kpi45.includes("closed_ts>=${window}")&&kpi45.includes('berdasarkan closed_ts')&&kpi45.includes('closed_calls_30d')],
+ ['maintenance official KPI is not overclaimed',kpi45.includes('angka ini tidak diklaim sebagai MTTR resmi')&&kpi45.includes('angka ini bukan klaim MTBF resmi')],
+ ['maintenance governance definitions surfaced',kpi45.includes('Definisi MTTR governance:')&&kpi45.includes('Definisi MTBF governance:')],
+ ['rolling window policy is exposed',kpi45.includes("body.window_policy='Rolling metrics")&&kpi45.includes('run duration dipotong pada boundary window')],
  ['project average is explicitly unweighted',kpi45.includes('bukan weighted portfolio progress')],
  ['register horizon is explicit',kpi45.includes('Cakupan seluruh register D1 terpetakan')&&kpi45.includes('Seluruh register hasil produksi terpetakan')]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Module, governed HMI mirror, unit-lineage, currency-safe PDS, KPI-semantics, approval, release-coverage, and media validation OK — ${checks.length} guards checked.`);
+console.log(`Module, governed HMI mirror, unit-lineage, currency-safe PDS, rolling-window KPI semantics, approval, release-coverage, and media validation OK — ${checks.length} guards checked.`);
