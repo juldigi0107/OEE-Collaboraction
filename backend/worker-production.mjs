@@ -23,7 +23,7 @@ export default {
     const path=new URL(req.url).pathname;
     if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false,release_fingerprint:RELEASE_FINGERPRINT}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
     if(path==='/api/assets'||path==='/api/import-data')await ensureAdditiveSchema(env);
-    const supportResponse=await handleSupportV21(req,env,BUILD_VERSION);
+    const supportResponse=await handleSupportV21(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);
     if(supportResponse)return supportResponse;
     const machineGovernanceResponse=await handleMachineGovernanceV20(req,env);
     if(machineGovernanceResponse)return machineGovernanceResponse;
