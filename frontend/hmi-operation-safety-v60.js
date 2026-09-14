@@ -2,6 +2,8 @@
 (()=>{
  const SENTINEL='__RESELECT_REQUIRED__';
  const norm=v=>String(v||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+ const normShift=v=>{const s=String(v||'').trim().toUpperCase().replace(/\s+/g,'');const d=s.match(/(?:SHIFT|S)?([123])$/)?.[1];if(d)return d;if(['I','II','III'].includes(s))return String(['I','II','III'].indexOf(s)+1);return '';};
+ const normGroup=v=>{const s=String(v||'').trim().toUpperCase().replace(/\s+/g,'');const g=s.match(/(?:GROUP|GRUP|G)?([ABCD])$/)?.[1];return g||'';};
  let telemetry={generated_at:null,freshness_seconds:180,machines:[]},workCalendar={approved:false,runtime_ready:false},calendarLoadedAt=0;
  const telemetryRow=code=>(telemetry.machines||[]).find(x=>norm(x.code)===norm(code));
  async function loadTelemetry(){try{telemetry=await api('/telemetry-status');}catch{telemetry={generated_at:null,freshness_seconds:180,machines:[]};}return telemetry;}
@@ -18,6 +20,12 @@
  }
  function machineExists(code){const key=norm(code);return !!key&&[...document.querySelectorAll('[data-machine]')].some(b=>norm(b.dataset.machine)===key);}
  function freshnessText(s){if(!s)return 'Telemetry machine belum terdaftar';if(!s.heartbeat_at)return `Heartbeat belum tersedia · source ${s.source_type||'belum diketahui'}`;const age=Number(s.heartbeat_age_seconds);return `${s.telemetry_trusted?'Telemetry fresh':'Telemetry tidak authoritative'} · ${Number.isFinite(age)?age+' detik sejak heartbeat':'umur heartbeat tidak tersedia'} · ${s.source_type||'source belum diketahui'}`;}
+ function bindPlanningCalendarGate(plans){
+  const form=$('#startRun'),choice=$('#planChoice');if(!form||!choice||choice.dataset.v62Gate)return;choice.dataset.v62Gate='1';choice.required=true;const shift=form.elements.shift,group=form.elements.group,start=form.querySelector('.hmi-start');let gate=document.querySelector('.v62-plan-calendar-gate');if(!gate){gate=document.createElement('div');gate.className='notice v62-plan-calendar-gate';const checklist=form.querySelector('.checklist-gate');checklist?.insertAdjacentElement('beforebegin',gate);}
+  const releaseCalendarBlock=blocked=>{if(!start)return;if(blocked){start.dataset.calendarBlocked='1';start.disabled=true;}else if(start.dataset.calendarBlocked==='1'&&!document.querySelector('.hmi-main[data-operation-locked]')){delete start.dataset.calendarBlocked;start.disabled=false;}};
+  const draw=()=>{const selected=(plans||[]).find(x=>String(x.row?.id)===String(choice.value)),plan=selected?.payload||null;if(!plan){gate.textContent='Pilih Planning Released. Shift/Group akan diselaraskan dengan planning dan Work Calendar sebelum Start PRO.';gate.className='notice v62-plan-calendar-gate';releaseCalendarBlock(false);return;}const ps=normShift(plan.shift),pg=normGroup(plan.group);let blockers=[];if(plan.shift&&!ps)blockers.push(`format Shift planning tidak dikenali (${plan.shift})`);if(plan.group&&!pg)blockers.push(`format Group planning tidak dikenali (${plan.group})`);if(group&&pg&&[...group.options].some(o=>String(o.value).toUpperCase()===pg))group.value=pg;if(workCalendar.runtime_ready&&workCalendar.shift){if(shift&&[...shift.options].some(o=>String(o.value)===String(workCalendar.shift)))shift.value=String(workCalendar.shift);if(ps&&ps!==String(workCalendar.shift))blockers.push(`Planning Shift ${ps} berbeda dari Shift runtime ${workCalendar.shift}`);}else if(shift&&ps&&[...shift.options].some(o=>String(o.value)===ps))shift.value=ps;if(blockers.length){gate.className='errorbox v62-plan-calendar-gate';gate.textContent='Start PRO ditahan: '+blockers.join(' · ')+'. Minta PPIC/owner kalender memperbaiki baseline sebelum eksekusi.';releaseCalendarBlock(true);}else{gate.className='notice v62-plan-calendar-gate';gate.textContent=`Planning sinkron · Shift ${shift?.value||'—'} · Group ${group?.value||'—'}${workCalendar.runtime_ready?' · tanggal kerja '+(workCalendar.work_date||'—'):' · Work Calendar belum authoritative'}.`;releaseCalendarBlock(false);}};
+  choice.addEventListener('change',draw);draw();
+ }
  function paintWorkCalendar(){
   if(view!=='shopfloor')return;document.querySelector('.v62-work-calendar')?.remove();const headingEl=document.querySelector('#content .heading'),anchor=document.querySelector('.v36-hmi-context')||headingEl;if(!anchor)return;
   const box=document.createElement('div');box.className=workCalendar.runtime_ready?'v36-hmi-context v62-work-calendar':'notice v62-work-calendar';
@@ -41,10 +49,11 @@
   const baseDraw=()=>{const raw=String(actual?.value||'').trim(),save=$('#v40FinishSave');if(save&&raw==='')save.disabled=true;};actual?.addEventListener('input',baseDraw);baseDraw();
  }
  if(typeof finishDialog==='function'){const baseFinishV60=finishDialog;finishDialog=function(run){const out=baseFinishV60(run);queueMicrotask(()=>decorateFinish(run));return out;};}
+ if(typeof bindHmiActions==='function'){const baseBindV60=bindHmiActions;bindHmiActions=function(active,m,down,call,plans){const out=baseBindV60(active,m,down,call,plans);if(!active)queueMicrotask(()=>bindPlanningCalendarGate(plans));return out;};}
  if(typeof shopfloor==='function'){
   const baseShopfloorV60=shopfloor;
-  shopfloor=async function(...args){const requested=String(hmiMachine||''),explicitBefore=!!requested&&requested!==SENTINEL,out=await baseShopfloorV60(...args),fallback=String(hmiMachine||'');await Promise.all([loadTelemetry(),loadWorkCalendar()]);if(requested===SENTINEL||explicitBefore&&!machineExists(requested)||explicitBefore&&norm(fallback)!==norm(requested))blockForReselect(requested===SENTINEL?'mesin sebelumnya':requested,fallback===SENTINEL?'':fallback);else maskSelectedTelemetry();paintWorkCalendar();return out;};
+  shopfloor=async function(...args){const requested=String(hmiMachine||''),explicitBefore=!!requested&&requested!==SENTINEL,out=await baseShopfloorV60(...args),fallback=String(hmiMachine||'');await Promise.all([loadTelemetry(),loadWorkCalendar()]);if(requested===SENTINEL||explicitBefore&&!machineExists(requested)||explicitBefore&&norm(fallback)!==norm(requested))blockForReselect(requested===SENTINEL?'mesin sebelumnya':requested,fallback===SENTINEL?'':fallback);else maskSelectedTelemetry();paintWorkCalendar();bindPlanningCalendarGate([]);return out;};
  }
  if(typeof liveMachines==='function'){const baseLiveV60=liveMachines;liveMachines=async function(...args){const out=await baseLiveV60(...args);await loadTelemetry();maskMachineWall();return out;};}
- window.HMIOperationSafetyV60={blockForReselect,machineExists,loadTelemetry,loadWorkCalendar,paintWorkCalendar,paintOperationalClock,formatOperationalDateTime,maskSelectedTelemetry,maskMachineWall,get telemetry(){return telemetry;},get workCalendar(){return workCalendar;}};
+ window.HMIOperationSafetyV60={blockForReselect,machineExists,loadTelemetry,loadWorkCalendar,bindPlanningCalendarGate,paintWorkCalendar,paintOperationalClock,formatOperationalDateTime,maskSelectedTelemetry,maskMachineWall,get telemetry(){return telemetry;},get workCalendar(){return workCalendar;}};
 })();
