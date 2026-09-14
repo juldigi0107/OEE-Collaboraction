@@ -42,12 +42,14 @@
   }
   async function enhanceDowntimeMaster(klass){
     const input=document.querySelector('#downForm input[name="code"]');if(!input)return;
+    const approvedLoss=window.OC31?OC31.read(OC31.keys.loss):null;
+    if(window.OC31&&OC31.approved(approvedLoss))return;
     let data;try{data=await api('/entries?module=master&page=0&q='+encodeURIComponent(klass));}catch{return;}
     const items=(data.rows||[]).map(r=>{try{return JSON.parse(r.payload)}catch{return {}}}).filter(p=>p.code||p.value);
     if(!items.length)return;
     const id='downtimeReasonList';let list=document.getElementById(id);if(!list){list=document.createElement('datalist');list.id=id;document.body.append(list);modal.addEventListener('close',()=>list.remove(),{once:true});}
     list.replaceChildren(...items.slice(0,80).map(p=>{const o=document.createElement('option');o.value=String(p.code||p.value||'');o.label=String(p.value||p.title||p.reason||p.code||'');return o;}));
     input.setAttribute('list',id);input.placeholder='Pilih / scan kode loss time';
-    const hint=document.createElement('small');hint.className='downtime-master-hint';hint.textContent=`Saran kode diambil dari Master Data yang cocok dengan ${klass}. Jika belum tersedia, input tetap dicatat untuk rekonsiliasi master.`;input.insertAdjacentElement('afterend',hint);
+    const hint=document.createElement('small');hint.className='downtime-master-hint';hint.textContent=`Baseline Loss-Time resmi belum disahkan. Saran sementara diambil dari Master Data yang cocok dengan ${klass} untuk rekonsiliasi owner proses.`;input.insertAdjacentElement('afterend',hint);
   }
 })();
