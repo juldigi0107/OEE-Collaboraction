@@ -11,9 +11,9 @@
  const quantity=(v,unit)=>`${num(v)}${has(unit)?`<small>${txt(unit)}</small>`:''}`;
  const duration=p=>has(first(p.minutes,p.runtime_minutes,p.repair_minutes))?num(first(p.minutes,p.runtime_minutes,p.repair_minutes))+' menit':has(p.hours)?num(p.hours,2)+' jam':'—';
  const statusName=s=>({PENDING:'Menunggu verifikasi',APPROVED:'Disetujui',REJECTED:'Ditolak',RUNNING:'Berjalan',FINISHED:'Selesai',OPEN:'Terbuka',CLOSED:'Selesai',ACKNOWLEDGED:'Diterima Maintenance',Draft:'Draft',Direncanakan:'Direncanakan',Released:'Siap Produksi',Dimulai:'Berjalan',Selesai:'Selesai',Terverifikasi:'Terverifikasi'}[s]||s||'Tercatat');
- const statusClass=s=>['APPROVED','FINISHED','CLOSED','Selesai','Terverifikasi'].includes(s)?'ok':['REJECTED'].includes(s)?'danger':['PENDING','OPEN','Draft','Direncanakan'].includes(s)?'warn':['Released'].includes(s)?'ok':'neutral';
+ const statusClass=s=>['APPROVED','FINISHED','CLOSED','Selesai','Terverifikasi'].includes(s)?'ok':['REJECTED','Ditolak'].includes(s)?'danger':['PENDING','OPEN','Draft','Direncanakan','Menunggu verifikasi'].includes(s)?'warn':['Released'].includes(s)?'ok':'neutral';
  const status=s=>`<span class="release-status ${statusClass(s)}">${esc(statusName(s))}</span>`;
- const source=p=>p.source_sheet||p.source_record?`${txt(p.source_sheet||'Sumber')}<small>${txt(p.source_record||'')}</small>`:'<span class="v25-source-live">D1 operasional</span>';
+ const source=p=>{if(p.source_sheet||p.source_record)return `${txt(p.source_sheet||'Sumber')}<small>${txt(p.source_record||'')}</small>`;if(p.source_system){const system=String(p.source_system).toUpperCase(),ref=p.source_entity_id||p.external_id||'';return `<span class="v25-source-live">${esc(system==='HMI'?'HMI operasional':system)}</span>${ref?`<small>${esc(p.source_entity||'record')} · ${esc(String(ref).slice(0,18))}${String(ref).length>18?'…':''}</small>`:''}`;}return '<span class="v25-source-live">D1 operasional</span>';};
  const boolLabel=v=>{if(v===true||v==='true'||v==='Siap'||v==='OK'||v==='Ya')return '<span class="release-status ok">Siap</span>';if(v===false||v==='false'||v==='Tidak')return '<span class="release-status danger">Belum</span>';return '<span class="release-status neutral">—</span>';};
  const col=(label,render,cls='')=>({label,render,cls});
  const commonDate=col('Tanggal',p=>pair(first(p.date,p.work_date),p.shift?`Shift ${p.shift}${p.group?' · Group '+p.group:''}`:''));
@@ -36,18 +36,12 @@
   master:[col('Kategori',p=>txt(p.category)),col('Kode',p=>txt(p.code)),col('Nilai / deskripsi',p=>txt(first(p.value,p.description,p.title))),col('Satuan',p=>txt(p.unit)),statusCol,sourceCol],
   project:[commonDate,col('Judul',p=>txt(p.title)),col('PIC',p=>txt(first(p.owner,p.pic))),col('Jatuh tempo',p=>txt(first(p.due,p.due_date))),col('Progress',p=>has(p.progress)?num(p.progress,1)+'%':'—','v25-num'),col('Output / deliverable',p=>txt(first(p.output,p.deliverable))),statusCol,sourceCol]
  };
- operations=async function(){
-  await baseOperationsV25();
-  renderModuleTableV25();
- };
+ operations=async function(){await baseOperationsV25();renderModuleTableV25();};
  function renderModuleTableV25(){
-  const table=$('#content .tablewrap table'),columns=specs[opModule];if(!table||!columns)return;
-  table.classList.add('module-table-v25');
-  const thead=table.querySelector('thead'),tbody=table.querySelector('tbody');if(!thead||!tbody)return;
+  const table=$('#content .tablewrap table'),columns=specs[opModule];if(!table||!columns)return;table.classList.add('module-table-v25');const thead=table.querySelector('thead'),tbody=table.querySelector('tbody');if(!thead||!tbody)return;
   thead.innerHTML=`<tr>${columns.map(c=>`<th class="${c.cls||''}">${esc(c.label)}</th>`).join('')}<th>Aksi</th></tr>`;
   tbody.innerHTML=(rows||[]).map((r,i)=>{const p=P(r);return `<tr>${columns.map(c=>`<td class="${c.cls||''}">${c.render(p,r)}</td>`).join('')}<td><button data-v25-entry="${i}">Detail</button></td></tr>`;}).join('');
-  document.querySelectorAll('[data-v25-entry]').forEach(b=>b.onclick=()=>entryForm(rows[Number(b.dataset.v25Entry)]));
-  const empty=$('#content .tablewrap .empty');if(empty)empty.textContent=`Belum ada data pada register ${modules[opModule]?.[0]||opModule}. Data historis sumber tetap dapat ditelusuri dari ruang kerja department.`;
-  let note=$('#content .v25-table-note');if(!note){note=document.createElement('p');note.className='sheetinfo v25-table-note';table.closest('.tablewrap')?.insertAdjacentElement('afterend',note);}if(note)note.textContent='Kolom mengikuti konteks modul. Satuan dan sumber dipertahankan; aplikasi tidak menggabungkan unit berbeda atau membuat nilai estimasi untuk field yang kosong.';
+  document.querySelectorAll('[data-v25-entry]').forEach(b=>b.onclick=()=>entryForm(rows[Number(b.dataset.v25Entry)]));const empty=$('#content .tablewrap .empty');if(empty)empty.textContent=`Belum ada data pada register ${modules[opModule]?.[0]||opModule}. Data historis sumber tetap dapat ditelusuri dari ruang kerja department.`;
+  let note=$('#content .v25-table-note');if(!note){note=document.createElement('p');note.className='sheetinfo v25-table-note';table.closest('.tablewrap')?.insertAdjacentElement('afterend',note);}if(note)note.textContent='Kolom mengikuti konteks modul. Satuan dan sumber dipertahankan; aplikasi tidak menggabungkan unit berbeda atau membuat nilai estimasi untuk field yang kosong. Record HMI adalah mirror read-only dari workflow operasional.';
  }
 })();
