@@ -5,7 +5,7 @@ import {handleGovernanceV19} from './release-v19-governance.mjs';
 import {handleMachineGovernanceV20} from './release-v20-machine-governance.mjs';
 import {handleSupportV21} from './release-v21-support.mjs';
 
-const BUILD_VERSION='6.1.0-source-audit';
+const BUILD_VERSION='6.2.0';
 let schemaReady=null;
 async function ensureAdditiveSchema(env){
   if(!schemaReady){
