@@ -11,9 +11,10 @@ import {handleDisplaySafetyV42} from './release-v42-display-safety.mjs';
 import {handleQualityUnitV44} from './release-v44-quality-unit.mjs';
 import {handleDataLifecycleV46,runLifecycleHousekeepingV46} from './release-v46-data-lifecycle.mjs';
 import {handleQueryPerformanceV47} from './release-v47-query-performance.mjs';
+import {handleLiveRegisterV49,captureLiveRegisterV49,afterLiveRegisterV49} from './release-v49-live-register.mjs';
 
 const BUILD_VERSION='6.2.0';
-const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47','query-performance-v47','frontend-security-v48'];
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44','kpi-semantics-v45','data-lifecycle-v46','query-index-v47','query-performance-v47','frontend-security-v48','live-register-v49'];
 let schemaReady=null;
 async function addColumnIfMissing(env,table,column,ddl){
   const columns=(await env.DB.prepare(`PRAGMA table_info('${table}')`).all()).results||[];
@@ -61,6 +62,7 @@ export default {
     const path=new URL(req.url).pathname;
     if(path==='/api/version')return new Response(JSON.stringify({ok:true,service:'OEE Collaboraction',version:BUILD_VERSION,storage:'D1-only',r2:false,release_fingerprint:RELEASE_FINGERPRINT}),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
     if(['/api/assets','/api/import-data','/api/readiness','/api/release-manifest','/api/approvals','/api/shopfloor/quality','/api/role-dashboard','/api/shopfloor/start','/api/realtime/overview'].includes(path))await ensureAdditiveSchema(env);
+    const liveSignal=await captureLiveRegisterV49(req);
     const lifecycleResponse=await handleDataLifecycleV46(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);
     if(lifecycleResponse)return lifecycleResponse;
     const supportResponse=await handleSupportV21(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);
@@ -77,10 +79,12 @@ export default {
     if(governanceResponse)return governanceResponse;
     const securityResponse=await handleSecurityV15(req,env);
     if(securityResponse)return securityResponse;
+    const liveGuard=await handleLiveRegisterV49(req,env);
+    if(liveGuard)return liveGuard;
     const hmiSafetyResponse=await handleHmiSafetyV40(req,env);
     if(hmiSafetyResponse)return hmiSafetyResponse;
     const qualityUnitResponse=await handleQualityUnitV44(req,env);
-    if(qualityUnitResponse)return qualityUnitResponse;
+    if(qualityUnitResponse){if(liveSignal&&qualityUnitResponse.ok)ctx.waitUntil(afterLiveRegisterV49(liveSignal,qualityUnitResponse.clone(),env));return qualityUnitResponse;}
     const queryResponse=await handleQueryPerformanceV47(req,env);
     if(queryResponse)return queryResponse;
     const releaseResponse=await handleReleaseV11(req,env);
@@ -88,6 +92,7 @@ export default {
     const signal=await captureReleaseV11(req);
     const response=await app.fetch(req,env,ctx);
     if(signal&&response.ok)ctx.waitUntil(afterReleaseV11(signal,response.clone(),req,env));
+    if(liveSignal&&response.ok)ctx.waitUntil(afterLiveRegisterV49(liveSignal,response.clone(),env));
     return secureFrontendResponse(path,response);
   },
   scheduled(controller,env,ctx){
