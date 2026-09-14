@@ -29,6 +29,8 @@ jobs:
         run: node scripts/validate-release-final.mjs
       - name: Validate workflow reconciliation v51
         run: node scripts/validate-workflow-v51.mjs
+      - name: Validate live mirror reconciliation v52
+        run: node scripts/validate-mirror-v52.mjs
       - name: Validate release polish v23
         run: node scripts/validate-release-v23.mjs
       - name: Validate module tables v25
@@ -62,6 +64,7 @@ jobs:
           echo "$body" | grep -Fq 'release-resilience-v33'
           echo "$body" | grep -Fq 'period-aware-dashboard-v34'
           echo "$body" | grep -Fq 'workflow-reconciliation-v51'
+          echo "$body" | grep -Fq 'mirror-reconciliation-v52'
       - name: Production D1 readiness check
         run: |
           tmp=$(mktemp)
@@ -123,6 +126,8 @@ jobs:
           r18=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-status-v18.js)
           echo "$r18" | grep -Fq 'Workflow Consistency'
           echo "$r18" | grep -Fq '/workflow-health'
+          echo "$r18" | grep -Fq 'Source Mirror Consistency'
+          echo "$r18" | grep -Fq '/mirror-health'
           r20=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/machine-governance-v20.js)
           echo "$r20" | grep -Fq 'machine'
           r21=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/support-recovery-v21.js)
@@ -174,7 +179,7 @@ jobs:
           echo "$runtime" | grep -Fq 'Data belum dapat dimuat'
       - name: Production protected endpoint check
         run: |
-          for endpoint in me approvals role-dashboard shopfloor/plans workflow-health; do
+          for endpoint in me approvals role-dashboard shopfloor/plans workflow-health mirror-health; do
             tmp=$(mktemp)
             code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' "https://oee-collaboraction.offsetbmj.workers.dev/api/$endpoint")
             cat "$tmp"
