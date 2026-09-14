@@ -11,6 +11,7 @@ const governanceEdit=read('frontend/data-governance-edit-v16.js');
 const moduleTable=read('frontend/module-table-v25.js');
 const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
+const runtimeSignoff=read('backend/release-v54-runtime-signoff.mjs');
 const lifecycle=read('backend/release-v46-data-lifecycle.mjs');
 const liveRegister=read('backend/release-v49-live-register.mjs');
 const process59=read('backend/release-v59-process-capability.mjs');
@@ -69,13 +70,16 @@ const checks=[
  ['telemetry capability fingerprinted',worker.includes('telemetry-freshness-v61')&&worker.includes('hmi-operation-safety-v60')],
  ['work calendar endpoint and fingerprint wired',worker.includes('handleWorkCalendarV62')&&worker.includes('work-calendar-v62')&&calendar62.includes("'/api/work-calendar/context'")],
  ['calendar timezone is explicit and never defaulted',governanceEdit.includes('Zona waktu operasional')&&governanceEdit.includes("timezone:f.get('timezone').trim()")&&calendar62.includes('IANA timezone')],
- ['shift windows reject overlap and runtime mismatch',calendar62.includes('Window Shift 1–3 saling overlap')&&calendar62.includes('di luar window shift')&&calendar62.includes('Planning Released berada pada Shift')],
+ ['shift windows require complete non-overlapping 24h coverage',calendar62.includes('Window Shift 1–3 saling overlap')&&calendar62.includes('Window Shift 1–3 memiliki gap')&&calendar62.includes('hits===0')],
+ ['approved legacy calendar fails runtime-ready until valid',calendar62.includes('validationError=approved?validateCalendarConfig(v):null')&&calendar62.includes('runtime_ready:false')],
+ ['runtime shift mismatch fails closed',calendar62.includes('Planning Released berada pada Shift')&&calendar62.includes('tidak sama dengan kalender runtime')],
  ['work date column is additive and audited',worker.includes("work_date','ALTER TABLE production_runs ADD COLUMN work_date TEXT")&&calendar62.includes('WORK_CALENDAR_APPLIED')],
  ['HMI presents governed work calendar',hmi60.includes('Tanggal kerja')&&hmi60.includes('Shift aktif')&&hmi60.includes('workday_cutoff')&&hmi60.includes('loadWorkCalendar')],
  ['live registers preserve governed work date',liveRegister.includes("date=clean(r.work_date)||safeDate")&&liveRegister.includes('work_date:clean(r.work_date)')&&liveRegister.includes('r.work_date,r.shift,r.group_name')],
+ ['final UAT requires runtime-ready work calendar',runtimeSignoff.includes("WorkCalendarV62")&&runtimeSignoff.includes('workCalendar?.runtime_ready!==true')&&runtimeSignoff.includes('work_calendar:workCalendar')],
  ['group rotation is not fabricated',governanceEdit.includes('Group rotation tetap mengikuti planning')&&!calendar62.includes('group=A')&&!calendar62.includes('group_model||')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62].join('\n')))]
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62,runtimeSignoff].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, work-calendar, work-date lineage, and storage guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, work-calendar, work-date lineage, final-signoff, and storage guards checked.`);
