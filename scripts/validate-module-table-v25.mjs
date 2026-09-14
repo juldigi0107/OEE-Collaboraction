@@ -3,9 +3,12 @@ const read=p=>fs.readFileSync(p,'utf8');
 const index=read('frontend/index.html');
 const js=read('frontend/module-table-v25.js');
 const css=read('frontend/module-table-v25.css');
+const form38=read('frontend/transaction-form-v38.js');
 const hmi=read('frontend/hmi-dialogs-v40.js');
 const admin37=read('frontend/admin-depth-v37.js');
 const source41=read('frontend/source-depth-v41.js');
+const planning39=read('backend/release-v39-planning-safety.mjs');
+const machine20=read('backend/release-v20-machine-governance.mjs');
 const quality44=read('backend/release-v44-quality-unit.mjs');
 const kpi45=read('backend/release-v45-kpi-semantics.mjs');
 const support21=read('backend/release-v21-support.mjs');
@@ -35,6 +38,13 @@ const checks=[
  ['approval UI surfaces inspection unit',admin37.includes('Satuan inspeksi:')&&admin37.includes('legacy / belum tersedia')],
  ['quality v44 wired before legacy release handler',worker.includes('handleQualityUnitV44')&&worker.indexOf('const qualityUnitResponse=await handleQualityUnitV44')<worker.indexOf('const releaseResponse=await handleReleaseV11')],
  ['quality schema preserves unit',init.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')&&realtimeSchema.includes('created_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,unit TEXT')],
+ ['planning form captures target unit',form38.includes('function planningUnit')&&form38.includes("input.name='unit'")&&form38.includes('Wajib saat Released')],
+ ['released planning requires authoritative unit',planning39.includes('approvedFgUnit')&&planning39.includes('Satuan target atau FG Unit authoritative')&&planning39.includes("unit_source='DATA_GOVERNANCE.fg_unit'")],
+ ['start PRO persists governed unit',machine20.includes('kpiConfig')&&machine20.includes('Satuan output belum ditetapkan')&&machine20.includes('source,unit) VALUES')],
+ ['start PRO uses one governed path',machine20.includes("return canonicalStart(req,env,cfg,kpi)")],
+ ['HMI displays run unit and legacy warning',hmi.includes('productionUnitContext')&&hmi.includes('PRO legacy ini belum memiliki satuan output')&&hmi.includes('Satuan target:')],
+ ['production unit additive migration is race safe',worker.includes("addColumnIfMissing(env,'production_runs','unit'")&&worker.includes("'/api/shopfloor/start'")],
+ ['fresh production schemas preserve unit',init.includes("version INTEGER NOT NULL DEFAULT 1,unit TEXT")&&realtimeSchema.includes("version INTEGER NOT NULL DEFAULT 1,unit TEXT")],
  ['fresh schema has no seeded superadmin',!init.includes("'seed-superadmin'")&&!init.includes("INSERT OR IGNORE INTO users")],
  ['release manifest exposes quality coverage',support21.includes('qualityCoverage')&&support21.includes('aggregation_policy')&&support21.includes('data_coverage')],
  ['release manifest exposes embedded media coverage',support21.includes('mediaCoverage')&&support21.includes('embedded_assets')&&support21.includes("status:total>0?'catalogued':'not_backfilled'")],
@@ -51,4 +61,4 @@ const checks=[
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Module, quality-unit, KPI-semantics, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
+console.log(`Module, quality-unit, production-unit, KPI-semantics, approval, and media validation OK — ${checks.length} presentation/data-integrity guards checked.`);
