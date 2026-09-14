@@ -4,12 +4,22 @@ const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(String(s|
 const one=(db,sql,...args)=>db.prepare(sql).bind(...args).first();
 const parse=(v,f=[])=>{try{return typeof v==='string'?JSON.parse(v):v||f}catch{return f}};
 const clean=v=>String(v??'').trim();
+const cleanCode=v=>clean(v).toUpperCase().replace(/[^A-Z0-9_.-]/g,'').slice(0,64);
+const matchCode=v=>clean(v).toUpperCase().replace(/[^A-Z0-9]/g,'');
 const allowedOrigin=(req,env)=>{const origin=req.headers.get('Origin')||'';const allow=String(env.ALLOWED_ORIGIN||'').split(',').map(x=>x.trim()).filter(Boolean);return origin&&allow.includes(origin)?origin:'';};
 const out=(req,env,message,status=409)=>{const origin=allowedOrigin(req,env);return new Response(JSON.stringify({error:message}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{})}});};
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
 const allow=(u,dept,action)=>u?.role==='superadmin'||(u?.role==='admin'&&u.department===dept&&parse(u.permissions,[]).includes(action));
 const fresh=v=>{const t=Date.parse(v||''),age=Date.now()-t;return Number.isFinite(t)&&age>=0&&age<180000;};
 const externalSource=v=>{const s=clean(v).toLowerCase();return !!s&&!s.startsWith('hmi');};
+async function canonicalMachine(env,raw){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.machine_aliases'"),cfg=parse(row?.value,{}),input=matchCode(raw);if(cfg?.approved===true&&input){for(const item of cfg.items||[]){for(const code of [item?.canonical,...(Array.isArray(item?.aliases)?item.aliases:[])])if(matchCode(code)===input)return cleanCode(item.canonical);}}return cleanCode(raw);}
+export async function captureTelemetryStartV61(req,env){
+ const path=new URL(req.url).pathname;if(req.method!=='POST'||path!=='/api/shopfloor/start')return null;let body;try{body=await req.clone().json();}catch{return null;}const code=await canonicalMachine(env,body?.machine);if(!code)return {code:'',trusted:false};
+ const row=await one(env.DB,'SELECT m.heartbeat_at,m.source_type,s.counter FROM machine_registry m LEFT JOIN machine_state s ON s.machine_id=m.id WHERE m.code=?',code),counter=Number(row?.counter),trusted=!!row&&fresh(row.heartbeat_at)&&externalSource(row.source_type)&&Number.isFinite(counter);return {code,trusted,counter:trusted?counter:null,captured_at:new Date().toISOString()};
+}
+export async function afterTelemetryStartV61(signal,response,env){
+ if(!signal||!response?.ok)return;let data;try{data=await response.clone().json();}catch{return;}const id=clean(data?.id);if(!id)return;await env.DB.prepare("UPDATE production_runs SET counter_start_trusted=? WHERE id=? AND status='RUNNING'").bind(signal.trusted?1:0,id).run();
+}
 export async function handleTelemetryFreshnessV61(req,env){
  const path=new URL(req.url).pathname;if(req.method!=='POST'||path!=='/api/shopfloor/finish')return null;
  const u=await auth(req,env);if(!u||!allow(u,'PROD','update'))return null;
@@ -23,4 +33,4 @@ export async function handleTelemetryFreshnessV61(req,env){
  const reason=!startTrusted?'counter awal PRO tidak berasal dari telemetry fresh/external':'telemetry akhir tidak fresh/external';
  return out(req,env,`Actual Qty wajib diisi manual karena ${reason}. Aplikasi tidak menurunkan hasil produksi dari selisih counter yang lineage-nya tidak authoritative.`,409);
 }
-export const TelemetryFreshnessV61={fresh,externalSource};
+export const TelemetryFreshnessV61={fresh,externalSource,canonicalMachine};
