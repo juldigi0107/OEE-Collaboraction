@@ -33,3 +33,33 @@
  if(typeof downtimeDialog==='function'){const base=downtimeDialog;downtimeDialog=function(run,klass){base(run,klass);const items=lossFor(klass),form=$('#downForm');if(!form||!items.length)return;const label=document.createElement('label');label.className='full oc31-loss-preset';const select=document.createElement('select');select.id='oc31LossPreset';select.innerHTML='<option value="">Pilih reason code yang disahkan</option>'+items.map((x,i)=>`<option value="${i}">${esc(x.code)} · ${esc(x.label)}</option>`).join('');label.append(document.createTextNode('Reason baseline'),select);form.prepend(label);select.onchange=()=>{const x=items[Number(select.value)];if(!x)return;const code=form.querySelector('[name="code"]'),reason=form.querySelector('[name="reason"]'),owner=form.querySelector('[name="owner_department"]');if(code)code.value=x.code||'';if(reason)reason.value=x.label||'';if(owner)owner.value=x.owner_department||'';};};}
  window.OC31Runtime={cycleFor,cycleDecision,lossFor};
 })();
+
+/* Data interpretation safeguards for business registers. */
+(()=>{
+ if(typeof operations!=='function')return;
+ const baseOperations=operations;
+ const payload=r=>{try{return JSON.parse(r?.payload||'{}')}catch{return {}}};
+ const domainMap={production:'production',downtime:'production',checklist:'production',logbook:'production',process:'production',energy:'production',batch:'production',quality:'quality',maintenance:'maintenance',confirmation:'ppic',planning:'ppic',development:'development',master:'master',project:'master'};
+ const domainLabel={production:'Production / OEE',quality:'Quality / Reject',maintenance:'Maintenance / Breakdown',ppic:'PPIC / Planning & Confirmation',development:'PDS / Development',master:'Master / Project'};
+ const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||''))&&!Number.isNaN(Date.parse(String(v)));
+ const uniq=a=>[...new Set(a.filter(Boolean))];
+ function sourceAuthority(){const domain=domainMap[opModule],cfg=window.DG16?DG16.read(DG16.keys.sources):{},approved=!!(window.DG16&&DG16.approved(cfg)),raw=cfg?.domains?.[domain],id=typeof raw==='string'?raw:raw?.source_id,src=(catalog?.sources||[]).find(s=>s.id===id);return {domain,approved,id:id||'',name:src?.name||raw?.source_name||''};}
+ function notes(list){const out=[];
+  if(opModule==='confirmation'){const n=list.filter(p=>['qty','scrap','hours'].some(k=>Number.isFinite(Number(p[k]))&&Number(p[k])<0)).length;if(n)out.push(`${n} baris tampil memiliki nilai negatif yang dipertahankan sebagai reversal candidate.`);out.push('PRO bukan natural key tunggal; gunakan transaction key/join grain yang disahkan.');}
+  if(opModule==='quality'){const units=uniq(list.map(p=>String(p.unit||'').trim()));if(units.length>1)out.push(`Multi-unit terdeteksi (${units.join(', ')}); jangan agregasikan reject/sample lintas satuan.`);out.push('Field kosong tidak dianggap nol.');}
+  if(opModule==='maintenance')out.push('Periode maintenance mengikuti rule tanggal kerja yang disahkan; timestamp dapat melintasi akhir bulan.');
+  if(opModule==='development')out.push('Periode mengikuti field transaksi dan source authority, bukan nama file.');
+  if(opModule==='production'){const kpi=window.DG16?DG16.read(DG16.keys.kpi):{};if(!(window.DG16&&DG16.approved(kpi)))out.push('Definisi KPI/Quality Printing belum disahkan; KPI lintas sumber belum authoritative.');}
+  if(opModule==='downtime')out.push('PDT/UPDT/COJ authoritative hanya berasal dari baseline Loss-Time yang disahkan.');
+  return out;
+ }
+ function add(parent,tag,text,cls=''){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=text;parent.append(el);return el;}
+ function paintDataContext(){if(!Array.isArray(rows)||!opModule)return;const table=document.querySelector('#content .module-table-v25');if(!table)return;document.querySelector('#content .data-context-v32')?.remove();const list=rows.map(payload),auth=sourceAuthority(),dates=list.map(p=>p.date).filter(validDate).sort(),historical=list.filter(p=>p.source_sheet||p.source_record).length,live=list.length-historical;
+  const box=document.createElement('section');box.className='panel data-context-v32';const head=document.createElement('div');head.className='release-section-head';const left=document.createElement('div');add(left,'span','DATA CONTEXT','eyebrow');add(left,'h3',domainLabel[auth.domain]||modules[opModule]?.[0]||opModule);add(left,'p','Periode mengikuti tanggal transaksi; nama file tidak digunakan sebagai periode laporan.');head.append(left);add(head,'span',auth.approved&&auth.id?`Authoritative · ${auth.name||auth.id}`:'Source authority belum disahkan','release-status '+(auth.approved&&auth.id?'ok':'warn'));box.append(head);
+  const facts=document.createElement('div');facts.className='release-grid';const range=dates.length?(dates[0]===dates[dates.length-1]?dates[0]:`${dates[0]} — ${dates[dates.length-1]}`):'Belum tersedia pada baris tampil';for(const [label,value] of [['Rentang baris tampil',range],['Asal data',`${historical} historis · ${live} operasional`],['Kebijakan unit','Satuan sumber dipertahankan; tidak agregasi lintas unit']]){const card=document.createElement('div');card.className='release-card';add(card,'small',label);add(card,'strong',value);facts.append(card);}box.append(facts);
+  const msg=notes(list);if(msg.length){const details=document.createElement('details');details.className='sheetinfo';add(details,'summary',`Catatan interpretasi (${msg.length})`);const ul=document.createElement('ul');msg.forEach(n=>add(ul,'li',n));details.append(ul);box.append(details);}table.closest('.tablewrap')?.insertAdjacentElement('beforebegin',box);
+  if(opModule==='confirmation'){[...table.querySelectorAll('tbody tr')].forEach((tr,i)=>{const p=list[i];if(!p||!['qty','scrap','hours'].some(k=>Number.isFinite(Number(p[k]))&&Number(p[k])<0))return;tr.dataset.reversal='1';const first=tr.querySelector('td');if(first&&!first.querySelector('.v32-reversal'))add(first,'span','Reversal','pill v32-reversal');});}
+ }
+ operations=async function(...args){const out=await baseOperations(...args);queueMicrotask(paintDataContext);return out;};
+ window.DataContextV32={paint:paintDataContext,sourceAuthority,notes};
+})();
