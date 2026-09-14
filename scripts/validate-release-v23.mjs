@@ -14,7 +14,9 @@ const checks=[
  ['source row editor does not expose JSON',!/JSON nilai|Kolom tambahan \(JSON/i.test(v23)],
  ['source row editor keeps Excel column schema',v23.includes("/^[A-Z]{1,3}$/")&&!v23.includes('__CHANGE_NOTE')],
  ['source row write remains permission guarded',v23.includes("can(dept,'create')")],
- ['dashboard distinguishes historical and live data',dash.includes('Konteks data')&&dash.includes('snapshot workbook Agustus 2026')&&dash.includes('D1 dan event live')],
+ ['archive delete uses application dialog',v23.includes('archiveRowDialog')&&v23.includes('rp23DeleteConfirm')],
+ ['dashboard distinguishes historical and live data',dash.includes('Konteks data historis')&&dash.includes('D1 dan event live')&&dash.includes('Tanggal transaksi/tanggal kerja')],
+ ['dashboard does not hardcode reporting month',!dash.includes('snapshot workbook Agustus 2026')],
  ['support page uses business-facing labels',support.includes('Dukungan & Pemulihan')&&support.includes('Belum diuji')&&support.includes('Terhubung')&&!support.includes('<span>Support & Recovery</span>')],
  ['responsive v23 styling present',css.includes('@media(max-width:680px)')&&css.includes('.rp23-field')]
 ];
