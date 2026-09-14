@@ -8,6 +8,7 @@
     if(m.unit==='Rp')return 'Rp '+fmt(v);
     return fmt(v,1)+(m.unit?' '+m.unit:'');
   };
+  const metricLabel=(m,dept)=>dept==='MTC'&&m.key==='mtbf'?'MTBF fleet · live estimate':dept==='MTC'&&m.key==='mttr'?'MTTR fleet · maintenance live':m.label;
   const dashboardV11=dashboard;
   dashboard=async function(){
     await dashboardV11();
@@ -28,8 +29,8 @@
     let data;try{data=await api('/role-dashboard?department='+encodeURIComponent(dept));}catch(e){return;}
     let host=content.querySelector('.role-operational-kpi');
     if(!host){host=document.createElement('section');host.className='panel role-operational-kpi';const focus=content.querySelector('.role-focus-panel');if(focus)focus.insertAdjacentElement('beforebegin',host);else content.append(host);}
-    const department=data.department||dept,updated=data.generated_at?new Date(data.generated_at).toLocaleString('id-ID'):'waktu server tidak tersedia';
-    host.innerHTML=`<div class="release-section-head"><div><h2>KPI Operasional · ${esc(departments[department]||department)}</h2><p>Data dihitung dari D1 dan event live yang tersedia. Nilai kosong tidak diganti dengan estimasi. Diperbarui ${esc(updated)}.</p></div>${user?.role==='superadmin'?`<label class="role-dept-select">Fokus<select id="roleDeptSelect">${Object.entries(departments).map(([k,n])=>`<option value="${k}" ${k===department?'selected':''}>${esc(n)}</option>`).join('')}</select></label>`:''}</div><div class="role-kpi-grid">${(data.metrics||[]).map(m=>`<article><span>${esc(m.label)}</span><strong>${esc(metricValue(m))}</strong><small>${esc(m.source||'D1')}</small>${m.note?`<p>${esc(m.note)}</p>`:''}</article>`).join('')||'<div class="release-empty">Belum ada KPI operasional untuk department ini.</div>'}</div>`;
+    const department=data.department||dept,updated=data.generated_at?new Date(data.generated_at).toLocaleString('id-ID'):'waktu server tidak tersedia',scopeNote=department==='MTC'?'MTBF/MTTR live di sini adalah indikator fleet dari event D1 yang tersedia, bukan pengganti KPI historis sampai definisi dan source authority disahkan.':department==='QC'?'Kuantitas QC live ditampilkan per satuan. Event lama tanpa satuan tidak dimasukkan ke total kuantitas lintas unit.':'KPI live tidak mengganti definisi historis/source authority yang belum disahkan.';
+    host.innerHTML=`<div class="release-section-head"><div><h2>KPI Operasional · ${esc(departments[department]||department)}</h2><p>Data dihitung dari D1 dan event live yang tersedia. Nilai kosong tidak diganti dengan estimasi. Diperbarui ${esc(updated)}.</p></div>${user?.role==='superadmin'?`<label class="role-dept-select">Fokus<select id="roleDeptSelect">${Object.entries(departments).map(([k,n])=>`<option value="${k}" ${k===department?'selected':''}>${esc(n)}</option>`).join('')}</select></label>`:''}</div><div class="role-kpi-grid">${(data.metrics||[]).map(m=>`<article><span>${esc(metricLabel(m,department))}</span><strong>${esc(metricValue(m))}</strong><small>${esc(m.source||'D1')}</small>${m.note?`<p>${esc(m.note)}</p>`:''}</article>`).join('')||'<div class="release-empty">Belum ada KPI operasional untuk department ini.</div>'}</div><p class="muted role-kpi-scope">${esc(scopeNote)}</p>`;
     const sel=host.querySelector('#roleDeptSelect');if(sel)sel.onchange=()=>renderRoleOperationalKpi(sel.value);
   }
 
