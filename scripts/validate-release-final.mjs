@@ -23,6 +23,7 @@ const oc31view=read('frontend/operational-control-view-v31.js');
 const oc31edit=read('frontend/operational-control-edit-v31.js');
 const oc31runtime=read('frontend/operational-control-runtime-v31.js');
 const resilience33=read('frontend/release-resilience-v33.js');
+const dashboard34=read('frontend/dashboard-period-v34.js');
 const back=read('backend/release-v11.mjs');
 const security=read('backend/release-v15-security.mjs');
 const governance19=read('backend/release-v19-governance.mjs');
@@ -31,13 +32,13 @@ const supportBackend21=read('backend/release-v21-support.mjs');
 const production=read('backend/worker-production.mjs');
 const realtime=read('backend/realtime.mjs');
 const wrangler=read('wrangler.toml');
-const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,machine20ui,uatCore,uatView,uatEdit,release18,support21,oc31core,oc31view,oc31edit,oc31runtime,resilience33].join('\n');
+const active=[r10,r11,r12,r13,r14,dgCore,dgView,dgEdit,machine20ui,uatCore,uatView,uatEdit,release18,support21,oc31core,oc31view,oc31edit,oc31runtime,resilience33,dashboard34].join('\n');
 const supportCall=production.indexOf('const supportResponse=await handleSupportV21');
 const machineCall=production.indexOf('const machineGovernanceResponse=await handleMachineGovernanceV20');
 const governanceCall=production.indexOf('const governanceResponse=await handleGovernanceV19');
 const securityCall=production.indexOf('const securityResponse=await handleSecurityV15');
 const releaseCall=production.indexOf('const releaseResponse=await handleReleaseV11');
-const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','machine-governance-v20.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js','support-recovery-v21.js','operational-control-core-v31.js','operational-control-view-v31.js','operational-control-edit-v31.js','operational-control-runtime-v31.js','release-resilience-v33.js'];
+const bundles=['release-v10.js','release-v11.js','role-dashboard-v12.js','workflow-v13.js','governance-v14.js','data-governance-core-v16.js','data-governance-view-v16.js','data-governance-edit-v16.js','machine-governance-v20.js','uat-release-core-v17.js','uat-release-view-v17.js','uat-release-edit-v17.js','release-status-v18.js','support-recovery-v21.js','operational-control-core-v31.js','operational-control-view-v31.js','operational-control-edit-v31.js','operational-control-runtime-v31.js','release-resilience-v33.js','dashboard-period-v34.js'];
 const checks=[
  ['release bundles active',bundles.every(x=>index.includes(x))],
  ['core department modules',['confirmation','planning','production','downtime','quality','maintenance','development','checklist','logbook','process','energy','master','project','batch'].every(x=>core.includes(x))],
@@ -66,6 +67,7 @@ const checks=[
  ['data governance approval remains explicit',dgEdit.includes('name="approved"')&&dgEdit.includes('sudah diverifikasi dan disetujui pemilik proses')],
  ['backend governance approval completeness',governance19.includes('Baseline KPI belum lengkap')&&governance19.includes('Canonical machine tidak boleh kosong')&&governance19.includes('Kalender shift belum lengkap')&&governance19.includes('Sumber authoritative belum ditetapkan')&&governance19.includes('Join grain wajib')],
  ['backend governance restricted to superadmin',governance19.includes("u.role!=='superadmin'")&&governance19.includes('hanya dapat disahkan oleh Superadmin')],
+ ['authoritative source ids must exist in D1',governance19.includes('Source Authority ${domain}: source ID tidak ditemukan pada D1')&&governance19.includes("SELECT id FROM sources WHERE id=?")],
  ['approved machine aliases gate runtime',machine20.includes("c?.approved===true")&&machine20.includes('DATA_GOVERNANCE.machine_aliases')],
  ['canonical Start PRO validates plan equivalence',machine20.includes('planCode=canonical(cfg,pp.machine)')&&machine20.includes('planCode!==code')&&machine20.includes("pp.status!=='Released'")],
  ['canonical Edge preserves source machine',machine20.includes('source_machine_code')&&machine20.includes("ingestMachineEvents(env,applied.events,'machine-edge-governed')")],
@@ -99,8 +101,11 @@ const checks=[
  ['HMI cycle matching fails safe on material ambiguity',oc31runtime.includes('cycleDecision')&&oc31runtime.includes('ambiguous_material')&&oc31runtime.includes('material_context_required')&&oc31runtime.includes('Belum dapat dipilih otomatis')],
  ['governed downtime requires approved baseline reason',oc31runtime.includes('select.required=true')&&oc31runtime.includes('readOnly=true')&&oc31runtime.includes('Belum ada reason')&&oc31runtime.includes("dept.value='PROD'")],
  ['data context preserves units periods reversal and source authority',oc31runtime.includes('Multi-unit terdeteksi')&&oc31runtime.includes('reversal candidate')&&oc31runtime.includes('Periode mengikuti tanggal transaksi')&&oc31runtime.includes('Source authority belum disahkan')],
+ ['process data context is quality-owned',oc31runtime.includes("process:'quality'")&&oc31runtime.includes('Process parameter berada pada domain Quality')],
+ ['data context derives period from transaction fields',oc31runtime.includes("const dateOf=")&&oc31runtime.includes("['work_date','date','report_date','finish_date','start_date']")&&oc31runtime.includes('timestamp operasional hanya fallback')],
  ['resilience resets stale department sheet',resilience33.includes('!sheets.some(s=>s.id===activeSheet)')&&resilience33.includes('Belum ada sheet sumber')&&resilience33.includes('retryDept')],
  ['resilience previews common browser image kinds',resilience33.includes("['jpg','jpeg','webp','gif']")&&resilience33.includes("kind==='svg'?'png'"))],
+ ['dashboard period derives from source cells',dashboard34.includes('excelEpoch')&&dashboard34.includes('toDate')&&dashboard34.includes('periode berasal dari cell tanggal sumber')&&dashboard34.includes('Trend OEE ${esc(lastPeriod.label)}')],
  ['D1 only configuration',wrangler.includes('[[d1_databases]]')&&!/\[\[r2_buckets\]\]/.test(wrangler)],
  ['no prototype language in active release UI',!/\b(prototype|mockup|dummy|lorem ipsum|data demo|contoh data)\b/i.test(active)]
 ];
