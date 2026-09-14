@@ -11,8 +11,18 @@
   const dashboardV11=dashboard;
   dashboard=async function(){
     await dashboardV11();
+    renderDataContext();
     await renderRoleOperationalKpi(user?.role==='superadmin'?'PROD':user?.department);
   };
+  function renderDataContext(){
+    const content=$('#content');if(!content)return;
+    const subtitle=content.querySelector('.heading .muted');if(subtitle)subtitle.textContent='Snapshot OEE sumber dan KPI operasional dari D1/live';
+    if(content.querySelector('.role-data-context'))return;
+    const headingEl=content.querySelector('.heading');if(!headingEl)return;
+    const context=document.createElement('div');context.className='role-data-context';
+    context.innerHTML='<div><strong>Konteks data</strong><span>Trend OEE historis: snapshot workbook Agustus 2026</span></div><div><strong>Operasional</strong><span>KPI department: D1 dan event live yang tersedia</span></div><div><strong>Periode sumber</strong><span>Mengikuti metadata masing-masing file, bukan nama file semata</span></div>';
+    headingEl.insertAdjacentElement('afterend',context);
+  }
   async function renderRoleOperationalKpi(dept){
     const content=$('#content');if(!content)return;
     let data;try{data=await api('/role-dashboard?department='+encodeURIComponent(dept));}catch(e){return;}
