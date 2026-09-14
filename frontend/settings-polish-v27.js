@@ -5,7 +5,8 @@
   ['DISPLAY_LAYOUT.','Layout Display Mesin','settings'],
   ['DATA_GOVERNANCE.','Definisi Data & KPI','data-governance'],
   ['UAT_RELEASE.','UAT & Go-Live','uat-release'],
-  ['RELEASE_READINESS.','Tata Kelola & Readiness','governance']
+  ['RELEASE_READINESS.','Tata Kelola & Readiness','governance'],
+  ['OPERATIONAL_CONTROL.','Standar Operasional','operational-control']
  ];
  const roleName=()=>user?.role==='superadmin'?'Superadmin':user?.role==='admin'?'Admin Department':'Viewer';
  const parse=(kind,raw)=>{if(kind==='number'){const n=Number(raw);if(raw===''||!Number.isFinite(n))throw Error('Nilai angka belum valid.');return n;}if(kind==='boolean')return raw==='true';if(kind==='json'){try{return JSON.parse(raw||'{}')}catch{throw Error('JSON lanjutan belum valid.')}}return String(raw??'');};
@@ -19,7 +20,7 @@
  }
  function shortcuts(panel){
   if(user?.role!=='superadmin'||panel.querySelector('.v27-shortcuts'))return;
-  const box=document.createElement('div');box.className='v27-shortcuts';box.innerHTML='<div><strong>Editor khusus</strong><span>Gunakan halaman khusus untuk konfigurasi terstruktur agar validasi bisnis tetap aktif.</span></div><div class="v27-shortcut-actions"><button type="button" data-v27-view="data-governance">Definisi Data & KPI</button><button type="button" data-v27-view="uat-release">UAT & Go-Live</button><button type="button" data-v27-view="governance">Tata Kelola & Readiness</button></div>';panel.prepend(box);box.querySelectorAll('[data-v27-view]').forEach(b=>b.onclick=()=>navigate(b.dataset.v27View));
+  const box=document.createElement('div');box.className='v27-shortcuts';box.innerHTML='<div><strong>Editor khusus</strong><span>Gunakan halaman khusus untuk konfigurasi terstruktur agar validasi bisnis tetap aktif.</span></div><div class="v27-shortcut-actions"><button type="button" data-v27-view="data-governance">Definisi Data & KPI</button><button type="button" data-v27-view="operational-control">Standar Operasional</button><button type="button" data-v27-view="uat-release">UAT & Go-Live</button><button type="button" data-v27-view="governance">Tata Kelola & Readiness</button></div>';panel.prepend(box);box.querySelectorAll('[data-v27-view]').forEach(b=>b.onclick=()=>navigate(b.dataset.v27View));
  }
  function labelExisting(panel){
   panel.querySelectorAll('details').forEach(d=>{
@@ -39,7 +40,7 @@
   form.dataset.v27='1';shortcuts(system);labelExisting(system);
   const own=user?.department||'',isSuper=user?.role==='superadmin';
   form.className='formgrid de5-config-form v27-settings-form';
-  form.innerHTML=`<div class="full v27-form-head"><div><strong>Parameter Sistem</strong><span>${isSuper?'Kelola parameter lintas department dengan tipe data terkontrol.':'Kelola parameter untuk '+esc(departments[own]||own)+' sesuai izin akun.'}</span></div><span class="v27-role">${esc(roleName())}</span></div><label>Department${isSuper?`<select name="department">${Object.keys(departments).map(d=>`<option value="${d}">${esc(departments[d]||d)}</option>`).join('')}</select>`:`<input value="${esc(departments[own]||own)}" disabled><input type="hidden" name="department" value="${esc(own)}">`}</label><label>Kunci parameter<input name="key" required placeholder="Contoh: PROD.target_shift"></label><label>Tipe nilai<select name="kind"><option value="text">Teks</option><option value="number">Angka</option><option value="boolean">Ya / Tidak</option>${isSuper?'<option value="json">JSON lanjutan</option>':''}</select></label><label class="full">Nilai<div id="v27Value"></div></label><div class="full v27-form-note">Parameter Data Governance, UAT, Release Readiness, dan Layout Display dikelola melalui editor khusus. Perubahan tetap tercatat pada audit trail.</div><button class="primary full">Simpan parameter</button>`;
+  form.innerHTML=`<div class="full v27-form-head"><div><strong>Parameter Sistem</strong><span>${isSuper?'Kelola parameter lintas department dengan tipe data terkontrol.':'Kelola parameter untuk '+esc(departments[own]||own)+' sesuai izin akun.'}</span></div><span class="v27-role">${esc(roleName())}</span></div><label>Department${isSuper?`<select name="department">${Object.keys(departments).map(d=>`<option value="${d}">${esc(departments[d]||d)}</option>`).join('')}</select>`:`<input value="${esc(departments[own]||own)}" disabled><input type="hidden" name="department" value="${esc(own)}">`}</label><label>Kunci parameter<input name="key" required placeholder="Contoh: PROD.target_shift"></label><label>Tipe nilai<select name="kind"><option value="text">Teks</option><option value="number">Angka</option><option value="boolean">Ya / Tidak</option>${isSuper?'<option value="json">JSON lanjutan</option>':''}</select></label><label class="full">Nilai<div id="v27Value"></div></label><div class="full v27-form-note">Data Governance, Standar Operasional, UAT, Release Readiness, dan Layout Display dikelola melalui editor khusus. Perubahan tetap tercatat pada audit trail.</div><button class="primary full">Simpan parameter</button>`;
   const kind=form.elements.kind,valueHost=form.querySelector('#v27Value');renderValue(valueHost,kind.value,'');kind.onchange=()=>renderValue(valueHost,kind.value,'');
   form.onsubmit=async e=>{
    e.preventDefault();const fd=new FormData(form),key=String(fd.get('key')||'').trim(),match=dedicated(key);
