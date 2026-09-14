@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Build a D1 Free-plan seed from the audited SQLite snapshot and original files.
 
-Historical spreadsheet rows are packed into JSON chunks. Original files are split into
-small BLOB rows so every SQL statement stays below D1's 100 KB statement limit.
-No user account or secret is included.
+Historical spreadsheet rows are packed into JSON chunks. Original files and embedded
+OOXML media are split into small BLOB rows so every SQL statement stays below D1's
+100 KB statement limit. No user account or secret is included.
 """
 from __future__ import annotations
-import hashlib, json, mimetypes, shutil, sqlite3
+import hashlib, json, mimetypes, shutil, sqlite3, zipfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -19,11 +19,13 @@ RECORD_JSON_TARGET=36_000
 FILE_CHUNK=45_056
 
 MIME={
- 'pdf':'application/pdf','png':'image/png','jpeg':'image/jpeg','jpg':'image/jpeg',
+ 'pdf':'application/pdf','png':'image/png','jpeg':'image/jpeg','jpg':'image/jpeg','gif':'image/gif','webp':'image/webp','svg':'image/svg+xml',
+ 'emf':'image/emf','wmf':'image/wmf','wdp':'image/vnd.ms-photo',
  'pptx':'application/vnd.openxmlformats-officedocument.presentationml.presentation',
  'xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
- 'xls':'application/vnd.ms-excel',
+ 'xlsm':'application/vnd.ms-excel.sheet.macroEnabled.12','xls':'application/vnd.ms-excel',
 }
+OFFICE_MEDIA_EXT={'.xlsx','.xlsm','.pptx'}
 
 def q(v):
     if v is None:return 'NULL'
@@ -91,20 +93,45 @@ for sh in con.execute('SELECT id,department FROM sheets ORDER BY id'):
 counts['record_chunks']=chunk_count;counts['base_records']=base_record_count
 
 file_count=file_chunks=file_bytes=0
+asset_count=asset_chunks=asset_bytes=0
 sources={r['id']:r for r in con.execute('SELECT * FROM sources')}
+
+def mime_for(name):
+    ext=Path(name).suffix.lower().lstrip('.')
+    return MIME.get(ext) or mimetypes.guess_type(name)[0] or 'application/octet-stream'
+
+def write_blob(file_id,name,raw):
+    global file_count,file_chunks,file_bytes
+    sha=hashlib.sha256(raw).hexdigest(); chunks=(len(raw)+FILE_CHUNK-1)//FILE_CHUNK
+    w.add(stmt('source_files',['source_id','name','mime_type','bytes','sha256','chunks'],[file_id,name,mime_for(name),len(raw),sha,chunks]));file_count+=1;file_bytes+=len(raw)
+    for i in range(chunks):
+        part=raw[i*FILE_CHUNK:(i+1)*FILE_CHUNK]
+        w.add(f"INSERT INTO source_file_chunks(source_id,chunk_no,data) VALUES({q(file_id)},{i},X'{part.hex()}');\n");file_chunks+=1
+    return sha,chunks
+
+def embedded_media(source_id,p):
+    global asset_count,asset_chunks,asset_bytes,file_count,file_chunks,file_bytes
+    if p.suffix.lower() not in OFFICE_MEDIA_EXT:return
+    try:
+        with zipfile.ZipFile(p) as z:
+            members=[n for n in z.namelist() if '/media/' in n and not n.endswith('/')]
+            for member in sorted(members):
+                raw=z.read(member); occurrence=hashlib.sha256(f'{source_id}|{member}'.encode()).hexdigest()[:24];asset_id=f'asset:{occurrence}'
+                before_chunks=file_chunks;before_bytes=file_bytes
+                write_blob(asset_id,Path(member).name,raw)
+                asset_chunks+=file_chunks-before_chunks;asset_bytes+=file_bytes-before_bytes;asset_count+=1
+                w.add(stmt('asset_catalog',['id','parent','path'],[asset_id,source_id,member]))
+    except zipfile.BadZipFile:
+        return
+
 for source_id in sorted(sources):
     folder=ORIGINALS/source_id
     if not folder.exists(): continue
     candidates=[p for p in folder.iterdir() if p.is_file()]
     if not candidates: continue
-    p=candidates[0]; raw=p.read_bytes(); ext=p.suffix.lower().lstrip('.'); mime=MIME.get(ext) or mimetypes.guess_type(p.name)[0] or 'application/octet-stream'
-    sha=hashlib.sha256(raw).hexdigest(); chunks=(len(raw)+FILE_CHUNK-1)//FILE_CHUNK
-    w.add(stmt('source_files',['source_id','name','mime_type','bytes','sha256','chunks'],[source_id,p.name,mime,len(raw),sha,chunks]));file_count+=1;file_bytes+=len(raw)
-    for i in range(chunks):
-        part=raw[i*FILE_CHUNK:(i+1)*FILE_CHUNK]
-        w.add(f"INSERT INTO source_file_chunks(source_id,chunk_no,data) VALUES({q(source_id)},{i},X'{part.hex()}');\n");file_chunks+=1
-counts.update(source_files=file_count,source_file_chunks=file_chunks,source_file_bytes=file_bytes,total_seed_rows=w.rows)
+    p=candidates[0]; raw=p.read_bytes();write_blob(source_id,p.name,raw);embedded_media(source_id,p)
+counts.update(source_files=file_count,source_file_chunks=file_chunks,source_file_bytes=file_bytes,embedded_assets=asset_count,embedded_asset_chunks=asset_chunks,embedded_asset_bytes=asset_bytes,total_seed_rows=w.rows)
 w.close();con.close()
-summary={'format':'OEE Collaboraction D1-only free-plan seed','counts':counts,'sql_files':len(w.files),'sql_bytes':sum(p.stat().st_size for p in w.files),'file_chunk_bytes':FILE_CHUNK,'record_json_target_bytes':RECORD_JSON_TARGET}
+summary={'format':'OEE Collaboraction D1-only free-plan seed','counts':counts,'sql_files':len(w.files),'sql_bytes':sum(p.stat().st_size for p in w.files),'file_chunk_bytes':FILE_CHUNK,'record_json_target_bytes':RECORD_JSON_TARGET,'asset_policy':'Original Office files remain authoritative; embedded media are child preview assets linked through asset_catalog.'}
 (OUT/'summary.json').write_text(json.dumps(summary,indent=2,ensure_ascii=False),encoding='utf-8')
 print(json.dumps(summary,indent=2,ensure_ascii=False))
