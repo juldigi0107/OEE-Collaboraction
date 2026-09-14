@@ -28,6 +28,8 @@ export default {
     if(path==='/api/assets'||path==='/api/import-data')await ensureAdditiveSchema(env);
     const supportResponse=await handleSupportV21(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);
     if(supportResponse)return supportResponse;
+    const planningSafetyResponse=await handlePlanningSafetyV39(req,env);
+    if(planningSafetyResponse)return planningSafetyResponse;
     const machineGovernanceResponse=await handleMachineGovernanceV20(req,env);
     if(machineGovernanceResponse)return machineGovernanceResponse;
     const operationalSafetyResponse=await handleOperationalSafetyV35(req,env);
@@ -36,8 +38,6 @@ export default {
     if(governanceResponse)return governanceResponse;
     const securityResponse=await handleSecurityV15(req,env);
     if(securityResponse)return securityResponse;
-    const planningSafetyResponse=await handlePlanningSafetyV39(req,env);
-    if(planningSafetyResponse)return planningSafetyResponse;
     const hmiSafetyResponse=await handleHmiSafetyV40(req,env);
     if(hmiSafetyResponse)return hmiSafetyResponse;
     const releaseResponse=await handleReleaseV11(req,env);
