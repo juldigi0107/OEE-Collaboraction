@@ -32,12 +32,20 @@
   figure.append(img,cap);link.insertAdjacentElement('afterend',figure);
  };
 
- /* Replace the legacy free-form JSON field with a native dynamic column editor. */
+ /* Replace the legacy free-form JSON field for new rows and remove native browser confirmation for archive deletion. */
  const baseRowDetail=rowDetail;
  rowDetail=function(row,dept){
-  if(row)return baseRowDetail(row,dept);
-  return openNativeSourceRow(dept);
+  if(!row)return openNativeSourceRow(dept);
+  const out=baseRowDetail(row,dept);
+  const del=$('#deleteRow');if(del)del.onclick=()=>archiveRowDialog(row,dept);
+  return out;
  };
+ function archiveRowDialog(row,dept){
+  const sheet=(catalog?.sheets||[]).find(s=>s.id===activeSheet),source=(catalog?.sources||[]).find(s=>s.id===sheet?.source_id);
+  dialog('Arsipkan baris sumber',`<div class="rp23-source-context"><strong>Baris ${esc(row.row_num)}</strong><span>${esc(sheet?.name||'Sheet sumber')} · ${esc(source?.name||departments[dept]||dept)}</span></div><div class="notice">Baris akan dihapus dari tampilan aktif melalui soft delete. File sumber asli tetap dipertahankan dan aktivitas ini tercatat pada audit trail.</div><div class="formactions"><button type="button" id="rp23DeleteCancel">Batal</button><button type="button" id="rp23DeleteConfirm" class="danger">Arsipkan baris</button></div>`);
+  $('#rp23DeleteCancel').onclick=()=>rowDetail(row,dept);
+  $('#rp23DeleteConfirm').onclick=async()=>{const btn=$('#rp23DeleteConfirm');btn.disabled=true;try{await api('/records/'+encodeURIComponent(row.id),'DELETE',{version:row.version});modal.close();toast('Baris diarsipkan. File sumber asli dan jejak audit tetap tersedia.');await render();}catch(err){btn.disabled=false;toast(err.message);}};
+ }
  function openNativeSourceRow(dept){
   if(!can(dept,'create'))return toast('Akun ini tidak memiliki izin menambah baris sumber.');
   const sheet=(catalog?.sheets||[]).find(s=>s.id===activeSheet);
