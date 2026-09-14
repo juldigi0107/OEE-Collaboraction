@@ -19,7 +19,7 @@ async function tableCounts(db){
  const rows=[];for(const [key,table,where] of specs)rows.push({key,count:await count(db,table,where||'1=1')});return rows;
 }
 function selectedSetting(key){return /^(DATA_GOVERNANCE\.|OPERATIONAL_CONTROL\.|UAT_RELEASE\.|RELEASE_READINESS\.|DISPLAY_LAYOUT\.|brand$)/.test(key);}
-export async function handleSupportV21(req,env,buildVersion){
+export async function handleSupportV21(req,env,buildVersion,releaseFingerprint=[]){
  const path=new URL(req.url).pathname;if(req.method!=='GET'||path!=='/api/release-manifest')return null;
  const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const pf=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(pf?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);if(u.role!=='superadmin')return out(req,env,{error:'Release Manifest khusus Superadmin'},403);
  const settingsRaw=await all(env.DB,'SELECT key,value,department FROM settings ORDER BY key'),settings=settingsRaw.filter(x=>selectedSetting(x.key)).map(x=>{const parsed=J(x.value,x.value);return {key:x.key,department:x.department,value:redact(parsed,x.key)}});
@@ -34,7 +34,7 @@ export async function handleSupportV21(req,env,buildVersion){
  return out(req,env,{
   manifest_type:'configuration_and_release_manifest',
   disclaimer:'Manifest ini bukan full backup D1 dan tidak dapat menggantikan prosedur export/restore database Cloudflare.',
-  generated_at:new Date().toISOString(),service:'OEE Collaboraction',build_version:buildVersion,storage:'D1-only',r2:false,
+  generated_at:new Date().toISOString(),service:'OEE Collaboraction',build_version:buildVersion,release_fingerprint:[...releaseFingerprint],storage:'D1-only',r2:false,
   runtime:{database_binding:'DB',schema:'ready',frontend_assets:'Worker assets + GitHub Pages'},
   operational:{pending_approvals:pendingApprovals,open_downtime:openDowntime,open_maintenance_calls:openMaintenance,delivery_open_actions:deliveryOpen},
   table_counts:await tableCounts(env.DB),governance,operational_control:operationalControl,uat,active_users:activeUsers,integrations,sources,settings
