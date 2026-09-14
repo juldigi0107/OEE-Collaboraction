@@ -38,9 +38,37 @@ function validateUAT(key,v){
  }
  return null;
 }
+function duplicate(items,keyFn){const seen=new Set();for(const row of items){const k=keyFn(row);if(!k)continue;if(seen.has(k))return k;seen.add(k);}return '';}
+function validDate(v){return /^\d{4}-\d{2}-\d{2}$/.test(clean(v))&&!Number.isNaN(Date.parse(clean(v)));}
+function validateOperational(key,v){
+ if(v.approved!==true)return null;
+ const items=Array.isArray(v.items)?v.items:[];
+ if(key.endsWith('cycle_targets')){
+  if(!items.length)return 'Minimal satu Cycle Target wajib ditetapkan sebelum baseline disahkan';
+  const dup=duplicate(items,r=>[norm(r.machine),norm(r.process),norm(r.material_scope||'*'),norm(r.unit)].join('|'));if(dup)return 'Cycle Target ganda ditemukan untuk kombinasi mesin/proses/material/satuan yang sama';
+  for(let i=0;i<items.length;i++){const r=items[i],n=i+1;if(!clean(r.machine)||!clean(r.unit))return `Cycle Target baris ${n}: mesin dan satuan wajib diisi`;const speed=Number(r.target_speed_per_hour||0),cycle=Number(r.cycle_seconds||0);if(!(speed>0)&&!(cycle>0))return `Cycle Target baris ${n}: target speed atau cycle time harus lebih dari nol`;if(!clean(r.owner)||!clean(r.source_ref))return `Cycle Target baris ${n}: owner dan referensi standard wajib diisi`;if(!validDate(r.effective_from))return `Cycle Target baris ${n}: effective date wajib valid`;}
+ }
+ if(key.endsWith('loss_time_classification')){
+  if(!items.length)return 'Minimal satu klasifikasi loss-time wajib ditetapkan';const dup=duplicate(items,r=>norm(r.code||r.label));if(dup)return 'Kode/nama loss-time ganda ditemukan';
+  for(let i=0;i<items.length;i++){const r=items[i],n=i+1;if(!clean(r.code)||!clean(r.label))return `Loss-Time baris ${n}: code dan deskripsi wajib diisi`;if(!['PDT','UPDT','COJ'].includes(clean(r.class).toUpperCase()))return `Loss-Time baris ${n}: class harus PDT, UPDT, atau COJ`;if(!['PROD','MTC','QC','PPIC','PDS','PROJECT'].includes(clean(r.owner_department).toUpperCase()))return `Loss-Time baris ${n}: owner department tidak valid`;if(!clean(r.source_ref))return `Loss-Time baris ${n}: referensi sumber wajib diisi`;}
+ }
+ if(key.endsWith('machine_triggers')){
+  const active=items.filter(r=>r.enabled!==false);if(!active.length)return 'Minimal satu Machine Trigger aktif wajib ditetapkan';const events=new Set(['STATE','HEARTBEAT','COUNTER','ALARM','JOB']),ops=new Set(['eq','ne','gt','gte','lt','lte','truthy','falsy']);
+  for(let i=0;i<active.length;i++){const r=active[i],n=i+1;if(!clean(r.rule_name)||!clean(r.source_tag)||!clean(r.owner))return `Machine Trigger baris ${n}: rule, source tag, dan owner wajib diisi`;if(!ops.has(clean(r.operator)))return `Machine Trigger baris ${n}: operator tidak valid`;if(!events.has(clean(r.event_type).toUpperCase()))return `Machine Trigger baris ${n}: event type tidak valid`;}
+ }
+ if(key.endsWith('field_ownership')){
+  if(!items.length)return 'Field Ownership belum diisi';const domains=new Set(items.map(r=>clean(r.domain).toLowerCase()));for(const d of ['production','quality','maintenance','ppic','development','master'])if(!domains.has(d))return `Field Ownership belum mencakup domain ${d}`;
+  for(let i=0;i<items.length;i++){const r=items[i],n=i+1;if(!Array.isArray(r.fields)||!r.fields.length)return `Field Ownership baris ${n}: minimal satu field wajib diisi`;if(!clean(r.owner)||!clean(r.approver)||!clean(r.source_of_truth)||!clean(r.refresh_sla))return `Field Ownership baris ${n}: owner, approver, source of truth, dan refresh SLA wajib diisi`;}
+ }
+ if(key.endsWith('delivery_plan')){
+  if(!clean(v.release_owner)||!validDate(v.target_go_live_date))return 'Release owner dan target go-live date wajib valid sebelum Delivery Plan disahkan';
+  for(let i=0;i<items.length;i++){const r=items[i],n=i+1;if(!clean(r.title)||!clean(r.owner))return `Open Action baris ${n}: judul dan owner wajib diisi`;const status=clean(r.status).toLowerCase();if(!['closed','not_applicable'].includes(status))return `Open Action baris ${n} belum ditutup`;if(status==='closed'&&!clean(r.evidence))return `Open Action baris ${n}: evidence closure wajib diisi`;}
+ }
+ return null;
+}
 export async function handleGovernanceV19(req,env){
  if(req.method!=='PUT'||new URL(req.url).pathname!=='/api/settings')return null;
- let body;try{body=await req.clone().json();}catch{return null;}const key=clean(body?.key);if(!key.startsWith('DATA_GOVERNANCE.')&&!key.startsWith('UAT_RELEASE.'))return null;
- const u=await auth(req,env);if(!u)return null;if(u.role!=='superadmin')return out(req,env,403,'Data Governance dan UAT Release hanya dapat disahkan oleh Superadmin');
- const value=parse(body.value);const error=key.startsWith('DATA_GOVERNANCE.')?validateGovernance(key,value):validateUAT(key,value);return error?out(req,env,400,error):null;
+ let body;try{body=await req.clone().json();}catch{return null;}const key=clean(body?.key),isDG=key.startsWith('DATA_GOVERNANCE.'),isUAT=key.startsWith('UAT_RELEASE.'),isOC=key.startsWith('OPERATIONAL_CONTROL.');if(!isDG&&!isUAT&&!isOC)return null;
+ const u=await auth(req,env);if(!u)return null;if(u.role!=='superadmin')return out(req,env,403,'Baseline governance, UAT, dan Standar Operasional hanya dapat disahkan oleh Superadmin');
+ const value=parse(body.value),error=isDG?validateGovernance(key,value):isUAT?validateUAT(key,value):validateOperational(key,value);return error?out(req,env,400,error):null;
 }
