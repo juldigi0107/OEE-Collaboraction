@@ -90,14 +90,16 @@
   const shopfloorV10=shopfloor;
   shopfloor=async function(refresh=false){
     const result=await shopfloorV10(refresh);
-    await enhanceMaintenanceClosure();
+    await enhanceOperationalClosure();
     return result;
   };
-  async function enhanceMaintenanceClosure(){
-    const card=document.querySelector('.escalation-card');if(!card)return;
+  async function enhanceOperationalClosure(){
+    const card=document.querySelector('.escalation-card'),stop=document.querySelector('#stopDown');if(!card&&!stop)return;
     let overview;try{overview=await api('/realtime/overview');}catch{return;}
     const machine=(overview.machines||[]).find(m=>m.code===hmiMachine)||(overview.machines||[])[0];
-    const call=(overview.maintenance||[]).find(x=>x.machine_id===machine?.machine_id);if(!call)return;
+    const call=(overview.maintenance||[]).find(x=>x.machine_id===machine?.machine_id),down=(overview.downtime||[]).find(x=>x.machine_id===machine?.machine_id&&x.status==='OPEN');
+    if(stop&&down){stop.onclick=()=>closeDowntimeDialog(down);stop.dataset.releaseDialog='1';}
+    if(!card||!call)return;
     if(!card.querySelector('.maintenance-timeline')){
       const timeline=document.createElement('div');timeline.className='maintenance-timeline';timeline.innerHTML=`<span>Requested <strong>${esc(new Date(call.requested_ts).toLocaleString('id-ID'))}</strong></span>${call.acknowledged_ts?`<span>Acknowledged <strong>${esc(new Date(call.acknowledged_ts).toLocaleString('id-ID'))}</strong></span>`:''}`;card.append(timeline);
     }
@@ -105,8 +107,12 @@
       const btn=document.createElement('button');btn.id='closeMtc';btn.className='primary';btn.textContent='Close Maintenance';card.append(btn);btn.onclick=()=>closeMaintenanceDialog(call);
     }
   }
+  function closeDowntimeDialog(down){
+    dialog('Tutup Downtime',`<form id="closeDowntimeForm" class="approval-decision"><p><strong>${esc(down.class||'Downtime')} · ${esc(down.code||down.reason||'')}</strong></p><p>Root cause/tindakan menjadi bagian dari jejak downtime dan masuk antrean verifikasi setelah event ditutup.</p><label>Root cause / tindakan<textarea name="root_cause" required placeholder="Tuliskan penyebab utama dan tindakan yang dilakukan"></textarea></label><button class="primary">Tutup Downtime</button></form>`);
+    $('#closeDowntimeForm').onsubmit=async e=>{e.preventDefault();const root_cause=String(new FormData(e.target).get('root_cause')||'').trim();if(!root_cause)return;try{await api('/shopfloor/downtime/stop','POST',{id:down.id,root_cause});modal.close();toast('Downtime ditutup dan menunggu verifikasi root cause.');shopfloor();}catch(err){toast(err.message);}};
+  }
   function closeMaintenanceDialog(call){
-    dialog('Close Maintenance',`<form id="closeMaintenanceForm" class="approval-decision"><p>Isi tindakan penyelesaian sebelum maintenance call ditutup.</p><label>Tindakan / hasil perbaikan<textarea name="note" required placeholder="Contoh: sensor diganti, alignment dikoreksi, test run normal"></textarea></label><button class="primary">Tutup Maintenance</button></form>`);
+    dialog('Close Maintenance',`<form id="closeMaintenanceForm" class="approval-decision"><p>Isi tindakan penyelesaian sebelum maintenance call ditutup.</p><label>Tindakan / hasil perbaikan<textarea name="note" required placeholder="Sensor diganti, alignment dikoreksi, test run normal, atau tindakan aktual lainnya"></textarea></label><button class="primary">Tutup Maintenance</button></form>`);
     $('#closeMaintenanceForm').onsubmit=async e=>{e.preventDefault();const note=new FormData(e.target).get('note');try{await api('/shopfloor/maintenance/close','POST',{id:call.id,note});modal.close();toast('Maintenance call ditutup dan tercatat.');shopfloor();}catch(err){toast(err.message);}};
   }
 
