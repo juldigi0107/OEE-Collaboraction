@@ -39,7 +39,7 @@ jobs:
         run: |
           body=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/api/version)
           echo "$body"
-          echo "$body" | grep -Fq '"version":"6.1.0-source-audit"'
+          echo "$body" | grep -Fq '"version":"6.2.0"'
           echo "$body" | grep -Fq '"storage":"D1-only"'
           echo "$body" | grep -Fq '"r2":false'
       - name: Production D1 readiness check
