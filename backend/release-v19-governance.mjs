@@ -54,7 +54,7 @@ function validateOperational(key,v){
  }
  if(key.endsWith('machine_triggers')){
   const active=items.filter(r=>r.enabled!==false);if(!active.length)return 'Minimal satu Machine Trigger aktif wajib ditetapkan';const events=new Set(['STATE','HEARTBEAT','COUNTER','ALARM','JOB']),ops=new Set(['eq','ne','gt','gte','lt','lte','truthy','falsy']),states=new Set(['RUNNING','IDLE','PDT','UPDT','COJ','OFFLINE']);
-  for(let i=0;i<active.length;i++){const r=active[i],n=i+1,type=clean(r.event_type).toUpperCase();if(!clean(r.rule_name)||!clean(r.source_tag)||!clean(r.owner))return `Machine Trigger baris ${n}: rule, source tag, dan owner wajib diisi`;if(!ops.has(clean(r.operator)))return `Machine Trigger baris ${n}: operator tidak valid`;if(!events.has(type))return `Machine Trigger baris ${n}: event type tidak valid`;if(type==='STATE'&&!states.has(clean(r.action).toUpperCase()))return `Machine Trigger baris ${n}: action STATE harus RUNNING, IDLE, PDT, UPDT, COJ, atau OFFLINE`;}
+  for(let i=0;i<active.length;i++){const r=active[i],n=i+1,type=clean(r.event_type).toUpperCase();if(!clean(r.rule_name)||!clean(r.machine_scope)||!clean(r.source_tag)||!clean(r.owner))return `Machine Trigger baris ${n}: rule, machine scope, source tag, dan owner wajib diisi`;if(!ops.has(clean(r.operator)))return `Machine Trigger baris ${n}: operator tidak valid`;if(!events.has(type))return `Machine Trigger baris ${n}: event type tidak valid`;if(type==='STATE'&&!states.has(clean(r.action).toUpperCase()))return `Machine Trigger baris ${n}: action STATE harus RUNNING, IDLE, PDT, UPDT, COJ, atau OFFLINE`;}
  }
  if(key.endsWith('field_ownership')){
   if(!items.length)return 'Field Ownership belum diisi';const domains=new Set(items.map(r=>clean(r.domain).toLowerCase()));for(const d of ['production','quality','maintenance','ppic','development','master'])if(!domains.has(d))return `Field Ownership belum mencakup domain ${d}`;
@@ -68,9 +68,10 @@ function validateOperational(key,v){
 }
 async function saved(env,key){const row=await one(env.DB,'SELECT value FROM settings WHERE key=?',key);return parse(row?.value);}
 async function baselineApproved(env,key){return (await saved(env,key)).approved===true;}
+async function canonicalMachines(env){const cfg=await saved(env,'DATA_GOVERNANCE.machine_aliases');if(cfg.approved!==true)return null;return new Set((Array.isArray(cfg.items)?cfg.items:[]).map(x=>norm(x.canonical)).filter(Boolean));}
 async function validateDependencies(env,key,value){
- if(key==='OPERATIONAL_CONTROL.cycle_targets'&&value.approved===true&&!await baselineApproved(env,'DATA_GOVERNANCE.machine_aliases'))return 'Canonical machine/alias harus disahkan sebelum Cycle Target menjadi baseline';
- if(key==='OPERATIONAL_CONTROL.machine_triggers'&&value.approved===true&&!await baselineApproved(env,'DATA_GOVERNANCE.machine_aliases'))return 'Canonical machine/alias harus disahkan sebelum Machine Trigger diaktifkan';
+ if(key==='OPERATIONAL_CONTROL.cycle_targets'&&value.approved===true){const canon=await canonicalMachines(env);if(!canon)return 'Canonical machine/alias harus disahkan sebelum Cycle Target menjadi baseline';for(let i=0;i<(value.items||[]).length;i++)if(!canon.has(norm(value.items[i].machine)))return `Cycle Target baris ${i+1}: mesin harus memakai canonical machine yang sudah disahkan`;}
+ if(key==='OPERATIONAL_CONTROL.machine_triggers'&&value.approved===true){const canon=await canonicalMachines(env);if(!canon)return 'Canonical machine/alias harus disahkan sebelum Machine Trigger diaktifkan';const active=(value.items||[]).filter(r=>r.enabled!==false);for(let i=0;i<active.length;i++){const scope=clean(active[i].machine_scope);if(scope!=='*'&&!canon.has(norm(scope)))return `Machine Trigger aktif baris ${i+1}: machine scope harus * atau canonical machine yang sudah disahkan`;}}
  if(key==='OPERATIONAL_CONTROL.field_ownership'&&value.approved===true&&!await baselineApproved(env,'DATA_GOVERNANCE.source_authority'))return 'Source Authority harus disahkan sebelum Field Ownership menjadi baseline';
  if(key==='UAT_RELEASE.signoff'&&value.status==='passed'){
   for(const k of ['kpi_definitions','machine_aliases','shift_calendar','source_authority','join_grain'])if(!await baselineApproved(env,'DATA_GOVERNANCE.'+k))return `Final UAT menunggu Data Governance: ${k}`;
