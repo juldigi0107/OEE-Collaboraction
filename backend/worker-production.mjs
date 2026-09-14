@@ -8,9 +8,10 @@ import {handleOperationalSafetyV35} from './release-v35-operational-safety.mjs';
 import {handlePlanningSafetyV39} from './release-v39-planning-safety.mjs';
 import {handleHmiSafetyV40} from './release-v40-hmi-safety.mjs';
 import {handleDisplaySafetyV42} from './release-v42-display-safety.mjs';
+import {handleQualityUnitV44} from './release-v44-quality-unit.mjs';
 
 const BUILD_VERSION='6.2.0';
-const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42'];
+const RELEASE_FINGERPRINT=['data-governance-v16','uat-release-v17','machine-governance-v20','support-recovery-v21','access-governance-v28','display-lifecycle-v29','staged-import-v30','operational-control-v31','release-resilience-v33','period-aware-dashboard-v34','operational-safety-v35','planning-safety-v39','hmi-safety-v40','display-safety-v42','quality-unit-v44'];
 let schemaReady=null;
 async function ensureAdditiveSchema(env){
   if(!schemaReady){
@@ -43,6 +44,8 @@ export default {
     if(securityResponse)return securityResponse;
     const hmiSafetyResponse=await handleHmiSafetyV40(req,env);
     if(hmiSafetyResponse)return hmiSafetyResponse;
+    const qualityUnitResponse=await handleQualityUnitV44(req,env);
+    if(qualityUnitResponse)return qualityUnitResponse;
     const releaseResponse=await handleReleaseV11(req,env);
     if(releaseResponse)return releaseResponse;
     const signal=await captureReleaseV11(req);
