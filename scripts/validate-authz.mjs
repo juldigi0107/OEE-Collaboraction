@@ -11,6 +11,7 @@ const planAuthority=read('backend/release-v53-plan-authority.mjs');
 const runtimeSignoff=read('backend/release-v54-runtime-signoff.mjs');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
+const callPos=needle=>production.indexOf(needle);
 
 // Verify the production routing chain, otherwise checks could target dead code.
 need(wrangler.includes('main = "backend/worker-production.mjs"'),'wrangler.toml tidak menunjuk worker-production.mjs.');
@@ -42,7 +43,8 @@ for(const rule of [
 
 // Released planning is the execution authority at Start PRO.
 need(production.includes("import {handlePlanAuthorityV53} from './release-v53-plan-authority.mjs'"),'Planning authority v53 belum di-wire ke Worker production.');
-need(production.indexOf('handlePlanningSafetyV39')<production.indexOf('handlePlanAuthorityV53')&&production.indexOf('handlePlanAuthorityV53')<production.indexOf('handleMachineGovernanceV20'),'Urutan planning safety → planning authority → machine governance tidak terjaga.');
+const planningCall=callPos('const planningSafetyResponse=await handlePlanningSafetyV39'),planAuthorityCall=callPos('const planAuthorityResponse=await handlePlanAuthorityV53'),machineCall=callPos('const machineGovernanceResponse=await handleMachineGovernanceV20');
+need(planningCall>=0&&planAuthorityCall>planningCall&&machineCall>planAuthorityCall,'Urutan runtime planning safety → planning authority → machine governance tidak terjaga.');
 need(production.includes('plan-authority-v53'),'Release fingerprint belum memuat plan-authority-v53.');
 for(const rule of [
   ['PRO pada request tidak sama dengan Planning Released','Start PRO belum mengunci PRO ke planning Released.'],
@@ -54,7 +56,8 @@ for(const rule of [
 
 // Final UAT must fail closed when runtime consistency is not green.
 need(production.includes("import {handleRuntimeSignoffV54} from './release-v54-runtime-signoff.mjs'"),'Runtime signoff v54 belum di-wire ke Worker production.');
-need(production.indexOf('handleRuntimeSignoffV54')<production.indexOf('handleGovernanceV19'),'Runtime signoff gate harus berjalan sebelum governance settings disimpan.');
+const signoffCall=callPos('const runtimeSignoffResponse=await handleRuntimeSignoffV54'),governanceCall=callPos('const governanceResponse=await handleGovernanceV19');
+need(signoffCall>=0&&governanceCall>signoffCall,'Runtime signoff gate harus berjalan sebelum governance settings disimpan.');
 need(production.includes('runtime-signoff-v54'),'Release fingerprint belum memuat runtime-signoff-v54.');
 need(production.includes("'/api/settings'"),'Additive schema belum dijamin sebelum settings/signoff gate.');
 for(const rule of [
