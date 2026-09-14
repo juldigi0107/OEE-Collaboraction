@@ -17,7 +17,9 @@ const externalSource=v=>{const s=clean(v).toLowerCase();return !!s&&!s.startsWit
 const heartbeatAge=v=>{const t=Date.parse(v||'');return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/1000)):null;};
 async function canonicalMachine(env,raw){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.machine_aliases'"),cfg=parse(row?.value,{}),input=matchCode(raw);if(cfg?.approved===true&&input){for(const item of cfg.items||[]){for(const code of [item?.canonical,...(Array.isArray(item?.aliases)?item.aliases:[])])if(matchCode(code)===input)return cleanCode(item.canonical);}}return cleanCode(raw);}
 export async function captureTelemetryStartV61(req,env){
- const path=new URL(req.url).pathname;if(req.method!=='POST'||path!=='/api/shopfloor/start')return null;let body;try{body=await req.clone().json();}catch{return null;}const code=await canonicalMachine(env,body?.machine);if(!code)return {code:'',trusted:false};
+ const path=new URL(req.url).pathname;if(req.method!=='POST'||path!=='/api/shopfloor/start')return null;
+ const u=await auth(req,env);if(!u||!allow(u,'PROD','create'))return null;const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return null;
+ let body;try{body=await req.clone().json();}catch{return null;}const code=await canonicalMachine(env,body?.machine);if(!code)return {code:'',trusted:false};
  const row=await one(env.DB,'SELECT m.heartbeat_at,m.source_type,s.counter FROM machine_registry m LEFT JOIN machine_state s ON s.machine_id=m.id WHERE m.code=?',code),counter=Number(row?.counter),trusted=!!row&&fresh(row.heartbeat_at)&&externalSource(row.source_type)&&Number.isFinite(counter);return {code,trusted,counter:trusted?counter:null,captured_at:new Date().toISOString()};
 }
 export async function afterTelemetryStartV61(signal,response,env){
