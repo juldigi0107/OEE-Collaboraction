@@ -25,6 +25,20 @@ async function qualityCoverage(db){
   return {total:Number(totals.total||0),with_unit:Number(totals.with_unit||0),missing_unit:Number(totals.missing_unit||0),units:units.map(x=>({unit:x.unit,events:Number(x.events||0)})),aggregation_policy:'Kuantitas Quality live hanya diagregasi di dalam unit yang sama; event legacy tanpa unit tidak ditebak.'};
  }catch{return {total:null,with_unit:null,missing_unit:null,units:[],aggregation_policy:'Kolom unit belum dapat diverifikasi.'};}
 }
+async function productionUnitCoverage(db){
+ try{
+  const totals=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN unit IS NULL OR trim(unit)='' THEN 1 ELSE 0 END) missing_unit,SUM(CASE WHEN unit IS NOT NULL AND trim(unit)<>'' THEN 1 ELSE 0 END) with_unit FROM production_runs")||{};
+  const units=await all(db,"SELECT lower(trim(unit)) unit,COUNT(*) runs FROM production_runs WHERE unit IS NOT NULL AND trim(unit)<>'' GROUP BY lower(trim(unit)) ORDER BY runs DESC,unit");
+  return {total:Number(totals.total||0),with_unit:Number(totals.with_unit||0),missing_unit:Number(totals.missing_unit||0),units:units.map(x=>({unit:x.unit,runs:Number(x.runs||0)})),policy:'Run baru mewarisi unit dari Planning atau FG Unit authoritative; run legacy tidak ditebak.'};
+ }catch{return {total:null,with_unit:null,missing_unit:null,units:[],policy:'Kolom production unit belum dapat diverifikasi.'};}
+}
+async function pdsCurrencyCoverage(db){
+ try{
+  const totals=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN json_extract(payload,'$.cost') IS NOT NULL AND trim(CAST(json_extract(payload,'$.cost') AS TEXT))<>'' THEN 1 ELSE 0 END) with_cost,SUM(CASE WHEN json_extract(payload,'$.cost') IS NOT NULL AND trim(CAST(json_extract(payload,'$.cost') AS TEXT))<>'' AND (json_extract(payload,'$.currency') IS NULL OR trim(json_extract(payload,'$.currency'))='') THEN 1 ELSE 0 END) cost_missing_currency FROM entries WHERE module='development' AND deleted=0")||{};
+  const currencies=await all(db,"SELECT upper(trim(json_extract(payload,'$.currency'))) currency,COUNT(*) records FROM entries WHERE module='development' AND deleted=0 AND json_extract(payload,'$.currency') IS NOT NULL AND trim(json_extract(payload,'$.currency'))<>'' GROUP BY upper(trim(json_extract(payload,'$.currency'))) ORDER BY records DESC,currency");
+  return {total:Number(totals.total||0),with_cost:Number(totals.with_cost||0),cost_missing_currency:Number(totals.cost_missing_currency||0),currencies:currencies.map(x=>({currency:x.currency,records:Number(x.records||0)})),policy:'Biaya hanya diagregasi di dalam currency yang sama; currency legacy tidak diasumsikan.'};
+ }catch{return {total:null,with_cost:null,cost_missing_currency:null,currencies:[],policy:'Coverage currency PDS belum dapat diverifikasi.'};}
+}
 async function mediaCoverage(db){
  try{
   const total=Number((await one(db,'SELECT COUNT(*) n FROM asset_catalog'))?.n||0),parents=Number((await one(db,'SELECT COUNT(DISTINCT parent) n FROM asset_catalog'))?.n||0),web=Number((await one(db,"SELECT COUNT(*) n FROM asset_catalog WHERE lower(path) LIKE '%.png' OR lower(path) LIKE '%.jpg' OR lower(path) LIKE '%.jpeg' OR lower(path) LIKE '%.gif' OR lower(path) LIKE '%.webp' OR lower(path) LIKE '%.svg'"))?.n||0);
@@ -44,14 +58,14 @@ export async function handleSupportV21(req,env,buildVersion,releaseFingerprint=[
  const operationalControl=settings.filter(x=>x.key.startsWith('OPERATIONAL_CONTROL.')).map(x=>({key:x.key,approved:x.value?.approved===true,item_count:Array.isArray(x.value?.items)?x.value.items.length:0,updated_at:x.value?.updated_at||null}));
  const delivery=settings.find(x=>x.key==='OPERATIONAL_CONTROL.delivery_plan')?.value||{},deliveryOpen=Array.isArray(delivery.items)?delivery.items.filter(x=>!['closed','not_applicable'].includes(String(x.status||'').toLowerCase())).length:0;
  const uat=settings.filter(x=>x.key.startsWith('UAT_RELEASE.')).map(x=>({key:x.key,status:x.value?.status||'not_started',owner:x.value?.owner||'',evidence_present:!!String(x.value?.evidence||'').trim(),updated_at:x.value?.updated_at||null}));
- const [qualityUnitCoverage,embeddedMediaCoverage,counts]=await Promise.all([qualityCoverage(env.DB),mediaCoverage(env.DB),tableCounts(env.DB)]);
+ const [qualityUnitCoverage,productionUnits,pdsCurrencies,embeddedMediaCoverage,counts]=await Promise.all([qualityCoverage(env.DB),productionUnitCoverage(env.DB),pdsCurrencyCoverage(env.DB),mediaCoverage(env.DB),tableCounts(env.DB)]);
  return out(req,env,{
   manifest_type:'configuration_and_release_manifest',
   disclaimer:'Manifest ini bukan full backup D1 dan tidak dapat menggantikan prosedur export/restore database Cloudflare.',
   generated_at:new Date().toISOString(),service:'OEE Collaboraction',build_version:buildVersion,release_fingerprint:[...releaseFingerprint],storage:'D1-only',r2:false,
   runtime:{database_binding:'DB',schema:'ready',frontend_assets:'Worker assets + GitHub Pages'},
   operational:{pending_approvals:pendingApprovals,open_downtime:openDowntime,open_maintenance_calls:openMaintenance,delivery_open_actions:deliveryOpen},
-  data_coverage:{quality_units:qualityUnitCoverage,embedded_media:embeddedMediaCoverage},
+  data_coverage:{quality_units:qualityUnitCoverage,production_units:productionUnits,pds_currency:pdsCurrencies,embedded_media:embeddedMediaCoverage},
   table_counts:counts,governance,operational_control:operationalControl,uat,active_users:activeUsers,integrations,sources,settings
  });
 }
