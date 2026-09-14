@@ -7,13 +7,13 @@
   const machineKey=norm(machine),materialKey=norm(material),processKey=norm(process),all=OC31.items(cfg).filter(x=>norm(x.machine)===machineKey);
   if(!all.length)return {item:null,reason:'no_machine_standard',candidates:[]};
   const processCompatible=x=>!processKey||!norm(x.process)||norm(x.process)===processKey;
-  const compatible=all.filter(processCompatible);
+  const compatible=all.filter(processCompatible),genericScope=x=>!norm(x.material_scope)||String(x.material_scope||'').trim()==='*'||norm(x.material_scope)==='ALL';
   if(materialKey){
    const exact=compatible.filter(x=>norm(x.material_scope)===materialKey);if(exact.length===1)return {item:exact[0],reason:'exact_material',candidates:exact};if(exact.length>1)return {item:null,reason:'ambiguous_material',candidates:exact};
-   const generic=compatible.filter(x=>!norm(x.material_scope)||String(x.material_scope||'').trim()==='*');if(generic.length===1)return {item:generic[0],reason:'generic_material',candidates:generic};if(generic.length>1)return {item:null,reason:'ambiguous_generic',candidates:generic};
+   const generic=compatible.filter(genericScope);if(generic.length===1)return {item:generic[0],reason:'generic_material',candidates:generic};if(generic.length>1)return {item:null,reason:'ambiguous_generic',candidates:generic};
    return {item:null,reason:'no_material_match',candidates:compatible};
   }
-  const generic=compatible.filter(x=>!norm(x.material_scope)||String(x.material_scope||'').trim()==='*');if(generic.length===1)return {item:generic[0],reason:'generic_without_material',candidates:generic};if(generic.length>1)return {item:null,reason:'ambiguous_generic',candidates:generic};
+  const generic=compatible.filter(genericScope);if(generic.length===1)return {item:generic[0],reason:'generic_without_material',candidates:generic};if(generic.length>1)return {item:null,reason:'ambiguous_generic',candidates:generic};
   return {item:null,reason:compatible.length>1?'ambiguous_without_material':'material_context_required',candidates:compatible};
  }
  const cycleFor=(machine,material='',process='')=>cycleDecision(machine,material,process).item;
@@ -30,7 +30,14 @@
  if(typeof runPanel==='function'){const baseRunPanel=runPanel;runPanel=function(r,m,d,c){context={machine:m?.code||(typeof hmiMachine!=='undefined'?hmiMachine:''),material:r?.material||'',process:r?.process||''};return baseRunPanel(r,m,d,c);};}
  if(typeof startPanel==='function'){const baseStartPanel=startPanel;startPanel=function(m,plans){context={machine:m?.code||(typeof hmiMachine!=='undefined'?hmiMachine:''),material:'',process:''};return baseStartPanel(m,plans);};}
  if(typeof shopfloor==='function'){const base=shopfloor;shopfloor=async function(...args){const out=await base(...args);queueMicrotask(()=>{bindPlanContext();paintStandard();});return out;};}
- if(typeof downtimeDialog==='function'){const base=downtimeDialog;downtimeDialog=function(run,klass){base(run,klass);const items=lossFor(klass),form=$('#downForm');if(!form||!items.length)return;const label=document.createElement('label');label.className='full oc31-loss-preset';const select=document.createElement('select');select.id='oc31LossPreset';select.innerHTML='<option value="">Pilih reason code yang disahkan</option>'+items.map((x,i)=>`<option value="${i}">${esc(x.code)} · ${esc(x.label)}</option>`).join('');label.append(document.createTextNode('Reason baseline'),select);form.prepend(label);select.onchange=()=>{const x=items[Number(select.value)];if(!x)return;const code=form.querySelector('[name="code"]'),reason=form.querySelector('[name="reason"]'),owner=form.querySelector('[name="owner_department"]');if(code)code.value=x.code||'';if(reason)reason.value=x.label||'';if(owner)owner.value=x.owner_department||'';};};}
+ if(typeof downtimeDialog==='function'){const base=downtimeDialog;downtimeDialog=function(run,klass){base(run,klass);const form=$('#downForm');if(!form)return;const cfg=OC31.read(OC31.keys.loss),approved=OC31.approved(cfg),items=lossFor(klass),dept=form.querySelector('[name="department"]');
+   if(dept){const opts=Object.entries(departments||{});dept.innerHTML=opts.map(([code,label])=>`<option value="${esc(code)}">${esc(label)}</option>`).join('');if(opts.some(([code])=>code==='PROD'))dept.value='PROD';}
+   if(!approved)return;
+   const submit=form.querySelector('button.primary');if(!items.length){const n=document.createElement('div');n.className='notice full';n.textContent=`Belum ada reason ${klass} yang disahkan pada baseline Loss-Time. Hubungi owner proses sebelum mencatat downtime.`;form.prepend(n);if(submit)submit.disabled=true;return;}
+   const label=document.createElement('label');label.className='full oc31-loss-preset';const select=document.createElement('select');select.id='oc31LossPreset';select.required=true;select.innerHTML='<option value="">Pilih reason code yang disahkan</option>'+items.map((x,i)=>`<option value="${i}">${esc(x.code)} · ${esc(x.label)}</option>`).join('');label.append(document.createTextNode('Reason baseline wajib '),select);form.prepend(label);
+   const code=form.querySelector('[name="code"]'),reason=form.querySelector('[name="reason"]'),owner=form.querySelector('[name="owner_department"]');for(const el of [code,reason,owner])if(el){el.readOnly=true;el.setAttribute('aria-readonly','true');}
+   select.onchange=()=>{const x=items[Number(select.value)];if(!x)return;if(code)code.value=x.code||'';if(reason)reason.value=x.label||'';if(owner)owner.value=x.owner_department||'';};
+  };}
  window.OC31Runtime={cycleFor,cycleDecision,lossFor};
 })();
 
