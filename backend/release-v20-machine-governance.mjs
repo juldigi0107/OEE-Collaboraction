@@ -14,8 +14,10 @@ const allowedOrigin=(req,env)=>{const origin=req.headers.get('Origin')||'';const
 const out=(req,env,v,status=200)=>{const origin=allowedOrigin(req,env);return new Response(JSON.stringify(v),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{})}});};
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
 const allow=(u,dept,action)=>u?.role==='superadmin'||(u?.role==='admin'&&u.department===dept&&J(u.permissions,[]).includes(action));
-async function config(env){const r=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.machine_aliases'");const c=J(r?.value,{});return c?.approved===true&&Array.isArray(c.items)&&c.items.length?c:null;}
-function canonical(cfg,raw){const input=matchCode(raw);if(!input)return '';for(const row of cfg.items){for(const code of [row?.canonical,...(Array.isArray(row?.aliases)?row.aliases:[])])if(matchCode(code)===input)return cleanCode(row.canonical);}return cleanCode(raw);}
+async function setting(env,key){const r=await one(env.DB,'SELECT value FROM settings WHERE key=?',key),c=J(r?.value,{});return c?.approved===true?c:null;}
+const config=env=>setting(env,'DATA_GOVERNANCE.machine_aliases');
+const lossConfig=env=>setting(env,'OPERATIONAL_CONTROL.loss_time_classification');
+function canonical(cfg,raw){const input=matchCode(raw);if(!input)return '';for(const row of cfg.items||[]){for(const code of [row?.canonical,...(Array.isArray(row?.aliases)?row.aliases:[])])if(matchCode(code)===input)return cleanCode(row.canonical);}return cleanCode(raw);}
 async function secureEdge(req,env){const got=req.headers.get('X-Edge-Key')||'',want=env.EDGE_INGEST_KEY||'';return !!want&&(await sha(got))===(await sha(want));}
 async function canonicalStart(req,env,cfg){
  const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);const pf=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(pf?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);if(!allow(u,'PROD','create'))return out(req,env,{error:'Akun ini hanya dapat melihat HMI'},403);
@@ -35,4 +37,11 @@ async function canonicalStart(req,env,cfg){
 async function canonicalEdge(req,env,cfg){
  if(!await secureEdge(req,env))return out(req,env,{error:'Edge key tidak valid'},401);let b;try{b=await req.json();}catch{return out(req,env,{error:'Payload Edge tidak valid'},400);}const events=Array.isArray(b)?b:b.events;if(!Array.isArray(events))return out(req,env,{error:'events wajib berupa array'},400);let changed=0;const mapped=events.map(raw=>{const source=raw.machine_code||raw.machine||raw.code,code=canonical(cfg,source);if(cleanCode(source)!==code)changed++;return {...raw,machine_code:code,...(cleanCode(source)!==code?{source_machine_code:source}:{})};});return out(req,env,{ok:true,accepted:await ingestMachineEvents(env,mapped,'machine-edge-governed'),canonicalized:changed});
 }
-export async function handleMachineGovernanceV20(req,env){const path=new URL(req.url).pathname;if(req.method!=='POST'||!['/api/shopfloor/start','/api/edge/events'].includes(path))return null;const cfg=await config(env);if(!cfg)return null;return path==='/api/shopfloor/start'?canonicalStart(req,env,cfg):canonicalEdge(req,env,cfg);}
+async function governedDowntime(req,env,cfg){
+ const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);if(!allow(u,'PROD','create'))return out(req,env,{error:'Tidak memiliki izin input downtime'},403);let b;try{b=await req.clone().json();}catch{return out(req,env,{error:'Payload downtime tidak valid'},400);}const code=matchCode(b.code),rule=(cfg.items||[]).find(x=>matchCode(x.code)===code);if(!rule)return out(req,env,{error:'Reason code belum terdaftar pada baseline Loss-Time yang disahkan'},409);if(String(rule.class||'').toUpperCase()!==String(b.class||'').toUpperCase())return out(req,env,{error:`Reason code ${rule.code} ditetapkan sebagai ${rule.class}, bukan ${b.class}`},409);if(String(rule.owner_department||'').toUpperCase()!==String(b.owner_department||'').toUpperCase())return out(req,env,{error:`Owner Department harus ${rule.owner_department} sesuai baseline Loss-Time`},409);return null;
+}
+export async function handleMachineGovernanceV20(req,env){
+ const path=new URL(req.url).pathname;if(req.method!=='POST')return null;
+ if(path==='/api/shopfloor/downtime/start'){const loss=await lossConfig(env);return loss?governedDowntime(req,env,loss):null;}
+ if(!['/api/shopfloor/start','/api/edge/events'].includes(path))return null;const cfg=await config(env);if(!cfg)return null;return path==='/api/shopfloor/start'?canonicalStart(req,env,cfg):canonicalEdge(req,env,cfg);
+}
