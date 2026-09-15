@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),app=$('#app'),modal=$('#modal');
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(n,d=0)=>typeof n==='number'&&Number.isFinite(n)?n.toLocaleString('id-ID',{maximumFractionDigits:d}):'—';const pct=n=>typeof n==='number'?fmt(n*100,2)+'%':'—';
 const APP_NAME='OEE COLLABORACTION - BMJ PACKAGING OFFSET';
 const APP_TAG='Intelligent Platform © 2026 IDJ';
