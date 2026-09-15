@@ -6,7 +6,12 @@ const active=[...index.matchAll(/<script[^>]+src="([^"]+\.js)(?:\?[^\"]*)?"/g)].
 const bundle=active.map(p=>fs.readFileSync('frontend/'+p,'utf8')).join('\n');
 const displayFront=fs.readFileSync('frontend/display-depth-v42.js','utf8');
 const displayBack=fs.readFileSync('backend/release-v42-display-safety.mjs','utf8');
+const source41=fs.readFileSync('frontend/source-depth-v41.js','utf8');
 const live71=fs.readFileSync('frontend/live-monitoring-v71.js','utf8');
+const quality72=fs.readFileSync('frontend/hmi-quality-v72.js','utf8');
+const qualityBack44=fs.readFileSync('backend/release-v44-quality-unit.mjs','utf8');
+const process73=fs.readFileSync('frontend/process-capability-v73.js','utf8');
+const processBack59=fs.readFileSync('backend/release-v59-process-capability.mjs','utf8');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
 const handlers={dashboard:'dashboard',documents:'documents',quality:'quality',operations:'operations',users:'users',settings:'settings',audit:'audit',import:'importCenter',shopfloor:'shopfloor',live:'liveMachines',integrations:'integrations'};
@@ -25,5 +30,10 @@ need(displayFront.includes('function machineAuthority')&&displayFront.includes('
 need(index.includes('integration-safety-v69.js')&&bundle.includes('PRODUCTION CONNECTION POLICY')&&bundle.includes('Worker Secret')&&bundle.includes('private/link-local address'),'Integration Safety v69 tidak aktif/lengkap.');
 need(index.includes('navigation-integrity-v70.js')&&bundle.includes('Operational Inbox')&&bundle.includes('Sesi hanya disimpan untuk sesi browser ini.')&&bundle.includes('Jaringan online')&&bundle.includes('Cari menu atau sumber data'),'Navigation Integrity v70 tidak aktif/lengkap.');
 need(index.includes('live-monitoring-v71.js')&&live71.includes('data-machine-code')&&live71.includes('telemetryMap')&&live71.includes("byCode.get(norm(m.code))")&&live71.includes("Promise.all([api('/realtime/overview'),api('/telemetry-status')])")&&!live71.includes('rows[i]'),'Live Monitoring v71 harus mengikat telemetry berdasarkan machine code, bukan posisi kartu.');
+need(index.includes('hmi-quality-v72.js')&&quality72.includes('name="unit" required')&&quality72.includes("api('/shopfloor/quality','POST'")&&quality72.includes('tidak digabungkan dengan event bersatuan lain'),'HMI Quality v72 unit-safe tidak aktif/lengkap.');
+need(qualityBack44.includes('Satuan Quality Event wajib diisi')&&qualityBack44.includes("GROUP BY COALESCE(NULLIF(lower(trim(unit)),''),'__missing__')")&&qualityBack44.includes('Event lama tanpa satuan'),'Backend Quality Unit v44 harus memisahkan agregasi berdasarkan satuan dan menandai legacy missing-unit.');
+need(index.includes('process-capability-v73.js')&&process73.includes("api('/process-capability")&&process73.includes('ambiguous_specification')&&process73.includes('Data tidak digabungkan lintas unit'),'Process Capability v73 register-driven tidak aktif/lengkap.');
+need(processBack59.includes("url.pathname==='/api/process-capability'")&&processBack59.includes('Ppk hanya dihitung untuk satu kombinasi mesin + parameter + satuan')&&processBack59.includes('ambiguous_specification')&&processBack59.includes('LIMIT 5001'),'Backend Process Capability v59 harus fail-safe terhadap unit/spec campuran dan subset terlalu besar.');
+need(source41.includes('Inspeksi baris sumber')&&source41.includes('Reconciliation Register')&&source41.includes('Kolom tambahan · mode lanjutan'),'Source Inspector dan Reconciliation Register harus tetap business-facing.');
 if(errors.length){console.error('Navigation validation FAILED');for(const e of errors)console.error('- '+e);process.exit(1);}
 console.log(`Navigation validation OK — ${Object.keys(handlers).length+1+releaseRoutes.length+1} routes + critical guards checked across ${active.length} active JS bundles.`);
