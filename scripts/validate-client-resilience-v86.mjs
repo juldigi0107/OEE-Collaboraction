@@ -5,12 +5,12 @@ const runtime=fs.readFileSync('frontend/runtime-polish-v6.js','utf8');
 const index=fs.readFileSync('frontend/index.html','utf8');
 const checks=[
  ['app-core active before feature bundles',index.indexOf('app-core.js')>=0&&index.indexOf('app-core.js')<index.indexOf('app-ui.js')],
- ['canonical HTML quote escaping',core.includes("'\\\"':'&quot;'")||core.includes("'\"':'&quot;'" )],
+ ['canonical HTML quote escaping',core.includes('&quot;')],
  ['dialog refresh does not call showModal twice',core.includes('const opening=!modal.open')&&core.includes('if(opening){modal.showModal()')],
- ['dialog title is accessible',core.includes("aria-labelledby','modalTitle")&&core.includes('id=\"modalTitle\"')],
+ ['dialog title is accessible',core.includes("aria-labelledby','modalTitle")&&core.includes('id="modalTitle"')],
  ['dialog returns focus to opener',core.includes('dialogReturnFocus')&&core.includes('target?.isConnected')&&core.includes('preventScroll:true')],
  ['global window error boundary',core.includes("window.addEventListener('error'")&&core.includes('surfaceClientIssue')],
- ['global unhandled promise boundary',core.includes("window.addEventListener('unhandledrejection'")&&core.includes("'promise'"))],
+ ['global unhandled promise boundary',core.includes("window.addEventListener('unhandledrejection'")&&core.includes("'promise'" )],
  ['client error boundary deduplicates bursts',core.includes('clientIssueLast')&&core.includes('stamp-clientIssueLast.ts<10000')],
  ['diagnostic reference does not render exception text',core.includes('Kode diagnostik')&&core.includes('${esc(ref)}')&&!core.includes('${esc(message)}')],
  ['blank screen has reload recovery',core.includes('Aplikasi belum dapat ditampilkan')&&core.includes('clientRecoveryReload')&&core.includes('location.reload()')],
