@@ -21,6 +21,10 @@ CREATE INDEX IF NOT EXISTS approvals_type_status_requested ON approvals(entity_t
 CREATE TABLE IF NOT EXISTS integration_connections(id TEXT PRIMARY KEY,system TEXT NOT NULL,mode TEXT NOT NULL DEFAULT 'REST',base_url TEXT,secret_env TEXT,enabled INTEGER NOT NULL DEFAULT 0,poll_minutes INTEGER NOT NULL DEFAULT 5,last_sync TEXT,last_status TEXT,last_message TEXT,config TEXT NOT NULL DEFAULT '{}');
 CREATE TABLE IF NOT EXISTS integration_sync_log(id TEXT PRIMARY KEY,connection_id TEXT NOT NULL,started_ts TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,finished_ts TEXT,status TEXT,rows_in INTEGER NOT NULL DEFAULT 0,rows_out INTEGER NOT NULL DEFAULT 0,message TEXT);
 CREATE INDEX IF NOT EXISTS integration_sync_connection ON integration_sync_log(connection_id,started_ts DESC);
+CREATE TABLE IF NOT EXISTS display_pair_codes(code_hash TEXT PRIMARY KEY,display_id TEXT NOT NULL,machine_code TEXT NOT NULL,created_by TEXT NOT NULL,created_ts INTEGER NOT NULL,expires_ts INTEGER NOT NULL,used_ts INTEGER);
+CREATE INDEX IF NOT EXISTS display_pair_expiry ON display_pair_codes(expires_ts,used_ts);
+CREATE TABLE IF NOT EXISTS display_devices(id TEXT PRIMARY KEY,display_id TEXT NOT NULL,machine_code TEXT NOT NULL,name TEXT NOT NULL,token_hash TEXT NOT NULL UNIQUE,active INTEGER NOT NULL DEFAULT 1,created_by TEXT NOT NULL,created_ts INTEGER NOT NULL,expires_ts INTEGER NOT NULL,last_seen_ts INTEGER);
+CREATE INDEX IF NOT EXISTS display_devices_layout ON display_devices(display_id,active,expires_ts);
 INSERT OR IGNORE INTO integration_connections(id,system,mode,enabled,poll_minutes,config) VALUES
 ('machine-edge','MACHINE','EDGE_PUSH',0,1,'{"target":"machine_events"}'),
 ('odin','ODIN','REST',0,5,'{"target":"machine_events","items_path":"items","mapping":{}}'),
