@@ -13,11 +13,12 @@ const json=(req,env,value,status=200)=>{const origin=allowedOrigin(req,env);retu
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
 const allow=(u,action)=>u?.role==='superadmin'||(u?.role==='admin'&&u.department==='PROD'&&parse(u.permissions,[]).includes(action));
 const finite=v=>v!==''&&v!==undefined&&v!==null&&Number.isFinite(Number(v));
+const present=v=>v!==''&&v!==undefined&&v!==null;
 async function kpiGovernance(env){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.kpi_definitions'");const cfg=parse(row?.value,{}),approved=cfg.approved===true,allowed=new Set(['good_total','good_nc_total']);return {approved,quality_rule:approved&&allowed.has(cfg.quality_rule)?cfg.quality_rule:'good_total',invalid_approved:approved&&!allowed.has(cfg.quality_rule),fg_unit:approved?clean(cfg.fg_unit):'',ideal_speed_basis:approved?clean(cfg.ideal_speed_basis):'',updated_at:cfg.updated_at||null};}
 function validateGovernedProduction(p,g){
  if(g.invalid_approved)return 'Data Governance KPI sudah disahkan tetapi quality rule tidak valid';
  if(!finite(p.total)||Number(p.total)<0||!finite(p.good)||Number(p.good)<0)return 'Total dan Good Production wajib berupa angka tidak negatif';
- if(finite(p.nc)&&Number(p.nc)<0)return 'NC Production tidak boleh negatif';
+ if(present(p.nc)&&(!finite(p.nc)||Number(p.nc)<0))return 'NC Production harus berupa angka tidak negatif';
  if(g.approved&&g.fg_unit&&normUnit(p.unit)!==normUnit(g.fg_unit))return `Satuan Production harus mengikuti FG Unit authoritative: ${g.fg_unit}`;
  if(g.approved&&g.quality_rule==='good_nc_total'){
   if(!finite(p.nc))return 'NC wajib diisi karena Quality Printing authoritative menggunakan (Good + NC) / Total';
