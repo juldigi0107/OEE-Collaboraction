@@ -6,9 +6,9 @@ const active=[...index.matchAll(/<script[^>]+src="([^"]+\.js)(?:\?[^\"]*)?"/g)].
 const bundle=active.map(p=>fs.readFileSync('frontend/'+p,'utf8')).join('\n');
 const displayFront=fs.readFileSync('frontend/display-depth-v42.js','utf8');
 const displayBack=fs.readFileSync('backend/release-v42-display-safety.mjs','utf8');
+const live71=fs.readFileSync('frontend/live-monitoring-v71.js','utf8');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
-
 const handlers={dashboard:'dashboard',documents:'documents',quality:'quality',operations:'operations',users:'users',settings:'settings',audit:'audit',import:'importCenter',shopfloor:'shopfloor',live:'liveMachines',integrations:'integrations'};
 const defined=name=>new RegExp(`function\\s+${name}\\s*\\(`).test(bundle)||new RegExp(`(?:window\\.)?${name}\\s*=\\s*(?:async\\s*)?function\\s*\\(`).test(bundle)||new RegExp(`(?:window\\.)?${name}\\s*=\\s*(?:async\\s*)?\\(`).test(bundle);
 for(const [view,handler] of Object.entries(handlers)){need(workspace.includes(`view==='${view}'`)||workspace.includes(`view === '${view}'`),`Render route ${view} tidak ditemukan.`);need(defined(handler),`Handler ${handler} untuk route ${view} tidak ditemukan pada bundle aktif.`);}
@@ -24,5 +24,6 @@ need(index.includes('form-semantics-v65.js')&&bundle.includes('Arsipkan transaks
 need(displayFront.includes('function machineAuthority')&&displayFront.includes('machineCanonical')&&displayFront.includes("ready:!!name&&!!machine&&authority.canonical")&&displayBack.includes('canonicalMachineProblem')&&displayBack.includes('Machine assignment harus memakai canonical machine yang sudah disahkan pada Data Governance'),'Display publish canonical-machine guard tidak lengkap.');
 need(index.includes('integration-safety-v69.js')&&bundle.includes('PRODUCTION CONNECTION POLICY')&&bundle.includes('Worker Secret')&&bundle.includes('private/link-local address'),'Integration Safety v69 tidak aktif/lengkap.');
 need(index.includes('navigation-integrity-v70.js')&&bundle.includes('Operational Inbox')&&bundle.includes('Sesi hanya disimpan untuk sesi browser ini.')&&bundle.includes('Jaringan online')&&bundle.includes('Cari menu atau sumber data'),'Navigation Integrity v70 tidak aktif/lengkap.');
+need(index.includes('live-monitoring-v71.js')&&live71.includes('data-machine-code')&&live71.includes('telemetryMap')&&live71.includes("byCode.get(norm(m.code))")&&live71.includes("Promise.all([api('/realtime/overview'),api('/telemetry-status')])")&&!live71.includes('rows[i]'),'Live Monitoring v71 harus mengikat telemetry berdasarkan machine code, bukan posisi kartu.');
 if(errors.length){console.error('Navigation validation FAILED');for(const e of errors)console.error('- '+e);process.exit(1);}
 console.log(`Navigation validation OK — ${Object.keys(handlers).length+1+releaseRoutes.length+1} routes + critical guards checked across ${active.length} active JS bundles.`);
