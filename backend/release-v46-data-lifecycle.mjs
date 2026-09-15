@@ -21,9 +21,11 @@ async function capacityHealth(db){
 }
 export async function storageHealthV46(env){
  const now=Date.now(),staleLoginBefore=now-86400000;
- const [sessions,attempts,snapshots,events,logs,audit,runs,quality,capacity]=await Promise.all([
+ const [sessions,attempts,pairCodes,displayDevices,snapshots,events,logs,audit,runs,quality,capacity]=await Promise.all([
   safeStat(env.DB,'SELECT COUNT(*) total,SUM(CASE WHEN expires<=? THEN 1 ELSE 0 END) expired,MIN(expires) oldest_expiry FROM sessions',now),
   safeStat(env.DB,'SELECT COUNT(*) total,SUM(CASE WHEN until_ts<? THEN 1 ELSE 0 END) stale,MIN(until_ts) oldest_until FROM login_attempts',staleLoginBefore),
+  safeStat(env.DB,'SELECT COUNT(*) total,SUM(CASE WHEN used_ts IS NULL AND expires_ts<=? THEN 1 ELSE 0 END) expired_unused,SUM(CASE WHEN used_ts IS NOT NULL THEN 1 ELSE 0 END) used FROM display_pair_codes',now),
+  safeStat(env.DB,'SELECT COUNT(*) total,SUM(CASE WHEN active=1 AND expires_ts>? THEN 1 ELSE 0 END) active,SUM(CASE WHEN active=1 AND expires_ts<=? THEN 1 ELSE 0 END) expired,SUM(CASE WHEN active=0 THEN 1 ELSE 0 END) revoked FROM display_devices',now,now),
   safeStat(env.DB,'SELECT COUNT(*) total,MIN(bucket_ts) oldest,MAX(bucket_ts) newest FROM machine_minute_snapshot'),
   safeStat(env.DB,'SELECT COUNT(*) total,MIN(event_ts) oldest,MAX(event_ts) newest FROM machine_events'),
   safeStat(env.DB,'SELECT COUNT(*) total,MIN(started_ts) oldest,MAX(started_ts) newest FROM integration_sync_log'),
@@ -36,7 +38,12 @@ export async function storageHealthV46(env){
   generated_at:new Date().toISOString(),
   policy:{ephemeral:'auto_cleanup',operational:'monitor_only',business_history:'no_automatic_delete'},
   capacity,
-  ephemeral:{sessions:{total:Number(sessions.total||0),expired:Number(sessions.expired||0)},login_attempts:{total:Number(attempts.total||0),stale:Number(attempts.stale||0),stale_after_hours:24}},
+  ephemeral:{
+   sessions:{total:Number(sessions.total||0),expired:Number(sessions.expired||0)},
+   login_attempts:{total:Number(attempts.total||0),stale:Number(attempts.stale||0),stale_after_hours:24},
+   display_pair_codes:{total:Number(pairCodes.total||0),expired_unused:Number(pairCodes.expired_unused||0),used:Number(pairCodes.used||0),cleanup_after_days:7}
+  },
+  display_devices:{total:Number(displayDevices.total||0),active:Number(displayDevices.active||0),expired:Number(displayDevices.expired||0),revoked:Number(displayDevices.revoked||0),retention:'preserve_for_audit'},
   growth:[
    {table:'machine_minute_snapshot',label:'Minute snapshot mesin',count:Number(snapshots.total||0),oldest:snapshots.oldest||null,newest:snapshots.newest||null,retention:'monitor_only'},
    {table:'machine_events',label:'Machine event',count:Number(events.total||0),oldest:events.oldest||null,newest:events.newest||null,retention:'monitor_only'},
@@ -45,15 +52,16 @@ export async function storageHealthV46(env){
    {table:'production_runs',label:'Production run',count:Number(runs.total||0),oldest:runs.oldest||null,newest:runs.newest||null,retention:'preserve'},
    {table:'quality_events',label:'Quality event',count:Number(quality.total||0),oldest:quality.oldest||null,newest:quality.newest||null,retention:'preserve'}
   ],
-  note:'Data operasional dan audit tidak dihapus otomatis. Tetapkan retention policy resmi sebelum mengaktifkan purge historis.'
+  note:'Data operasional, device registration, dan audit tidak dihapus otomatis. Hanya session, rate-limit state, dan pairing code ephemeral yang dibersihkan otomatis.'
  };
 }
 export async function runLifecycleHousekeepingV46(env){
- const now=Date.now(),staleLoginBefore=now-86400000;
+ const now=Date.now(),staleLoginBefore=now-86400000,pairCodeBefore=now-7*86400000;
  await env.DB.batch([
   env.DB.prepare('DELETE FROM sessions WHERE expires<=?').bind(now),
   env.DB.prepare('DELETE FROM login_attempts WHERE until_ts<?').bind(staleLoginBefore)
  ]);
+ try{await env.DB.prepare('DELETE FROM display_pair_codes WHERE (expires_ts<?) OR (used_ts IS NOT NULL AND used_ts<?)').bind(pairCodeBefore,pairCodeBefore).run();}catch(error){console.error('[lifecycle] display pairing cleanup skipped',error);}
 }
 function responseFrom(base,body){const headers=new Headers(base.headers);headers.set('Content-Type','application/json; charset=utf-8');headers.set('Cache-Control','no-store');return new Response(JSON.stringify(body),{status:base.status,headers});}
 export async function handleDataLifecycleV46(req,env,buildVersion,releaseFingerprint=[]){
