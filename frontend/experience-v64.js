@@ -15,7 +15,24 @@
     if(view==='dashboard')return ['Operational Briefing','Ringkasan kinerja dan tindakan berikutnya'];
     if(view==='departments')return ['Department Hub','Pilih ruang kerja berdasarkan proses'];
     if(view.startsWith('dept:'))return [departments[view.split(':')[1]]||'Ruang kerja','Transaksi, monitoring dan sumber'];
-    const labels={shopfloor:['HMI Produksi','Eksekusi produksi terkendali'],live:['Status Mesin','Kondisi mesin dan heartbeat'],documents:['Pusat Sumber','Dokumen, aset dan source authority'],quality:['Kualitas Data','Rekonsiliasi dan validasi sumber'],users:['Akun & Izin','Kontrol akses'],settings:['Konfigurasi','Parameter dan baseline'],audit:['Riwayat Aktivitas','Jejak audit'],integrations:['Integrasi','Koneksi sistem'],import:['Impor Data','Staging sumber']};
+    const labels={
+      operations:['Register Transaksi','Pencatatan, monitoring, dan traceability operasional'],
+      shopfloor:['HMI Produksi','Eksekusi produksi terkendali'],
+      live:['Status Mesin','Kondisi mesin, heartbeat, dan freshness telemetry'],
+      documents:['Pusat Sumber','Dokumen, aset, dan source authority'],
+      quality:['Kualitas Data','Rekonsiliasi, definisi, dan validasi sumber'],
+      approvals:['Approval & Verifikasi','Keputusan hasil, root cause, dan Quality Event'],
+      users:['Akun & Izin','Identitas, scope department, dan least-privilege'],
+      settings:['Konfigurasi & Display','Parameter terkontrol dan layout display mesin'],
+      integrations:['Integrasi Sistem','Koneksi Edge, ODIN, SAP, Qlik, dan status sinkronisasi'],
+      audit:['Riwayat Aktivitas','Jejak perubahan dan audit trail'],
+      import:['Impor Data','Staging, validasi, dan penambahan sumber'],
+      governance:['Tata Kelola & Readiness','Kesiapan perangkat, integrasi, terminology, dan owner'],
+      'data-governance':['Definisi Data & KPI','Authority, definisi KPI, mesin, kalender, dan join grain'],
+      'operational-control':['Standar Operasional','Cycle Target, Loss-Time, Machine Trigger, dan ownership'],
+      'uat-release':['UAT & Go-Live','Evidence, blocker, dan final operational sign-off'],
+      'support-recovery':['Dukungan & Pemulihan','Health, backup, restore, rollback, dan support evidence']
+    };
     return labels[view]||['OEE Collaboraction','BMJ Packaging Offset'];
   };
   const syncNetworkState=()=>{const status=document.querySelector('.top-status');if(!status)return;status.classList.toggle('offline',!navigator.onLine);status.textContent=navigator.onLine?'Terhubung':'Offline';};
@@ -93,5 +110,5 @@
   }
 
   if(document.querySelector('.shell'))enhanceShell();
-  window.ExperienceV64={enhanceShell,departmentHub64,dashboard64,syncNetworkState};
+  window.ExperienceV64={enhanceShell,departmentHub64,dashboard64,syncNetworkState,viewLabel};
 })();
