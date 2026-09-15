@@ -3,7 +3,7 @@
 (()=>{
 'use strict';
 const A='assets/';
-const PHOTO={PROD:'department-production.webp',QC:'department-quality.webp',MTC:'department-maintenance.webp',PPIC:'department-planning.webp',PDS:'department-quality.webp',PROJECT:'hero-bmj-photo.jpg'};
+const PHOTO={PROD:'department-production.webp',QC:'department-quality.webp',MTC:'department-maintenance.webp',PPIC:'department-planning.webp',PDS:'department-development.webp',PROJECT:'hero-bmj-photo.jpg'};
 const META={PROD:['production','Output, downtime, batch, dan energi produksi.'],QC:['quality','Inspeksi, reject, dan kinerja proses.'],MTC:['maintenance','Perawatan, perbaikan, dan keandalan mesin.'],PPIC:['planning','Rencana produksi dan konfirmasi hasil.'],PDS:['development','Pengembangan, trial, dan biaya produk.'],PROJECT:['project','Proyek, action plan, dan master data.']};
 const L={dashboard:'Beranda',workspace:'Workspace Department',departments:'Workspace Department',documents:'Data Sumber',live:'Monitoring Realtime',shopfloor:'HMI Produksi',quality:'Validasi Sumber',settings:'Konfigurasi',users:'Akun & Izin',audit:'Audit Log',integrations:'Integrasi Sistem',import:'Impor Data'};
 const E=v=>typeof esc==='function'?esc(v??''):String(v??'');
@@ -27,7 +27,7 @@ function shellPolish(){
  const ft=s.querySelector('.sidebar-foot');if(ft)ft.innerHTML='<strong>Better Process</strong><span>Brighter Tomorrow</span>';
  const tl=t.querySelector('.top-left');if(tl&&!tl.querySelector('.ref-mobile-logo')){const im=document.createElement('img');im.className='ref-mobile-logo';im.src=A+'logo-bmj.svg?v=85';im.alt='BMJ';tl.querySelector('.mobilemenu')?.after(im);}const ctx=t.querySelector('.context-title');if(ctx)ctx.innerHTML=`<strong>${E(L[view]||'BMJ OEE Platform')}</strong>`;t.querySelector('.top-status')?.remove();
  const m=t.querySelector('.mobilemenu');if(m){m.setAttribute('aria-expanded',String(s.classList.contains('open')));m.onclick=()=>{const o=!s.classList.contains('open');s.classList.toggle('open',o);document.body.classList.toggle('reference-menu-open',o);m.setAttribute('aria-expanded',String(o));};}
- if(!document.querySelector('.ref-backdrop')){const b=document.createElement('button');b.className='ref-backdrop';b.type='button';b.ariaLabel='Tutup menu';b.onclick=closeMenu;s.after(b);}
+ if(!document.querySelector('.ref-backdrop')){const b=document.createElement('button');b.className='ref-backdrop';b.type='button';b.setAttribute('aria-label','Tutup menu');b.onclick=closeMenu;s.after(b);}
  if(!document.querySelector('.ref-footer')){const f=document.createElement('footer');f.className='ref-footer';f.innerHTML=`<span>${I('trend')}Monitoring Real-time</span><span>${I('production')}Efisiensi Produksi</span><span>${I('quality')}Kualitas Terukur</span><span>${I('users')}Kolaborasi Tim</span><span>${I('documents')}Data Terintegrasi</span><em>Better Process · Brighter Tomorrow</em>`;document.querySelector('.workspace')?.append(f);}
 }
 function chart(series){const cs=['#168eff','#1bb26b','#f0a13d'];let z='<svg class="ref-trend" viewBox="0 0 720 190" role="img" aria-label="Tren OEE">';[0,.25,.5,.75,1].forEach(v=>{const y=168-v*132;z+=`<line x1="46" x2="704" y1="${y}" y2="${y}"/><text x="5" y="${y+4}">${v*100}%</text>`});series.slice(0,3).forEach((s,i)=>{const k=i?'J':'K',p=[];(s.rows||[]).filter(r=>r.row>=8&&r.row<=38).forEach((r,j)=>{const v=r.cells?.[k]?.v;if(typeof v==='number'&&v>=0&&v<=1)p.push(`${46+j*658/30},${168-v*132}`)});if(p.length>1)z+=`<polyline points="${p.join(' ')}" fill="none" stroke="${cs[i]}" stroke-width="2.4"/>`;});return z+'</svg>';}
