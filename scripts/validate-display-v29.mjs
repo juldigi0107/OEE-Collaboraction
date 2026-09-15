@@ -4,6 +4,8 @@ const js=fs.readFileSync('frontend/display-lifecycle-v29.js','utf8');
 const css=fs.readFileSync('frontend/display-lifecycle-v29.css','utf8');
 const field=fs.readFileSync('frontend/field-display-v8.js','utf8');
 const depth=fs.readFileSync('frontend/display-depth-v42.js','utf8');
+const capacityUi=fs.readFileSync('frontend/storage-capacity-v56.js','utf8');
+const lifecycle=fs.readFileSync('backend/release-v46-data-lifecycle.mjs','utf8');
 const projection=fs.readFileSync('backend/release-v82-field-display.mjs','utf8');
 const device=fs.readFileSync('backend/release-v83-display-device.mjs','utf8');
 const realtimeSchema=fs.readFileSync('backend/realtime-schema.sql','utf8');
@@ -38,10 +40,13 @@ const checks=[
  ['device scope follows layout and machine',device.includes('device.display_id')&&device.includes('device.machine_code')&&device.includes('Machine assignment layout berubah')],
  ['pairing management is superadmin only',device.includes("u.role!=='superadmin'")&&device.includes('/api/display-devices/pair-code')],
  ['device API is read-only allowlisted in browser',field.includes("DEVICE_KEY='oee-display-device:'")&&field.includes("'X-Display-Token':deviceToken")&&field.includes('Display device hanya memiliki akses read-only')],
+ ['paired display bootstrap is idempotent',field.includes('deviceBootPromise=null')&&field.includes('if(deviceBootPromise)return deviceBootPromise')&&field.includes('return deviceBootPromise')],
  ['user bearer token remains session storage architecture',field.includes('deviceMode=!token')&&!field.includes("localStorage.setItem('oee-token'")],
  ['field URL contains display id only',depth.includes('?display=${encodeURIComponent(layoutId)}')&&!depth.includes('deviceToken')&&!depth.includes('X-Display-Token')],
  ['superadmin can pair list and revoke devices',depth.includes('Pasangkan perangkat')&&depth.includes("api('/display-devices/pair-code'")&&depth.includes("api('/display-devices?display='")&&depth.includes("api('/display-devices/revoke'")],
  ['fresh schemas include pairing tables',[realtimeSchema,initSchema].every(x=>x.includes('display_pair_codes')&&x.includes('display_devices')&&x.includes('display_devices_layout'))],
+ ['pair code housekeeping preserves device audit rows',lifecycle.includes('DELETE FROM display_pair_codes')&&!lifecycle.includes('DELETE FROM display_devices')&&lifecycle.includes('display_pair_codes:{')&&lifecycle.includes('display_devices:{')],
+ ['storage center surfaces paired display health',capacityUi.includes('Field Display Devices')&&capacityUi.includes('Device aktif')&&capacityUi.includes('Device revoked')&&capacityUi.includes('Pairing code expired')],
  ['responsive lifecycle controls',css.includes('@media(max-width:820px)')]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, exact-machine, paired-device, caching, and field-safety guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, exact-machine, paired-device, caching, housekeeping, and field-safety guards checked.`);
