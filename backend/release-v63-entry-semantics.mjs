@@ -28,19 +28,29 @@ function validateEnergy(payload,{creating=false}={}){
  if(has(p.kwh)){const kwh=Number(p.kwh);if(!Number.isFinite(kwh)||kwh<0)return 'Pemakaian energi kWh harus berupa angka tidak negatif';}
  return null;
 }
-function validateByModule(module,payload,options={}){if(module==='development')return validateDevelopment(payload);if(module==='quality')return validateQuality(payload,options);if(module==='energy')return validateEnergy(payload,options);return null;}
+function validateConfirmation(payload,{creating=false,previous={}}={}){
+ const p=payload&&typeof payload==='object'&&!Array.isArray(payload)?payload:{},old=previous&&typeof previous==='object'?previous:{};
+ const identity=['date','pro','confirmation','counter','unit'],signed=['qty','scrap','hours'];
+ for(const k of signed)if(has(p[k])&&!Number.isFinite(Number(p[k])))return `${k} Confirmation harus berupa angka signed yang valid`;
+ const changed=[...identity,...signed,'machine','material'].some(k=>String(p[k]??'')!==String(old[k]??''));
+ if(creating||changed){for(const k of identity)if(!clean(p[k]))return `Confirmation PPIC wajib memiliki ${k}`;if(!signed.some(k=>has(p[k])))return 'Confirmation PPIC wajib memiliki minimal satu nilai Yield, Scrap, atau Jam';}
+ const unit=clean(p.unit);if(unit.length>24)return 'Satuan Confirmation terlalu panjang';if(unit&&!/^[A-Za-z0-9._/ -]+$/.test(unit))return 'Satuan Confirmation tidak valid';
+ if(clean(p.confirmation).length>120||clean(p.counter).length>120)return 'Nomor konfirmasi / counter terlalu panjang';
+ return null;
+}
+function validateByModule(module,payload,options={}){if(module==='development')return validateDevelopment(payload);if(module==='quality')return validateQuality(payload,options);if(module==='energy')return validateEnergy(payload,options);if(module==='confirmation')return validateConfirmation(payload,options);return null;}
 export async function handleEntrySemanticsV63(req,env){
  const path=new URL(req.url).pathname;if(!['POST','PUT'].includes(req.method))return null;
  let body;try{body=await req.clone().json();}catch{return null;}
  const u=await auth(req,env);if(!u)return null;
  if(req.method==='POST'&&path==='/api/entries'){
-  const module=clean(body?.module),dept={development:'PDS',quality:'QC',energy:'PROD'}[module];if(!dept||!allow(u,dept,'create'))return null;
+  const module=clean(body?.module),dept={development:'PDS',quality:'QC',energy:'PROD',confirmation:'PPIC'}[module];if(!dept||!allow(u,dept,'create'))return null;
   const error=validateByModule(module,body.payload,{creating:true,previous:{}});return error?out(req,env,error):null;
  }
  if(req.method==='PUT'&&path.startsWith('/api/entries/')){
-  let id='';try{id=decodeURIComponent(path.slice('/api/entries/'.length));}catch{id=path.slice('/api/entries/'.length);}const row=await one(env.DB,'SELECT module,department,payload FROM entries WHERE id=? AND deleted=0',id);if(!row||!['development','quality','energy'].includes(row.module)||!allow(u,row.department||({development:'PDS',quality:'QC',energy:'PROD'}[row.module]),'update'))return null;
+  let id='';try{id=decodeURIComponent(path.slice('/api/entries/'.length));}catch{id=path.slice('/api/entries/'.length);}const row=await one(env.DB,'SELECT module,department,payload FROM entries WHERE id=? AND deleted=0',id);if(!row||!['development','quality','energy','confirmation'].includes(row.module)||!allow(u,row.department||({development:'PDS',quality:'QC',energy:'PROD',confirmation:'PPIC'}[row.module]),'update'))return null;
   const error=validateByModule(row.module,body.payload,{creating:false,previous:parse(row.payload,{})});return error?out(req,env,error):null;
  }
  return null;
 }
-export const EntrySemanticsV63={validateDevelopment,validateQuality,validateEnergy,validateByModule};
+export const EntrySemanticsV63={validateDevelopment,validateQuality,validateEnergy,validateConfirmation,validateByModule};
