@@ -1,0 +1,39 @@
+/* Premium Clarity v79 — hierarchy, scanability, touch ergonomics */
+body.experience-v64{--v79-focus:0 0 0 4px rgba(19,140,245,.10);--v79-soft:#f7fafc;--v79-line:#dce7f0}
+body.experience-v64 .content{container-type:inline-size}
+body.experience-v64 .heading,body.experience-v64 .page-intro{position:relative}
+body.experience-v64 .heading:after,body.experience-v64 .page-intro:after{content:"";position:absolute;left:0;bottom:-1px;width:72px;height:2px;border-radius:2px;background:linear-gradient(90deg,#168df4,#55d3ff)}
+body.experience-v64 .panel>h2:first-child,body.experience-v64 .panel>h3:first-child{color:#173653;margin-top:0}
+body.experience-v64 .panel>p.muted:first-of-type{max-width:78ch;line-height:1.62}
+body.experience-v64 .cards{gap:14px}
+body.experience-v64 .card{min-height:112px;padding:18px}
+body.experience-v64 .card .label,body.experience-v64 .card>span:first-child{font-size:.66rem;font-weight:760;color:#71869a;letter-spacing:.035em}
+body.experience-v64 .card .value{font-size:clamp(1.65rem,2.5vw,2.2rem);line-height:1.05;color:#102f4e}
+body.experience-v64 .card small{line-height:1.45;color:#8496a7}
+body.experience-v64 .toolbar,body.experience-v64 .filters{gap:9px;padding:10px;border:1px solid var(--v79-line);border-radius:14px;background:var(--v79-soft)}
+body.experience-v64 .toolbar input,body.experience-v64 .toolbar select,body.experience-v64 .filters input,body.experience-v64 .filters select{min-height:40px;background:#fff}
+body.experience-v64 button,body.experience-v64 .btn{min-height:40px;padding-inline:14px}
+body.experience-v64 button.primary{font-weight:760}
+body.experience-v64 button:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
+body.experience-v64 table{font-variant-numeric:tabular-nums}
+body.experience-v64 thead th{position:sticky;top:0;z-index:3;padding-top:12px;padding-bottom:12px}
+body.experience-v64 tbody td{padding-top:12px;padding-bottom:12px;line-height:1.42}
+body.experience-v64 tbody tr:last-child td{border-bottom:0}
+body.experience-v64 td.num,body.experience-v64 th.num,body.experience-v64 .v25-num{text-align:right;font-variant-numeric:tabular-nums}
+body.experience-v64 .notice{display:flex;gap:10px;align-items:flex-start;line-height:1.55}
+body.experience-v64 .notice:before{content:"i";display:grid;place-items:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#e9f4ff;color:#1879ca;font-size:.7rem;font-weight:850}
+body.experience-v64 .errorbox:before{content:"Perlu perhatian";display:block;font-size:.64rem;font-weight:850;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+body.experience-v64 dialog form{max-height:min(78vh,760px);overflow:auto}
+body.experience-v64 dialog .actions{position:sticky;bottom:0;z-index:4;margin:16px -20px -20px;padding:12px 20px;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-top:1px solid var(--v79-line)}
+body.experience-v64 .role-kpi-grid article{min-height:126px;display:flex;flex-direction:column}
+body.experience-v64 .role-kpi-grid article strong{font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+body.experience-v64 .role-kpi-grid article p{margin-top:auto;line-height:1.45}
+body.experience-v64 .release-section-head{align-items:flex-start}
+body.experience-v64 .release-section-head p{max-width:78ch;line-height:1.55}
+body.experience-v64 .pill,body.experience-v64 .status{white-space:nowrap}
+body.experience-v64 .empty,body.experience-v64 .release-empty{border:1px dashed #d8e4ed;border-radius:16px;background-color:#fbfdff}
+body.experience-v64 .loading-panel{border-radius:16px;background:linear-gradient(100deg,#f7fafc 20%,#fff 38%,#f7fafc 56%);background-size:220% 100%;animation:v79skeleton 1.5s ease-in-out infinite}
+@keyframes v79skeleton{to{background-position:-120% 0}}
+@container (max-width:760px){body.experience-v64 .heading,body.experience-v64 .page-intro{align-items:flex-start;flex-direction:column}body.experience-v64 .page-intro-actions{width:100%;justify-content:flex-start}body.experience-v64 .page-intro-actions button{flex:1 1 150px}}
+@media(max-width:820px){body.experience-v64 button,body.experience-v64 .btn,body.experience-v64 input,body.experience-v64 select{min-height:44px}body.experience-v64 .tablewrap{border-radius:14px}body.experience-v64 tbody td{padding-top:11px;padding-bottom:11px}body.experience-v64 dialog .actions{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}}
+@media(prefers-reduced-motion:reduce){body.experience-v64 .loading-panel{animation:none}}
