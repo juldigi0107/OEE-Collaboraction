@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import './validate-client-resilience-v86.mjs';
 
 const root=path.resolve('frontend');
 const indexPath=path.join(root,'index.html');
