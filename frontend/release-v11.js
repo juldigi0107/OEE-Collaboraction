@@ -96,8 +96,10 @@
   async function enhanceOperationalClosure(){
     const card=document.querySelector('.escalation-card'),stop=document.querySelector('#stopDown');if(!card&&!stop)return;
     let overview;try{overview=await api('/realtime/overview');}catch{return;}
-    const machine=(overview.machines||[]).find(m=>m.code===hmiMachine)||(overview.machines||[])[0];
-    const call=(overview.maintenance||[]).find(x=>x.machine_id===machine?.machine_id),down=(overview.downtime||[]).find(x=>x.machine_id===machine?.machine_id&&x.status==='OPEN');
+    const selected=String(hmiMachine||'').trim().toUpperCase();
+    const machine=selected?(overview.machines||[]).find(m=>String(m.code||'').trim().toUpperCase()===selected):null;
+    if(!machine)return;
+    const call=(overview.maintenance||[]).find(x=>x.machine_id===machine.machine_id),down=(overview.downtime||[]).find(x=>x.machine_id===machine.machine_id&&x.status==='OPEN');
     if(stop&&down){stop.onclick=()=>closeDowntimeDialog(down);stop.dataset.releaseDialog='1';}
     if(!card||!call)return;
     if(!card.querySelector('.maintenance-timeline')){
