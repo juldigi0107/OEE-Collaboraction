@@ -4,6 +4,7 @@ const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(String(s|
 const one=(db,sql,...args)=>db.prepare(sql).bind(...args).first();
 const J=(v,f={})=>{try{return typeof v==='string'?JSON.parse(v):v||f}catch{return f}};
 const clean=v=>String(v??'').trim();
+const norm=v=>clean(v).toUpperCase().replace(/[^A-Z0-9]/g,'');
 const allowedOrigin=(req,env)=>{const origin=req.headers.get('Origin')||'';const allow=String(env.ALLOWED_ORIGIN||'').split(',').map(x=>x.trim()).filter(Boolean);return origin&&allow.some(x=>origin===x||origin.startsWith(x+'/'))?origin:'';};
 const out=(req,env,status,error)=>{const origin=allowedOrigin(req,env);return new Response(JSON.stringify({error}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{})}});};
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
@@ -18,6 +19,12 @@ function validateLayout(v){
  if(v.status==='published'){if(!clean(v.machine))return 'Kode mesin/display wajib diisi sebelum publikasi';if(!widgets.length)return 'Minimal satu widget wajib ada sebelum publikasi';}
  return '';
 }
-export async function handleDisplaySafetyV42(req,env){
- if(req.method!=='PUT'||new URL(req.url).pathname!=='/api/settings')return null;let body;try{body=await req.clone().json();}catch{return null;}if(!clean(body?.key).startsWith('DISPLAY_LAYOUT.'))return null;const u=await auth(req,env);if(!u)return null;if(u.role!=='superadmin')return out(req,env,403,'Layout Display Mesin hanya dapat dikelola oleh Superadmin');const problem=validateLayout(J(body.value,{}));return problem?out(req,env,400,problem):null;
+async function canonicalMachineProblem(env,v){
+ if(v.status!=='published')return '';
+ const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.machine_aliases'"),cfg=J(row?.value,{});if(cfg.approved!==true)return 'Canonical machine/alias harus disahkan pada Data Governance sebelum layout dipublikasikan';
+ const canonical=new Set((Array.isArray(cfg.items)?cfg.items:[]).map(x=>norm(x?.canonical)).filter(Boolean));if(!canonical.has(norm(v.machine)))return 'Machine assignment harus memakai canonical machine yang sudah disahkan pada Data Governance';return '';
 }
+export async function handleDisplaySafetyV42(req,env){
+ if(req.method!=='PUT'||new URL(req.url).pathname!=='/api/settings')return null;let body;try{body=await req.clone().json();}catch{return null;}if(!clean(body?.key).startsWith('DISPLAY_LAYOUT.'))return null;const u=await auth(req,env);if(!u)return null;if(u.role!=='superadmin')return out(req,env,403,'Layout Display Mesin hanya dapat dikelola oleh Superadmin');const value=J(body.value,{});let problem=validateLayout(value);if(!problem)problem=await canonicalMachineProblem(env,value);return problem?out(req,env,400,problem):null;
+}
+export const DisplaySafetyV42={validateLayout,canonicalMachineProblem};
