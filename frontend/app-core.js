@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),app=$('#app'),modal=$('#modal');
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const fmt=(n,d=0)=>typeof n==='number'&&Number.isFinite(n)?n.toLocaleString('id-ID',{maximumFractionDigits:d}):'—';const pct=n=>typeof n==='number'?fmt(n*100,2)+'%':'—';
 const APP_NAME='OEE COLLABORACTION - BMJ PACKAGING OFFSET';
 const APP_TAG='Intelligent Platform © 2026 IDJ';
@@ -12,5 +12,6 @@ const permissionList=()=>Array.isArray(user?.permissions)?user.permissions:[];
 const can=(d,a)=>user?.role==='superadmin'||(user?.role==='admin'&&user.department===d&&permissionList().includes(a));
 const toast=t=>{$('#toast').textContent=t;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',6500);};
 async function api(path,method='GET',data){if(!base)throw Error('Backend Cloudflare belum terhubung.');const r=await fetch(base.replace(/\/$/,'')+'/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined});let v;try{v=await r.json();}catch{throw Error('Respons backend bukan JSON.');}if(!r.ok){if(r.status===401&&user){user=null;token='';sessionStorage.removeItem('oee-token');login();}throw Error(v.error||'Permintaan gagal');}return v;}
-function dialog(title,content){modal.innerHTML=`<div class="dialoghead"><h2 style="margin:0">${esc(title)}</h2><button id="closeDialog" aria-label="Tutup">×</button></div><div class="dialogbody">${content}</div>`;$('#closeDialog').onclick=()=>modal.close();modal.showModal();}
-
+let dialogReturnFocus=null;
+function dialog(title,content){const opening=!modal.open;if(opening)dialogReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;modal.innerHTML=`<div class="dialoghead"><h2 id="modalTitle" style="margin:0">${esc(title)}</h2><button id="closeDialog" aria-label="Tutup dialog">×</button></div><div class="dialogbody">${content}</div>`;modal.setAttribute('aria-labelledby','modalTitle');$('#closeDialog').onclick=()=>modal.close();if(opening){modal.showModal();queueMicrotask(()=>{const target=modal.querySelector('[autofocus],.dialogbody input:not([disabled]),.dialogbody select:not([disabled]),.dialogbody textarea:not([disabled]),.dialogbody button:not([disabled]),#closeDialog');target?.focus({preventScroll:true});});}}
+modal.addEventListener('close',()=>{const target=dialogReturnFocus;dialogReturnFocus=null;if(target?.isConnected)queueMicrotask(()=>target.focus({preventScroll:true}));});
