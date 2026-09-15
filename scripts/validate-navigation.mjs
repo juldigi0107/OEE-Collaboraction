@@ -23,6 +23,8 @@ const kpi45=fs.readFileSync('backend/release-v45-kpi-semantics.mjs','utf8');
 const capacity75=fs.readFileSync('frontend/capacity-utilization-v75.js','utf8');
 const capacityBack75=fs.readFileSync('backend/release-v75-capacity-utilization.mjs','utf8');
 const capacity76=fs.readFileSync('frontend/release-capacity-readiness-v76.js','utf8');
+const barcode77=fs.readFileSync('frontend/barcode-workflow-v77.js','utf8');
+const barcodeBack77=fs.readFileSync('backend/release-v77-barcode-resolver.mjs','utf8');
 const worker=fs.readFileSync('backend/worker-production.mjs','utf8');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
@@ -59,6 +61,9 @@ need(support21.includes('async function energyCoverage')&&support21.includes('un
 need(index.includes('capacity-utilization-v75.js')&&capacity75.includes("api('/capacity-utilization")&&capacity75.includes('Tidak ada overall utilization')&&capacity75.includes('Planning dianalisis'),'Capacity Utilization v75 UI tidak aktif/lengkap.');
 need(capacityBack75.includes("url.pathname!=='/api/capacity-utilization'")&&capacityBack75.includes('definitionAligned')&&capacityBack75.includes("IN ('Released','Dimulai')")&&capacityBack75.includes('Agregasi hanya di dalam unit yang sama')&&capacityBack75.includes('Target Order / kapasitas shift'),'Backend Capacity Utilization v75 harus fail-closed, Released/Dimulai only, dan unit-safe.');
 need(index.includes('release-capacity-readiness-v76.js')&&capacity76.includes('Capacity & Utilization Authority')&&capacity76.includes("d.ready===true&&d.authoritative===true")&&capacity76.includes("badge.textContent='Belum final'"),'Release Capacity v76 harus aktif dan menurunkan status release saat authority tidak siap.');
+need(index.includes('barcode-workflow-v77.js')&&barcode77.includes("api('/barcode/resolve?value=")&&barcode77.includes('exact match only')&&barcode77.includes('Scan tidak melakukan Start otomatis')&&barcode77.includes('v77ResolvedPlan')&&barcode77.includes('stopImmediatePropagation'),'Barcode Workflow v77 harus exact-resolve, tidak auto-start, dan memblokir submit scan yang belum tervalidasi.');
+need(barcodeBack77.includes("url.pathname!=='/api/barcode/resolve'")&&barcodeBack77.includes("json_extract(payload,'$.status')='Released'")&&barcodeBack77.includes("status:'ambiguous'")&&barcodeBack77.includes("status:'machine_mismatch'")&&barcodeBack77.includes('Exact match only')&&!barcodeBack77.includes('includes(raw)'),'Backend Barcode Resolver v77 harus exact-only, Released-only, machine-scoped, dan fail-safe terhadap ambiguity.');
+need(worker.includes('handleBarcodeResolverV77')&&worker.includes('barcode-resolver-v77'),'Worker harus memuat endpoint dan fingerprint Barcode Resolver v77.');
 need(worker.includes('handleCapacityUtilizationV75')&&worker.includes('capacity-utilization-v75'),'Worker harus memuat endpoint dan fingerprint Capacity Utilization v75.');
 need(worker.includes('afterWorkCalendarStartV62(workCalendarSignal')&&!worker.includes('workCalendarStartSignal'),'Work Calendar start signal wiring harus memakai signal yang benar.');
 if(errors.length){console.error('Navigation validation FAILED');for(const e of errors)console.error('- '+e);process.exit(1);}
