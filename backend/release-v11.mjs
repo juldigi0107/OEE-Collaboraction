@@ -16,6 +16,8 @@ const canReview=(u,t)=>u?.role==='superadmin'||(u?.role==='admin'&&u.department=
 const scopeTypes=u=>u?.role==='superadmin'?['production_run','downtime','quality']:u?.role==='admin'&&u.department==='PROD'?['production_run','downtime']:u?.role==='admin'&&u.department==='QC'?['quality']:[];
 const countEntries=async(db,module)=>Number((await one(db,'SELECT COUNT(*) n FROM entries WHERE module=? AND deleted=0',module))?.n||0);
 const metric=(key,label,value,unit='',source='D1',note='')=>({key,label,value:value===undefined?null:value,unit,source,note});
+const ageMinutes=ts=>{const t=Date.parse(ts||'');return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/60000)):0;};
+const attention=(id,category,severity,department,title,detail,created_at,target_view,target_module='')=>({id,category,severity,department,title,detail,created_at,age_minutes:ageMinutes(created_at),target_view,target_module});
 async function entityInfo(db,a){
  if(a.entity_type==='production_run')return await one(db,"SELECT r.id,r.pro,r.material,r.status,r.planned_qty,r.actual_qty,r.good_qty,r.reject_qty,r.start_ts,r.end_ts,m.code machine,m.name machine_name FROM production_runs r LEFT JOIN machine_registry m ON m.id=r.machine_id WHERE r.id=?",a.entity_id)||{};
  if(a.entity_type==='downtime')return await one(db,"SELECT d.id,d.class,d.code,d.reason,d.root_cause,d.status,d.start_ts,d.end_ts,m.code machine,m.name machine_name FROM downtime_events d LEFT JOIN machine_registry m ON m.id=d.machine_id WHERE d.id=?",a.entity_id)||{};
@@ -52,6 +54,29 @@ async function roleDashboard(db,dept){
  }
  return metrics;
 }
+async function attentionCenter(db,u){
+ const dept=String(u?.department||'').toUpperCase(),global=u?.role==='superadmin',items=[];
+ if(global||dept==='PROD'||dept==='MTC'){
+  const downs=await all(db,"SELECT d.id,d.class,d.code,d.reason,d.owner_department,d.start_ts,m.code machine FROM downtime_events d LEFT JOIN machine_registry m ON m.id=d.machine_id WHERE d.status='OPEN' ORDER BY d.start_ts LIMIT 80");
+  for(const d of downs){if(!global&&dept==='MTC'&&String(d.class).toUpperCase()!=='UPDT'&&String(d.owner_department||'').toUpperCase()!=='MTC')continue;const age=ageMinutes(d.start_ts),critical=String(d.class).toUpperCase()==='UPDT'&&age>=10;items.push(attention('downtime:'+d.id,'downtime',critical?'critical':'warning','PROD',`${d.class||'Downtime'} aktif · ${d.machine||'Mesin belum dikenal'}`,`${d.code||'Tanpa code'} · ${d.reason||'Reason belum dicatat'} · ${age} menit`,d.start_ts,'live'));}
+  const calls=await all(db,"SELECT c.id,c.priority,c.status,c.requested_ts,c.note,m.code machine FROM maintenance_calls c LEFT JOIN machine_registry m ON m.id=c.machine_id WHERE c.status<>'CLOSED' ORDER BY CASE c.priority WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2 END,c.requested_ts LIMIT 80");
+  for(const c of calls){const p=String(c.priority||'').toUpperCase(),sev=['CRITICAL','HIGH'].includes(p)?'critical':'warning';items.push(attention('maintenance:'+c.id,'maintenance',sev,'MTC',`Maintenance ${c.status==='ACKNOWLEDGED'?'ditangani':'menunggu'} · ${c.machine||'Mesin belum dikenal'}`,`${p||'NORMAL'} · ${c.note||'Catatan belum diisi'}`,c.requested_ts,'operations','maintenance'));}
+ }
+ if(global||dept==='PROD'){
+  const stale=await all(db,"SELECT r.id,r.pro,r.start_ts,m.code machine,m.heartbeat_at FROM production_runs r JOIN machine_registry m ON m.id=r.machine_id WHERE r.status='RUNNING' AND (m.heartbeat_at IS NULL OR datetime(m.heartbeat_at,'+3 minutes')<datetime('now')) ORDER BY r.start_ts LIMIT 50");
+  for(const r of stale)items.push(attention('telemetry:'+r.id,'telemetry','critical','PROD',`Telemetry tidak fresh · ${r.machine||'Mesin'}`,`PRO ${r.pro||'—'} sedang berjalan tetapi heartbeat tidak authoritative/fresh.`,r.heartbeat_at||r.start_ts,'live'));
+ }
+ if(global||(u?.role==='admin'&&['PROD','QC'].includes(dept))){
+  const types=global?['production_run','downtime','quality']:dept==='QC'?['quality']:['production_run','downtime'],ph=types.map(()=>'?').join(',');
+  const pending=await all(db,`SELECT id,entity_type,entity_id,step,requested_ts FROM approvals WHERE status='PENDING' AND entity_type IN (${ph}) ORDER BY requested_ts LIMIT 100`,...types);
+  for(const a of pending){const owner=a.entity_type==='quality'?'QC':'PROD',age=ageMinutes(a.requested_ts),label=a.entity_type==='quality'?'QC Verification':a.entity_type==='downtime'?'Root Cause Verification':'Final Production Verification';items.push(attention('approval:'+a.id,'approval',age>=480?'warning':'info',owner,label,`${a.step||'VERIFY'} · menunggu ${age} menit`,a.requested_ts,'approvals'));}
+ }
+ if(global){
+  const errors=await all(db,"SELECT id,system,last_sync,last_message FROM integration_connections WHERE enabled=1 AND upper(COALESCE(last_status,''))='ERROR' ORDER BY last_sync DESC LIMIT 30");
+  for(const x of errors)items.push(attention('integration:'+x.id,'integration','warning','PROJECT',`Integrasi ${x.system||x.id} error`,x.last_message||'Sinkronisasi terakhir gagal.',x.last_sync||now(),'integrations'));
+ }
+ const rank={critical:0,warning:1,info:2};items.sort((a,b)=>(rank[a.severity]??9)-(rank[b.severity]??9)||b.age_minutes-a.age_minutes);const limited=items.slice(0,120),summary={critical:limited.filter(x=>x.severity==='critical').length,warning:limited.filter(x=>x.severity==='warning').length,info:limited.filter(x=>x.severity==='info').length,total:limited.length};return {generated_at:now(),scope:global?'ALL':dept||'UNKNOWN',summary,items:limited};
+}
 async function workflowGate(req,env,path){
  const {u,error}=await authorizedUser(req,env);if(error)return error;
  let body={};try{body=await req.clone().json();}catch{}
@@ -87,8 +112,9 @@ export async function handleReleaseV11(req,env){
  if(req.method==='POST'&&['/api/shopfloor/start','/api/shopfloor/downtime/stop','/api/shopfloor/maintenance/close','/api/approvals/decide'].includes(path)){
    const blocked=await workflowGate(req,env,path);if(blocked)return blocked;
  }
- if(req.method!=='GET'||!['/api/approvals','/api/role-dashboard'].includes(path))return null;
+ if(req.method!=='GET'||!['/api/approvals','/api/role-dashboard','/api/attention-center'].includes(path))return null;
  const {u,error}=await authorizedUser(req,env);if(error)return error;
+ if(path==='/api/attention-center')return json(req,env,await attentionCenter(env.DB,u));
  if(path==='/api/role-dashboard'){
    const requested=String(url.searchParams.get('department')||u.department||'PROJECT').toUpperCase(),dept=u.role==='superadmin'?requested:u.department;
    if(!['PROD','QC','MTC','PPIC','PDS','PROJECT'].includes(dept))return json(req,env,{error:'Department tidak valid'},400);
