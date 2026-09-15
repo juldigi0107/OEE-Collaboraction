@@ -30,22 +30,34 @@ function stats(values,lsl,usl){
  const sorted=[...values].sort((a,b)=>a-b),n=sorted.length,mean=sorted.reduce((a,b)=>a+b,0)/n,median=n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2,sd=n>1?Math.sqrt(sorted.reduce((s,x)=>s+(x-mean)**2,0)/(n-1)):null,ppk=sd>0?Math.min((usl-mean)/(3*sd),(mean-lsl)/(3*sd)):null,outCount=sorted.filter(x=>x<lsl||x>usl).length;
  return {n,mean,median,min:sorted[0],max:sorted[n-1],sd,ppk,out_of_spec_count:outCount,out_of_spec_rate:n?outCount/n:null};
 }
+function subgroupCapability(records,lsl,usl,overallMean){
+ const labelled=records.filter(p=>clean(p.subgroup)&&Number.isFinite(Number(p.value))),groups=new Map();
+ for(const p of labelled){const id=clean(p.subgroup);if(!groups.has(id))groups.set(id,[]);groups.get(id).push(Number(p.value));}
+ const eligible=[...groups.entries()].filter(([,values])=>values.length>=2),measurements=eligible.reduce((n,[,v])=>n+v.length,0),df=eligible.reduce((n,[,v])=>n+v.length-1,0),coverage=records.length?labelled.length/records.length:null;
+ if(!groups.size)return {cpk:null,within_sd:null,subgroup_count:0,subgroup_measurements:0,subgroup_df:0,subgroup_labelled:0,subgroup_coverage:coverage,cpk_status:'subgroup_required'};
+ if(eligible.length<2||df<2)return {cpk:null,within_sd:null,subgroup_count:eligible.length,subgroup_measurements:measurements,subgroup_df:df,subgroup_labelled:labelled.length,subgroup_coverage:coverage,cpk_status:'insufficient_subgroup_data'};
+ let ss=0;for(const [,values] of eligible){const mean=values.reduce((a,b)=>a+b,0)/values.length;ss+=values.reduce((n,x)=>n+(x-mean)**2,0);}const withinSd=df>0?Math.sqrt(ss/df):null;
+ if(!(withinSd>0))return {cpk:null,within_sd:withinSd,subgroup_count:eligible.length,subgroup_measurements:measurements,subgroup_df:df,subgroup_labelled:labelled.length,subgroup_coverage:coverage,cpk_status:'zero_within_variation'};
+ const cpk=Math.min((usl-overallMean)/(3*withinSd),(overallMean-lsl)/(3*withinSd));
+ return {cpk,within_sd:withinSd,subgroup_count:eligible.length,subgroup_measurements:measurements,subgroup_df:df,subgroup_labelled:labelled.length,subgroup_coverage:coverage,cpk_status:'ready'};
+}
 async function capabilityGet(req,env,url){
  const u=await auth(req,env);if(!u)return error(req,env,'Silakan login kembali',401);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return error(req,env,'Ganti password awal terlebih dahulu',403);
  const dimensions=(await all(env.DB,"SELECT trim(COALESCE(json_extract(payload,'$.machine'),'')) machine,trim(COALESCE(json_extract(payload,'$.parameter'),'')) parameter,trim(COALESCE(json_extract(payload,'$.unit'),'')) unit,COUNT(*) records,MIN(json_extract(payload,'$.date')) first_date,MAX(json_extract(payload,'$.date')) last_date FROM entries WHERE module='process' AND deleted=0 GROUP BY trim(COALESCE(json_extract(payload,'$.machine'),'')),trim(COALESCE(json_extract(payload,'$.parameter'),'')),trim(COALESCE(json_extract(payload,'$.unit'),'')) ORDER BY machine,parameter,unit LIMIT 1000")).filter(x=>clean(x.machine)&&clean(x.parameter)&&clean(x.unit)).map(x=>({...x,records:Number(x.records||0)}));
  const machine=clean(url.searchParams.get('machine')),parameter=clean(url.searchParams.get('parameter')),unit=clean(url.searchParams.get('unit')),from=clean(url.searchParams.get('from')),to=clean(url.searchParams.get('to'));
  if(!validDate(from)||!validDate(to)||from&&to&&from>to)return error(req,env,'Rentang tanggal Process Capability tidak valid',400);
- const base={dimensions,selection:{machine,parameter,unit,from,to},policy:'Ppk hanya dihitung untuk satu kombinasi mesin + parameter + satuan dengan satu pasangan LSL/USL yang konsisten. Cpk tidak diklaim tanpa desain subgroup.'};
+ const base={dimensions,selection:{machine,parameter,unit,from,to},policy:'Ppk memakai standard deviation keseluruhan untuk satu kombinasi mesin + parameter + satuan dengan satu pasangan LSL/USL konsisten. Cpk hanya dihitung dari pooled within-subgroup standard deviation bila minimal dua subgroup berlabel memiliki sedikitnya dua measurement per subgroup; aplikasi tidak menganggap subgroup kosong atau label acak sebagai rational subgroup.'};
  if(!machine||!parameter||!unit)return json(req,env,{...base,status:'selection_required',result:null});
  const rows=await all(env.DB,"SELECT payload FROM entries WHERE module='process' AND deleted=0 AND lower(trim(COALESCE(json_extract(payload,'$.machine'),'')))=lower(?) AND lower(trim(COALESCE(json_extract(payload,'$.parameter'),'')))=lower(?) AND lower(trim(COALESCE(json_extract(payload,'$.unit'),'')))=lower(?) AND (?='' OR json_extract(payload,'$.date')>=?) AND (?='' OR json_extract(payload,'$.date')<=?) ORDER BY json_extract(payload,'$.date'),updated LIMIT 5001",machine,parameter,unit,from,from,to,to);
  const truncated=rows.length>5000,records=rows.slice(0,5000).map(r=>parse(r.payload,{})),validValues=records.filter(p=>p.value!==''&&Number.isFinite(Number(p.value))),withSpec=validValues.filter(p=>p.lsl!==''&&p.lsl!==undefined&&p.usl!==''&&p.usl!==undefined&&Number.isFinite(Number(p.lsl))&&Number.isFinite(Number(p.usl))&&Number(p.lsl)<Number(p.usl));
- const specMap=new Map();for(const p of withSpec){const l=Number(p.lsl),u2=Number(p.usl),key=`${l}|${u2}`;if(!specMap.has(key))specMap.set(key,{lsl:l,usl:u2,values:[]});specMap.get(key).values.push(Number(p.value));}
+ const specMap=new Map();for(const p of withSpec){const l=Number(p.lsl),u2=Number(p.usl),key=`${l}|${u2}`;if(!specMap.has(key))specMap.set(key,{lsl:l,usl:u2,records:[]});specMap.get(key).records.push(p);}
  const common={...base,records_total:records.length,valid_measurements:validValues.length,specified_measurements:withSpec.length,missing_spec:Math.max(0,validValues.length-withSpec.length),truncated};
  if(!validValues.length)return json(req,env,{...common,status:'no_measurement',result:null});
  if(!specMap.size)return json(req,env,{...common,status:'no_specification',result:null});
- if(specMap.size>1)return json(req,env,{...common,status:'ambiguous_specification',specifications:[...specMap.values()].map(x=>({lsl:x.lsl,usl:x.usl,n:x.values.length})),result:null});
- const spec=[...specMap.values()][0];if(spec.values.length<2)return json(req,env,{...common,status:'insufficient_sample',specification:{lsl:spec.lsl,usl:spec.usl},result:null});
- return json(req,env,{...common,status:'ready',specification:{lsl:spec.lsl,usl:spec.usl},result:stats(spec.values,spec.lsl,spec.usl)});
+ if(specMap.size>1)return json(req,env,{...common,status:'ambiguous_specification',specifications:[...specMap.values()].map(x=>({lsl:x.lsl,usl:x.usl,n:x.records.length})),result:null});
+ const spec=[...specMap.values()][0],values=spec.records.map(p=>Number(p.value));if(values.length<2)return json(req,env,{...common,status:'insufficient_sample',specification:{lsl:spec.lsl,usl:spec.usl},result:null});
+ const result=stats(values,spec.lsl,spec.usl),cpk=subgroupCapability(spec.records,spec.lsl,spec.usl,result.mean);
+ return json(req,env,{...common,status:'ready',specification:{lsl:spec.lsl,usl:spec.usl},result:{...result,...cpk}});
 }
 export async function handleProcessCapabilityV59(req,env){
  const url=new URL(req.url),path=url.pathname;
@@ -55,4 +67,4 @@ export async function handleProcessCapabilityV59(req,env){
  const u=await auth(req,env);if(!u||!allow(u,req.method==='POST'?'create':'update'))return null;
  const problem=validateProcess(body.payload,{creating:req.method==='POST'});return problem?error(req,env,problem,400):null;
 }
-export const ProcessCapabilityV59={validateProcess,stats};
+export const ProcessCapabilityV59={validateProcess,stats,subgroupCapability};
