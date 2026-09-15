@@ -80,7 +80,7 @@
       for(const w of layout.widgets||[]){const [v,m]=resolve(w,dash,ctx);if(v!==undefined)setValue(w,v,m);}
       renderClock(layout);
       const exact=!!ctx.machine,trust=ctx.trust?.telemetry_trusted===true;
-      status(exact,exact?`Live exact machine · ${trust?'telemetry authoritative':'telemetry belum authoritative'} · ${new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`:`Machine assignment ${layout.machine} belum ditemukan pada realtime overview`);
+      status(exact&&trust,exact?`Exact machine · ${trust?'telemetry authoritative':'telemetry belum authoritative'} · ${new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`:`Machine assignment ${layout.machine} belum ditemukan pada realtime overview`);
     }catch(e){status(false,'Data terakhir · koneksi refresh tertunda');}
     finally{refreshing=false;}
   }
@@ -107,7 +107,7 @@
         blockDisplay('Layout harus dipublikasikan oleh superadmin dan ditetapkan ke mesin sebelum dapat ditampilkan.');return;
       }
       lastLayout=typeof item.value==='string'?item.value:JSON.stringify(item.value);
-      status(true,'Menyiapkan data live exact machine…');refresh();
+      status(false,'Menyiapkan verifikasi exact machine & telemetry…');refresh();
       timer=setInterval(refresh,REFRESH_MS);layoutTimer=setInterval(checkLayout,LAYOUT_MS);
       setInterval(()=>renderClock(currentLayout()),1000);
       document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
