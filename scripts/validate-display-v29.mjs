@@ -18,10 +18,12 @@ const checks=[
  ['v82 exact-machine route wired',worker.includes("handleFieldDisplayV82")&&worker.includes("field-display-projection-v82")&&worker.includes("'/api/field-display/machine'")],
  ['field display consumes v82 projection',field.includes("api('/field-display/machine?machine='")&&!field.includes("api('/realtime/overview')")&&!field.includes("api('/telemetry-status')")],
  ['projection is auth protected and canonical',projection.includes("Silakan login kembali")&&projection.includes('canonicalMachine')&&projection.includes("status:'machine_not_found'")],
+ ['projection exact fallback is unique or fail-closed',projection.includes('async function exactMachine')&&projection.includes("WHERE r.code=? AND r.active=1")&&projection.includes('matches.length===1')&&projection.includes("match:'ambiguous'")&&projection.includes("status:'machine_ambiguous'")],
+ ['frontend exposes ambiguous identity state',field.includes("projection?.status==='machine_ambiguous'")&&field.includes('Perbaiki canonical machine / alias')],
  ['projection preserves telemetry trust',projection.includes('telemetry.trusted')||projection.includes("trusted:hb.fresh&&externalSource")],
  ['projection quality is unit fail-safe',projection.includes('known=rows.filter')&&projection.includes('ambiguous_or_mismatch')&&projection.includes('mismatched_or_missing_unit_events')],
  ['field resolves live business widgets',['quality.reject','maintenance.status','planning.target','production.table'].every(x=>field.includes(x))],
  ['historical widgets remain labelled global',field.includes('snapshot historis/global')&&field.includes('bukan KPI live mesin')],
  ['responsive lifecycle controls',css.includes('@media(max-width:820px)')]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, exact-machine projection, and field-safety guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, exact-machine projection, ambiguity, and field-safety guards checked.`);
