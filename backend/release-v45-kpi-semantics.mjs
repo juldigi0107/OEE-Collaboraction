@@ -29,10 +29,23 @@ async function maintenanceMetrics(env,baseMetrics,gov){
  annotate(metrics,'records','Seluruh register corrective terpetakan; tidak dibatasi 30 hari.');
  return metrics;
 }
+async function productionMetrics(env,baseMetrics,gov){
+ const metrics=[...(baseMetrics||[])];
+ annotate(metrics,'records','Seluruh register hasil produksi terpetakan; KPI realtime lain mengikuti state saat ini.');
+ annotate(metrics,'online','Heartbeat aktif bila update mesin ≤ 3 menit.');
+ const e=await one(env.DB,"SELECT COUNT(*) records,SUM(CASE WHEN json_extract(payload,'$.kwh') IS NOT NULL AND trim(CAST(json_extract(payload,'$.kwh') AS TEXT))<>'' AND CAST(json_extract(payload,'$.kwh') AS REAL)>=0 THEN 1 ELSE 0 END) valid_kwh_records,SUM(CASE WHEN json_extract(payload,'$.kwh') IS NOT NULL AND trim(CAST(json_extract(payload,'$.kwh') AS TEXT))<>'' AND CAST(json_extract(payload,'$.kwh') AS REAL)>=0 THEN CAST(json_extract(payload,'$.kwh') AS REAL) ELSE 0 END) kwh,COUNT(DISTINCT CASE WHEN trim(COALESCE(json_extract(payload,'$.machine'),''))<>'' THEN trim(json_extract(payload,'$.machine')) END) machines FROM entries WHERE module='energy' AND deleted=0 AND date(json_extract(payload,'$.date'))>=date('now','-30 days') AND date(json_extract(payload,'$.date'))<=date('now')")||{};
+ const undated=Number((await one(env.DB,"SELECT COUNT(*) n FROM entries WHERE module='energy' AND deleted=0 AND (json_extract(payload,'$.date') IS NULL OR trim(json_extract(payload,'$.date'))='' OR date(json_extract(payload,'$.date')) IS NULL)"))?.n||0),valid=Number(e.valid_kwh_records||0),approved=gov.approved===true;
+ setMetric(metrics,'energy_records_30d',{label:'Pencatatan energi · 30 hari',value:Number(e.records||0),unit:'record',source:'Register Energy',note:'Window mengikuti field tanggal transaksi Energy; nama file tidak dipakai sebagai periode.'});
+ setMetric(metrics,'energy_kwh_30d',{label:'Energi tercatat · 30 hari',value:valid?Number(e.kwh||0):null,unit:'kWh',source:'Register Energy',note:valid?`${valid} record kWh valid dijumlahkan; nilai kosong/tidak valid tidak dipaksa menjadi nol.`:'Belum ada record kWh valid pada rolling window 30 hari.'});
+ setMetric(metrics,'energy_machines_30d',{label:'Mesin dengan data energi · 30 hari',value:Number(e.machines||0),unit:'mesin',source:'Register Energy',note:'Distinct machine dari record Energy bertanggal valid pada rolling window.'});
+ if(undated)setMetric(metrics,'energy_undated',{label:'Energy tanpa tanggal valid',value:undated,unit:'record',source:'Register Energy',note:'Tidak dimasukkan ke agregasi 30 hari sampai tanggal direkonsiliasi.'});
+ setMetric(metrics,'enpi',{label:'ENPI / intensitas energi',value:null,unit:'',source:'Energy + Production',note:`Belum dihitung otomatis. Denominator output/capacity, unit output, dan basis ENPI harus disahkan terlebih dahulu agar tidak mencampur proses atau satuan.${approved&&clean(gov.utilization_definition)?' Governance utilization tersedia, tetapi bukan pengganti definisi ENPI.':''}`});
+ return metrics;
+}
 export async function handleKpiSemanticsV45(req,env){
  const url=new URL(req.url);if(req.method!=='GET'||url.pathname!=='/api/role-dashboard')return null;
- const response=await handleReleaseV11(req,env);if(!response||!response.ok)return response;const body=await jsonFrom(response);if(!body)return response;let metrics=Array.isArray(body.metrics)?body.metrics:[],dept=body.department;
- if(dept==='MTC')metrics=await maintenanceMetrics(env,metrics,await kpiGovernance(env));
+ const response=await handleReleaseV11(req,env);if(!response||!response.ok)return response;const body=await jsonFrom(response);if(!body)return response;let metrics=Array.isArray(body.metrics)?body.metrics:[],dept=body.department,gov=await kpiGovernance(env);
+ if(dept==='MTC')metrics=await maintenanceMetrics(env,metrics,gov);
  if(dept==='PPIC')for(const key of ['planning','ready','started','confirmation','reversal'])annotate(metrics,key,'Cakupan seluruh register D1 terpetakan; bukan rolling 30 hari.');
  if(dept==='PDS')metrics=await pdsMetrics(env,metrics);
  if(dept==='PROJECT'){
@@ -40,9 +53,6 @@ export async function handleKpiSemanticsV45(req,env){
   annotate(metrics,'progress','Rata-rata aritmatik record dengan progress 0–100; bukan weighted portfolio progress.');
   annotate(metrics,'readiness','Jumlah area readiness yang tercatat, bukan jumlah area yang sudah lulus.');
  }
- if(dept==='PROD'){
-  annotate(metrics,'records','Seluruh register hasil produksi terpetakan; KPI realtime lain mengikuti state saat ini.');
-  annotate(metrics,'online','Heartbeat aktif bila update mesin ≤ 3 menit.');
- }
- body.metrics=metrics;body.semantic_policy='Label KPI mengikuti formula aktual; status authoritative mengikuti baseline Data Governance.';body.window_policy='Rolling metrics memakai timestamp event yang dinyatakan pada label; run duration dipotong pada boundary window dan memasukkan run aktif sampai waktu sekarang, bukan dipilih dari nama file.';return responseFrom(response,body);
+ if(dept==='PROD')metrics=await productionMetrics(env,metrics,gov);
+ body.metrics=metrics;body.semantic_policy='Label KPI mengikuti formula aktual; status authoritative mengikuti baseline Data Governance.';body.window_policy='Rolling metrics memakai timestamp/event date yang dinyatakan pada label; run duration dipotong pada boundary window dan memasukkan run aktif sampai waktu sekarang. Energy memakai field tanggal transaksi; nama file tidak digunakan sebagai periode.';return responseFrom(response,body);
 }
