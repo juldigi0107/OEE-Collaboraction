@@ -4,6 +4,7 @@ const index=read('frontend/index.html');
 const v23=read('frontend/release-polish-v23.js');
 const css=read('frontend/release-polish-v23.css');
 const dash=read('frontend/role-dashboard-v12.js');
+const dash34=read('frontend/dashboard-period-v34.js');
 const support=read('frontend/support-recovery-v21.js');
 const field=read('frontend/field-display-v8.js');
 const hmi81=read('frontend/hmi-oee-v81.js');
@@ -24,13 +25,18 @@ const checks=[
  ['source row write remains permission guarded',v23.includes("can(dept,'create')")],
  ['archive delete uses application dialog',v23.includes('archiveRowDialog')&&v23.includes('rp23DeleteConfirm')],
  ['dashboard distinguishes historical and live data',dash.includes('Konteks data historis')&&dash.includes('D1 dan event live')&&dash.includes('Tanggal transaksi/tanggal kerja')],
- ['dashboard does not hardcode reporting month',!dash.includes('snapshot workbook Agustus 2026')],
+ ['dashboard role layer does not hardcode reporting month',!dash.includes('snapshot workbook Agustus 2026')],
+ ['premium dashboard period derives directly from cached source series',dash34.includes('dashboardCache?.series')&&dash34.includes('dynamicChart(series)')&&dash34.includes('periode berasal dari cell tanggal sumber')],
+ ['premium dashboard replaces hardcoded trend rendering',dash34.includes('replacePremiumTrend(svg)')&&dash34.includes('Periode sumber ·')&&dash34.includes('Periode belum dapat ditentukan')],
+ ['dashboard KPI availability is checked against OEE AP rows 2-5',dash34.includes("lastSeries.find(s=>s.name==='OEE AP')")&&dash34.includes('rows=[2,3,4,5]')],
+ ['dashboard never falls back to a fabricated reporting period',dash34.includes('aplikasi tidak memakai periode dari nama file atau default bulan')&&dash34.includes('Nilai tidak dialihkan ke bulan default')],
  ['support page uses business-facing labels',support.includes('Dukungan & Pemulihan')&&support.includes('Belum diuji')&&support.includes('Terhubung')&&!support.includes('<span>Support & Recovery</span>')],
  ['responsive v23 styling present',css.includes('@media(max-width:680px)')&&css.includes('.rp23-field')],
  ['field display has no first-machine fallback',field.includes("find(m=>normalize(m.code)===code)||null")&&!field.includes("||(rt?.machines||[])[0]")],
  ['field display uses telemetry authority',field.includes("api('/telemetry-status')")&&field.includes('telemetry_trusted===true')&&field.includes('counter_start_trusted===true')],
  ['field display withholds untrusted counter output',field.includes('Counter ditahan · telemetry/start counter belum authoritative')&&field.includes('Aktual dari counter authoritative')],
  ['field display labels dashboard KPI as historical global',field.includes('Snapshot dashboard historis/global · bukan KPI live mesin')],
+ ['field display green state requires exact machine and trusted telemetry',field.includes('status(exact&&trust')&&field.includes('telemetry belum authoritative')],
  ['HMI OEE v81 frontend active after v80',index.includes('hmi-oee-v81.js')&&index.indexOf('hmi-oee-v81.js')>index.indexOf('oee-governance-v80.js')],
  ['HMI Finish follows governed NC rule',hmi81.includes('NC wajib diisi sesuai Quality rule authoritative')&&hmi81.includes("gov.rule==='good_nc_total'")&&hmi81.includes("api('/shopfloor/finish','POST'")],
  ['backend HMI Finish stores governance snapshot',back81.includes('nc_qty=?')&&back81.includes('quality_rule=?')&&back81.includes('governance_approved=?')&&back81.includes('governance_updated_at=?')],
@@ -43,8 +49,8 @@ const checks=[
  ['production NC schema additive in Worker',worker.includes("addColumnIfMissing(env,'production_runs','nc_qty'")&&worker.includes("addColumnIfMissing(env,'production_runs','quality_rule'")&&worker.includes("addColumnIfMissing(env,'production_runs','governance_approved'")],
  ['fresh schemas include HMI OEE governance fields',[init,realtime].every(s=>s.includes('nc_qty REAL')&&s.includes('quality_rule TEXT')&&s.includes('governance_approved INTEGER NOT NULL DEFAULT 0')&&s.includes('governance_updated_at TEXT'))],
  ['v81 fingerprint exposed',worker.includes('hmi-oee-parity-v81')],
- ['v81 contains no prototype language',!/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([hmi81,back81,field].join('\n'))]
+ ['release layers contain no prototype language',!/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([hmi81,back81,field,dash34].join('\n'))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release polish, exact-machine display, and HMI OEE parity validation OK — ${checks.length} UX, telemetry, NC, governance-snapshot, approval, mirror, and schema guards checked.`);
+console.log(`Release polish, source-derived dashboard period, exact-machine display, and HMI OEE parity validation OK — ${checks.length} UX, period, telemetry, NC, governance-snapshot, approval, mirror, and schema guards checked.`);
