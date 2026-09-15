@@ -15,3 +15,15 @@ async function api(path,method='GET',data){if(!base)throw Error('Backend Cloudfl
 let dialogReturnFocus=null;
 function dialog(title,content){const opening=!modal.open;if(opening)dialogReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;modal.innerHTML=`<div class="dialoghead"><h2 id="modalTitle" style="margin:0">${esc(title)}</h2><button id="closeDialog" aria-label="Tutup dialog">×</button></div><div class="dialogbody">${content}</div>`;modal.setAttribute('aria-labelledby','modalTitle');$('#closeDialog').onclick=()=>modal.close();if(opening){modal.showModal();queueMicrotask(()=>{const target=modal.querySelector('[autofocus],.dialogbody input:not([disabled]),.dialogbody select:not([disabled]),.dialogbody textarea:not([disabled]),.dialogbody button:not([disabled]),#closeDialog');target?.focus({preventScroll:true});});}}
 modal.addEventListener('close',()=>{const target=dialogReturnFocus;dialogReturnFocus=null;if(target?.isConnected)queueMicrotask(()=>target.focus({preventScroll:true}));});
+let clientIssueLast={key:'',ts:0};
+const clientIssueRef=()=>`UI-${Date.now().toString(36).slice(-6).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+function surfaceClientIssue(reason,source='runtime'){
+ const message=String(reason?.message||reason||'Gangguan tampilan tidak dikenal').trim();if(!message||/ResizeObserver loop|AbortError|The operation was aborted/i.test(message))return;
+ const key=`${source}|${message.slice(0,180)}`,stamp=Date.now();if(clientIssueLast.key===key&&stamp-clientIssueLast.ts<10000)return;clientIssueLast={key,ts:stamp};const ref=clientIssueRef();console.error(`[${ref}] OEE client ${source} error`,reason);
+ const notice=`Tampilan mengalami gangguan. Kode diagnostik ${ref}. Coba muat ulang halaman jika fungsi belum kembali normal.`;
+ if(app?.textContent?.trim()){toast(notice);return;}
+ queueMicrotask(()=>{if(app?.textContent?.trim())return;app.innerHTML=`<div class="splash"><section class="login-card panel" role="alert"><h2>Aplikasi belum dapat ditampilkan</h2><p class="muted">Terjadi gangguan pada tampilan. Data di server tidak diubah oleh error browser ini.</p><div class="errorbox"><strong>Kode diagnostik</strong><span>${esc(ref)}</span></div><button id="clientRecoveryReload" class="primary">Muat ulang aplikasi</button></section></div>`;$('#clientRecoveryReload')?.addEventListener('click',()=>location.reload());});
+}
+window.addEventListener('error',event=>surfaceClientIssue(event.error||event.message,'window'));
+window.addEventListener('unhandledrejection',event=>surfaceClientIssue(event.reason,'promise'));
+window.OEEClientRecovery={surface:surfaceClientIssue};
