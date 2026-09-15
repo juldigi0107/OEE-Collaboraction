@@ -70,6 +70,7 @@ jobs:
           echo "$body" | grep -Fq 'plan-authority-v53'
           echo "$body" | grep -Fq 'runtime-signoff-v54'
           echo "$body" | grep -Fq 'runtime-invariants-v55'
+          echo "$body" | grep -Fq 'integration-safety-v69'
       - name: Production D1 readiness check
         run: |
           tmp=$(mktemp)
@@ -80,7 +81,7 @@ jobs:
           grep -Fq '"schema":"ready"' "$tmp"
       - name: Production frontend and BMJ asset smoke check
         run: |
-          js_assets="role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js release-polish-v23.js module-table-v25.js archive-semantic-v26.js settings-polish-v27.js access-governance-v28.js display-lifecycle-v29.js import-center-v30.js operational-control-core-v31.js operational-control-view-v31.js operational-control-edit-v31.js operational-control-runtime-v31.js release-resilience-v33.js dashboard-period-v34.js"
+          js_assets="role-ux-v7.js field-display-v8.js release-v10.js release-v11.js role-dashboard-v12.js workflow-v13.js governance-v14.js data-governance-core-v16.js data-governance-view-v16.js data-governance-edit-v16.js machine-governance-v20.js uat-release-core-v17.js uat-release-view-v17.js uat-release-edit-v17.js release-status-v18.js support-recovery-v21.js release-polish-v23.js module-table-v25.js archive-semantic-v26.js settings-polish-v27.js access-governance-v28.js display-lifecycle-v29.js import-center-v30.js operational-control-core-v31.js operational-control-view-v31.js operational-control-edit-v31.js operational-control-runtime-v31.js release-resilience-v33.js dashboard-period-v34.js integration-safety-v69.js navigation-integrity-v70.js live-monitoring-v71.js"
           ready=0
           for attempt in $(seq 1 12); do
             html=$(curl --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/ || true)
@@ -109,85 +110,93 @@ jobs:
           echo "$release" | grep -Fq 'filter(m=>normalize(m.code)===code)'
       - name: Production release workflow smoke check
         run: |
+          check(){ printf '%s' "$1" | grep -Fq "$2" || { echo "Missing production marker: $3 -> $2"; exit 1; }; }
           r10=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-v10.js)
-          echo "$r10" | grep -Fq 'Tata Kelola & Readiness'
-          echo "$r10" | grep -Fq 'Pusat Data & Dokumen'
-          echo "$r10" | grep -Fq 'barcodePlanScan'
+          check "$r10" 'Tata Kelola & Readiness' 'release-v10'
+          check "$r10" 'Pusat Data & Dokumen' 'release-v10'
+          check "$r10" 'barcodePlanScan' 'release-v10'
           r11=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-v11.js)
-          echo "$r11" | grep -Fq 'Approval & Verifikasi'
-          echo "$r11" | grep -Fq 'Close Maintenance'
+          check "$r11" 'Approval & Verifikasi' 'release-v11'
+          check "$r11" 'Tutup Maintenance' 'release-v11'
           r12=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/role-dashboard-v12.js)
-          echo "$r12" | grep -Fq '/role-dashboard?department='
-          echo "$r12" | grep -Fq 'Konteks data'
+          check "$r12" '/role-dashboard?department=' 'role-dashboard-v12'
+          check "$r12" 'Konteks data' 'role-dashboard-v12'
           r13=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/workflow-v13.js)
-          echo "$r13" | grep -Fq 'Released / Siap Produksi'
+          check "$r13" 'Released / Siap Produksi' 'workflow-v13'
           r14=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/governance-v14.js)
-          echo "$r14" | grep -Fq 'Audit Log'
-          echo "$r14" | grep -Fq '[disamarkan]'
+          check "$r14" 'Riwayat Aktivitas' 'governance-v14'
+          check "$r14" '[disamarkan]' 'governance-v14'
           r16=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/data-governance-core-v16.js)
-          echo "$r16" | grep -Fq 'DATA_GOVERNANCE'
+          check "$r16" 'DATA_GOVERNANCE' 'data-governance-v16'
           r17=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/uat-release-core-v17.js)
-          echo "$r17" | grep -Fq 'UAT'
+          check "$r17" 'UAT' 'uat-release-v17'
           r18=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-status-v18.js)
-          echo "$r18" | grep -Fq 'Workflow Consistency'
-          echo "$r18" | grep -Fq '/workflow-health'
-          echo "$r18" | grep -Fq 'Source Mirror Consistency'
-          echo "$r18" | grep -Fq '/mirror-health'
-          echo "$r18" | grep -Fq 'Shopfloor Invariants'
-          echo "$r18" | grep -Fq '/runtime-invariants'
+          check "$r18" 'Workflow Consistency' 'release-status-v18'
+          check "$r18" '/workflow-health' 'release-status-v18'
+          check "$r18" 'Source Mirror Consistency' 'release-status-v18'
+          check "$r18" '/mirror-health' 'release-status-v18'
+          check "$r18" 'Shopfloor Invariants' 'release-status-v18'
+          check "$r18" '/runtime-invariants' 'release-status-v18'
           r20=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/machine-governance-v20.js)
-          echo "$r20" | grep -Fq 'machine'
+          check "$r20" 'machine' 'machine-governance-v20'
           r21=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/support-recovery-v21.js)
-          echo "$r21" | grep -Fq 'Dukungan & Pemulihan'
-          echo "$r21" | grep -Fq 'workflow + mirror + shopfloor invariant'
+          check "$r21" 'Dukungan & Pemulihan' 'support-recovery-v21'
+          check "$r21" 'workflow + mirror + shopfloor invariant' 'support-recovery-v21'
           r22=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/uat-release-edit-v17.js)
-          echo "$r22" | grep -Fq 'uatNative'
+          check "$r22" 'uatNative' 'uat-release-edit-v17'
           r23=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-polish-v23.js)
-          echo "$r23" | grep -Fq 'rp23RowForm'
-          echo "$r23" | grep -Fq 'Belum ada sheet sumber'
-          echo "$r23" | grep -Fq "'webp'"
+          check "$r23" 'rp23RowForm' 'release-polish-v23'
+          check "$r23" 'Belum ada sheet sumber' 'release-polish-v23'
+          check "$r23" "'webp'" 'release-polish-v23'
           r25=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/module-table-v25.js)
-          echo "$r25" | grep -Fq 'Good / NC / Reject'
-          echo "$r25" | grep -Fq 'Verifikasi hasil'
-          echo "$r25" | grep -Fq 'Satuan dan sumber dipertahankan'
+          check "$r25" 'Good / NC / Reject' 'module-table-v25'
+          check "$r25" 'Verifikasi hasil' 'module-table-v25'
+          check "$r25" 'Satuan dan sumber dipertahankan' 'module-table-v25'
           r26=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/archive-semantic-v26.js)
-          echo "$r26" | grep -Fq 'koordinat Excel tetap ditampilkan'
-          echo "$r26" | grep -Fq 'Header bisnis belum dapat disimpulkan secara aman'
+          check "$r26" 'koordinat Excel tetap ditampilkan' 'archive-semantic-v26'
+          check "$r26" 'Header bisnis belum dapat disimpulkan secara aman' 'archive-semantic-v26'
           r27=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/settings-polish-v27.js)
-          echo "$r27" | grep -Fq 'JSON lanjutan'
-          echo "$r27" | grep -Fq 'Scope konfigurasi dikunci ke department'
-          echo "$r27" | grep -Fq 'Definisi Data & KPI'
+          check "$r27" 'JSON lanjutan' 'settings-polish-v27'
+          check "$r27" 'Scope konfigurasi dikunci ke department' 'settings-polish-v27'
+          check "$r27" 'Definisi Data & KPI' 'settings-polish-v27'
           r28=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/access-governance-v28.js)
-          echo "$r28" | grep -Fq 'Daftar akses pengguna'
-          echo "$r28" | grep -Fq 'Admin Department'
-          echo "$r28" | grep -Fq 'View only'
+          check "$r28" 'Daftar akses pengguna' 'access-governance-v28'
+          check "$r28" 'Admin Department' 'access-governance-v28'
+          check "$r28" 'View only' 'access-governance-v28'
           r29=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/display-lifecycle-v29.js)
-          echo "$r29" | grep -Fq 'Layout Mesin Baru'
-          echo "$r29" | grep -Fq 'Duplikat dibuat sebagai Draft tanpa assignment mesin'
-          echo "$r29" | grep -Fq 'Salin Link Display'
+          check "$r29" 'Layout Mesin Baru' 'display-lifecycle-v29'
+          check "$r29" 'Duplikat dibuat sebagai Draft tanpa assignment mesin' 'display-lifecycle-v29'
+          check "$r29" 'Salin Link Display' 'display-lifecycle-v29'
           r30=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/import-center-v30.js)
-          echo "$r30" | grep -Fq 'Paket lolos validasi lokal'
-          echo "$r30" | grep -Fq 'D1 belum berubah'
-          echo "$r30" | grep -Fq 'bukan payload base64 yang valid'
+          check "$r30" 'Paket lolos validasi lokal' 'import-center-v30'
+          check "$r30" 'D1 belum berubah' 'import-center-v30'
+          check "$r30" 'bukan payload base64 yang valid' 'import-center-v30'
           r31=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/operational-control-runtime-v31.js)
-          echo "$r31" | grep -Fq 'Belum dapat dipilih otomatis'
-          echo "$r31" | grep -Fq 'Reason baseline wajib'
-          echo "$r31" | grep -Fq "process:'quality'"
+          check "$r31" 'Belum dapat dipilih otomatis' 'operational-control-v31'
+          check "$r31" 'Reason baseline wajib' 'operational-control-v31'
+          check "$r31" "process:'quality'" 'operational-control-v31'
           r33=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/release-resilience-v33.js)
-          echo "$r33" | grep -Fq 'Belum ada sheet sumber'
-          echo "$r33" | grep -Fq "webp:'image/webp'"
-          echo "$r33" | grep -Fq "svg:'image/svg+xml'"
-          echo "$r33" | grep -Fq '/api/files/'
-          echo "$r33" | grep -Fq 'arrayBuffer()'
+          check "$r33" 'Belum ada sheet sumber' 'release-resilience-v33'
+          check "$r33" "webp:'image/webp'" 'release-resilience-v33'
+          check "$r33" "svg:'image/svg+xml'" 'release-resilience-v33'
+          check "$r33" '/api/files/' 'release-resilience-v33'
+          check "$r33" 'arrayBuffer()' 'release-resilience-v33'
           r34=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/dashboard-period-v34.js)
-          echo "$r34" | grep -Fq 'excelEpoch'
-          echo "$r34" | grep -Fq 'periode berasal dari cell tanggal sumber'
+          check "$r34" 'excelEpoch' 'dashboard-period-v34'
+          check "$r34" 'periode berasal dari cell tanggal sumber' 'dashboard-period-v34'
+          r69=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/integration-safety-v69.js)
+          check "$r69" 'PRODUCTION CONNECTION POLICY' 'integration-safety-v69'
+          r70=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/navigation-integrity-v70.js)
+          check "$r70" 'Operational Inbox' 'navigation-integrity-v70'
+          r71=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/live-monitoring-v71.js)
+          check "$r71" 'data-machine-code' 'live-monitoring-v71'
+          check "$r71" 'telemetryMap' 'live-monitoring-v71'
           runtime=$(curl --fail --silent --show-error --location --max-time 20 https://oee-collaboraction.offsetbmj.workers.dev/runtime-polish-v6.js)
-          echo "$runtime" | grep -Fq 'Memuat data operasional'
-          echo "$runtime" | grep -Fq 'Data belum dapat dimuat'
+          check "$runtime" 'Memuat data operasional' 'runtime-polish-v6'
+          check "$runtime" 'Data belum dapat dimuat' 'runtime-polish-v6'
       - name: Production protected endpoint check
         run: |
-          for endpoint in me approvals role-dashboard shopfloor/plans workflow-health mirror-health runtime-invariants; do
+          for endpoint in me approvals role-dashboard shopfloor/plans workflow-health mirror-health runtime-invariants telemetry-status; do
             tmp=$(mktemp)
             code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' "https://oee-collaboraction.offsetbmj.workers.dev/api/$endpoint")
             cat "$tmp"
