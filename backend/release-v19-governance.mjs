@@ -9,11 +9,13 @@ const allowedOrigin=(req,env)=>{const origin=req.headers.get('Origin')||'';const
 const out=(req,env,status,error)=>{const origin=allowedOrigin(req,env);return new Response(JSON.stringify({error}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{})}});};
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
 const required=(v,fields)=>fields.find(k=>!clean(v?.[k]));
+const utilizationAligned=v=>{const t=clean(v).toLowerCase();return /(order|target|planning|rencana)/.test(t)&&/(capacity|kapasitas)/.test(t);};
 function validateGovernance(key,v){
  if(v.approved!==true)return null;
  if(key.endsWith('kpi_definitions')){
   if(!['good_total','good_nc_total'].includes(v.quality_rule))return 'Pilih definisi Quality Printing sebelum baseline KPI disahkan';
   const miss=required(v,['fg_unit','ideal_speed_basis','mtbf_definition','mttr_definition','utilization_definition']);if(miss)return `Baseline KPI belum lengkap: ${miss}`;
+  if(!utilizationAligned(v.utilization_definition))return 'Definisi Utilization harus eksplisit memakai basis Order/Target/Planning dibanding Capacity/Kapasitas sesuai blueprint sebelum baseline KPI disahkan';
  }
  if(key.endsWith('machine_aliases')){
   if(!Array.isArray(v.items)||!v.items.length)return 'Minimal satu canonical machine wajib ditetapkan sebelum mapping disahkan';
@@ -76,6 +78,7 @@ async function validateDependencies(env,key,value){
  if(key==='OPERATIONAL_CONTROL.field_ownership'&&value.approved===true&&!await baselineApproved(env,'DATA_GOVERNANCE.source_authority'))return 'Source Authority harus disahkan sebelum Field Ownership menjadi baseline';
  if(key==='UAT_RELEASE.signoff'&&value.status==='passed'){
   for(const k of ['kpi_definitions','machine_aliases','shift_calendar','source_authority','join_grain'])if(!await baselineApproved(env,'DATA_GOVERNANCE.'+k))return `Final UAT menunggu Data Governance: ${k}`;
+  const kpi=await saved(env,'DATA_GOVERNANCE.kpi_definitions');if(!utilizationAligned(kpi.utilization_definition))return 'Final UAT menunggu definisi Utilization yang selaras dengan basis Order/Capacity';
   for(const k of ['cycle_targets','loss_time_classification','machine_triggers','field_ownership'])if(!await baselineApproved(env,'OPERATIONAL_CONTROL.'+k))return `Final UAT menunggu Standar Operasional: ${k}`;
   for(const k of ['roles','devices','data','display','recovery','integrations']){const gate=await saved(env,'UAT_RELEASE.'+k),status=clean(gate.status);if(!['passed','not_applicable'].includes(status))return `Final UAT menunggu gate UAT: ${k}`;if(!clean(gate.owner)||!clean(gate.evidence))return `Final UAT gate ${k} belum memiliki PIC dan evidence/alasan yang lengkap`;}
  }
