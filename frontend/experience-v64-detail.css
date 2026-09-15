@@ -30,6 +30,15 @@ body.experience-v64 .run-hero{border-radius:18px;background:linear-gradient(135d
 body.experience-v64 .run-kpis>div{border-radius:14px;background:#f6fafe;border:1px solid #e3ecf4;padding:17px}
 body.experience-v64 .machine-card,body.experience-v64 .integration-card{border-radius:17px;border-color:#dfe8f0;box-shadow:0 8px 28px rgba(18,65,105,.045);padding:19px}
 body.experience-v64 .state-pill{border-radius:999px;padding:5px 9px;font-size:.66rem;font-weight:760}
+body.experience-v64 .profile-self{min-height:34px;padding:7px 10px;border:1px solid var(--x64-line);background:rgba(255,255,255,.72);font-size:.7rem;color:#31506c}
+body.experience-v64 .profile-summary{display:flex;align-items:center;gap:14px;padding:15px 16px;border:1px solid #dfe8f0;border-radius:15px;background:#f8fbfe;margin-bottom:12px}
+body.experience-v64 .profile-avatar{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#178df5,#084f9f);color:#fff;font-weight:800;font-size:1.05rem;box-shadow:0 8px 18px rgba(15,111,205,.18)}
+body.experience-v64 .profile-summary strong,body.experience-v64 .profile-summary span,body.experience-v64 .profile-summary small{display:block}
+body.experience-v64 .profile-summary strong{font-size:.88rem;color:#183552}.profile-summary span{font-size:.72rem;color:#60788f;margin-top:2px}
+body.experience-v64 .profile-summary small{font-size:.66rem;color:#8a9bad;margin-top:4px}
+body.experience-v64 .profile-scope-note{border-left:3px solid #59b8f4;padding:9px 12px;background:#f5faff;color:#5a7187;border-radius:0 10px 10px 0;font-size:.71rem;line-height:1.5;margin-bottom:14px}
+body.experience-v64 #selfPwError:empty{display:none}
+body.experience-v64 #selfPwError:not(:empty){display:block;padding:10px 12px;border-radius:10px;background:#fff4f5;border:1px solid #f1c7cc;color:#9e3542;font-size:.7rem}
 @media(max-width:760px){
  body.experience-v64 .context-line-v64{padding:11px 0}
  body.experience-v64 .context-line-v64 strong{white-space:normal}
@@ -37,5 +46,6 @@ body.experience-v64 .state-pill{border-radius:999px;padding:5px 9px;font-size:.6
  body.experience-v64 .formactions{margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px}
  body.experience-v64 .run-kpis{grid-template-columns:1fr 1fr}
  body.experience-v64 .docgrid{grid-template-columns:1fr}
+ body.experience-v64 .profile-self{padding:7px 9px}
 }
-@media(max-width:430px){body.experience-v64 .run-kpis{grid-template-columns:1fr}}
+@media(max-width:430px){body.experience-v64 .run-kpis{grid-template-columns:1fr}body.experience-v64 .profile-self{font-size:0;width:34px;padding:0}body.experience-v64 .profile-self:before{content:'●';font-size:.8rem}}
