@@ -17,6 +17,12 @@ const uatView=fs.readFileSync('frontend/uat-release-view-v17.js','utf8');
 const uatEdit=fs.readFileSync('frontend/uat-release-edit-v17.js','utf8');
 const entry63=fs.readFileSync('backend/release-v63-entry-semantics.mjs','utf8');
 const form65=fs.readFileSync('frontend/form-semantics-v65.js','utf8');
+const support74=fs.readFileSync('frontend/support-evidence-v74.js','utf8');
+const support21=fs.readFileSync('backend/release-v21-support.mjs','utf8');
+const kpi45=fs.readFileSync('backend/release-v45-kpi-semantics.mjs','utf8');
+const capacity75=fs.readFileSync('frontend/capacity-utilization-v75.js','utf8');
+const capacityBack75=fs.readFileSync('backend/release-v75-capacity-utilization.mjs','utf8');
+const worker=fs.readFileSync('backend/worker-production.mjs','utf8');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
 const handlers={dashboard:'dashboard',documents:'documents',quality:'quality',operations:'operations',users:'users',settings:'settings',audit:'audit',import:'importCenter',shopfloor:'shopfloor',live:'liveMachines',integrations:'integrations'};
@@ -45,5 +51,12 @@ need(uatView.includes('6 prerequisite UAT selesai')&&uatView.includes('Dependenc
 need(uatEdit.includes('const prerequisites=')&&uatEdit.includes('Final Sign-off belum dapat diluluskan')&&uatEdit.includes('workflow/mirror consistency'),'UAT editor harus menahan final sign-off sebelum prerequisite selesai.');
 need(['validateProduction','validateDowntime','validateMaintenance','validateChecklist','validateLogbook','validateMaster','validateConfirmation'].every(x=>entry63.includes(x))&&entry63.includes('Confirmation PPIC wajib memiliki')&&entry63.includes('Maintenance selesai/terverifikasi wajib memiliki tindakan korektif'),'Backend entry semantics harus menjaga completeness transaksi baru tanpa mengarang legacy.');
 need(form65.includes('businessCompleteness')&&form65.includes('Wajib transaksi baru')&&form65.includes('Nomor konfirmasi bersama counter')&&form65.includes('Empat keputusan kesiapan harus eksplisit'),'Frontend form semantics harus mencerminkan business completeness backend.');
+need(index.includes('support-evidence-v74.js')&&support74.includes('Cakupan Semantik Data')&&support74.includes('quality_units')&&support74.includes('production_units')&&support74.includes('pds_currency')&&support74.includes('energy')&&support74.includes('release_fingerprint'),'Support Evidence v74 harus menampilkan semantic data coverage dan release fingerprint.');
+need(kpi45.includes('energy_records_30d')&&kpi45.includes('energy_kwh_30d')&&kpi45.includes("key:'enpi'")&&kpi45.includes('Belum dihitung otomatis'),'Energy KPI v74 harus memakai tanggal transaksi/kWh valid dan tidak mengarang ENPI.');
+need(support21.includes('async function energyCoverage')&&support21.includes('undated_or_invalid_date')&&support21.includes('ENPI tidak dihitung'),'Release manifest harus menyertakan evidence coverage Energy.');
+need(index.includes('capacity-utilization-v75.js')&&capacity75.includes("api('/capacity-utilization")&&capacity75.includes('Tidak ada overall utilization')&&capacity75.includes('Planning dianalisis'),'Capacity Utilization v75 UI tidak aktif/lengkap.');
+need(capacityBack75.includes("url.pathname!=='/api/capacity-utilization'")&&capacityBack75.includes('definitionAligned')&&capacityBack75.includes("IN ('Released','Dimulai')")&&capacityBack75.includes('Agregasi hanya di dalam unit yang sama')&&capacityBack75.includes('Target Order / kapasitas shift'),'Backend Capacity Utilization v75 harus fail-closed, Released/Dimulai only, dan unit-safe.');
+need(worker.includes('handleCapacityUtilizationV75')&&worker.includes('capacity-utilization-v75'),'Worker harus memuat endpoint dan fingerprint Capacity Utilization v75.');
+need(worker.includes('afterWorkCalendarStartV62(workCalendarSignal')&&!worker.includes('workCalendarStartSignal'),'Work Calendar start signal wiring harus memakai signal yang benar.');
 if(errors.length){console.error('Navigation validation FAILED');for(const e of errors)console.error('- '+e);process.exit(1);}
 console.log(`Navigation validation OK — ${Object.keys(handlers).length+1+releaseRoutes.length+1} routes + critical guards checked across ${active.length} active JS bundles.`);
