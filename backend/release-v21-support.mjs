@@ -46,6 +46,13 @@ async function energyCoverage(db){
   return {total,valid_date:validDate,valid_kwh:validKwh,undated_or_invalid_date:Math.max(0,total-validDate),first_date:t.first_date||null,last_date:t.last_date||null,policy:'Energy 30 hari hanya memakai field tanggal transaksi yang valid dan nilai kWh non-negatif. ENPI tidak dihitung sebelum denominator output/capacity dan satuan output disahkan.'};
  }catch{return {total:null,valid_date:null,valid_kwh:null,undated_or_invalid_date:null,first_date:null,last_date:null,policy:'Coverage Energy belum dapat diverifikasi.'};}
 }
+async function processCoverage(db){
+ try{
+  const r=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN trim(COALESCE(json_extract(payload,'$.machine'),''))<>'' AND trim(COALESCE(json_extract(payload,'$.parameter'),''))<>'' AND trim(COALESCE(json_extract(payload,'$.unit'),''))<>'' AND json_type(payload,'$.value') IN ('integer','real') THEN 1 ELSE 0 END) complete_measurement,SUM(CASE WHEN json_type(payload,'$.lsl') IN ('integer','real') AND json_type(payload,'$.usl') IN ('integer','real') AND CAST(json_extract(payload,'$.lsl') AS REAL)<CAST(json_extract(payload,'$.usl') AS REAL) THEN 1 ELSE 0 END) with_valid_spec,SUM(CASE WHEN trim(COALESCE(json_extract(payload,'$.subgroup'),''))<>'' THEN 1 ELSE 0 END) with_subgroup,SUM(CASE WHEN trim(COALESCE(json_extract(payload,'$.subgroup'),''))<>'' AND json_type(payload,'$.value') IN ('integer','real') AND json_type(payload,'$.lsl') IN ('integer','real') AND json_type(payload,'$.usl') IN ('integer','real') AND CAST(json_extract(payload,'$.lsl') AS REAL)<CAST(json_extract(payload,'$.usl') AS REAL) THEN 1 ELSE 0 END) subgroup_spec_measurement FROM entries WHERE module='process' AND deleted=0")||{};
+  const total=Number(r.total||0),withSubgroup=Number(r.with_subgroup||0);
+  return {total,complete_measurement:Number(r.complete_measurement||0),with_valid_spec:Number(r.with_valid_spec||0),with_subgroup:withSubgroup,missing_subgroup:Math.max(0,total-withSubgroup),subgroup_spec_measurement:Number(r.subgroup_spec_measurement||0),policy:'Ppk dapat dihitung pada subset mesin + parameter + unit + specification yang konsisten. Cpk hanya dihitung bila struktur rational subgroup memadai; keberadaan Subgroup ID saja bukan bukti rationality.'};
+ }catch{return {total:null,complete_measurement:null,with_valid_spec:null,with_subgroup:null,missing_subgroup:null,subgroup_spec_measurement:null,policy:'Coverage Process Capability belum dapat diverifikasi.'};}
+}
 async function mediaCoverage(db){
  try{
   const total=Number((await one(db,'SELECT COUNT(*) n FROM asset_catalog'))?.n||0),parents=Number((await one(db,'SELECT COUNT(DISTINCT parent) n FROM asset_catalog'))?.n||0),web=Number((await one(db,"SELECT COUNT(*) n FROM asset_catalog WHERE lower(path) LIKE '%.png' OR lower(path) LIKE '%.jpg' OR lower(path) LIKE '%.jpeg' OR lower(path) LIKE '%.gif' OR lower(path) LIKE '%.webp' OR lower(path) LIKE '%.svg'"))?.n||0);
@@ -65,14 +72,14 @@ export async function handleSupportV21(req,env,buildVersion,releaseFingerprint=[
  const operationalControl=settings.filter(x=>x.key.startsWith('OPERATIONAL_CONTROL.')).map(x=>({key:x.key,approved:x.value?.approved===true,item_count:Array.isArray(x.value?.items)?x.value.items.length:0,updated_at:x.value?.updated_at||null}));
  const delivery=settings.find(x=>x.key==='OPERATIONAL_CONTROL.delivery_plan')?.value||{},deliveryOpen=Array.isArray(delivery.items)?delivery.items.filter(x=>!['closed','not_applicable'].includes(String(x.status||'').toLowerCase())).length:0;
  const uat=settings.filter(x=>x.key.startsWith('UAT_RELEASE.')).map(x=>({key:x.key,status:x.value?.status||'not_started',owner:x.value?.owner||'',evidence_present:!!String(x.value?.evidence||'').trim(),updated_at:x.value?.updated_at||null}));
- const [qualityUnitCoverage,productionUnits,pdsCurrencies,energyData,embeddedMediaCoverage,counts]=await Promise.all([qualityCoverage(env.DB),productionUnitCoverage(env.DB),pdsCurrencyCoverage(env.DB),energyCoverage(env.DB),mediaCoverage(env.DB),tableCounts(env.DB)]);
+ const [qualityUnitCoverage,productionUnits,pdsCurrencies,energyData,processData,embeddedMediaCoverage,counts]=await Promise.all([qualityCoverage(env.DB),productionUnitCoverage(env.DB),pdsCurrencyCoverage(env.DB),energyCoverage(env.DB),processCoverage(env.DB),mediaCoverage(env.DB),tableCounts(env.DB)]);
  return out(req,env,{
   manifest_type:'configuration_and_release_manifest',
   disclaimer:'Manifest ini bukan full backup D1 dan tidak dapat menggantikan prosedur export/restore database Cloudflare.',
   generated_at:new Date().toISOString(),service:'OEE Collaboraction',build_version:buildVersion,release_fingerprint:[...releaseFingerprint],storage:'D1-only',r2:false,
   runtime:{database_binding:'DB',schema:'ready',frontend_assets:'Worker assets + GitHub Pages'},
   operational:{pending_approvals:pendingApprovals,open_downtime:openDowntime,open_maintenance_calls:openMaintenance,delivery_open_actions:deliveryOpen},
-  data_coverage:{quality_units:qualityUnitCoverage,production_units:productionUnits,pds_currency:pdsCurrencies,energy:energyData,embedded_media:embeddedMediaCoverage},
+  data_coverage:{quality_units:qualityUnitCoverage,production_units:productionUnits,pds_currency:pdsCurrencies,energy:energyData,process_capability:processData,embedded_media:embeddedMediaCoverage},
   table_counts:counts,governance,operational_control:operationalControl,uat,active_users:activeUsers,integrations,sources,settings
  });
 }
