@@ -11,7 +11,14 @@ const modules={confirmation:['Konfirmasi PPIC','PPIC'],planning:['Planning produ
 const permissionList=()=>Array.isArray(user?.permissions)?user.permissions:[];
 const can=(d,a)=>user?.role==='superadmin'||(user?.role==='admin'&&user.department===d&&permissionList().includes(a));
 const toast=t=>{$('#toast').textContent=t;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',6500);};
-async function api(path,method='GET',data){if(!base)throw Error('Backend Cloudflare belum terhubung.');const r=await fetch(base.replace(/\/$/,'')+'/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined});let v;try{v=await r.json();}catch{throw Error('Respons backend bukan JSON.');}if(!r.ok){if(r.status===401&&user){user=null;token='';sessionStorage.removeItem('oee-token');login();}throw Error(v.error||'Permintaan gagal');}return v;}
+const sessionUserKey=()=>String(user?.id||user?.username||'').trim();
+const sessionChannel=typeof BroadcastChannel==='function'?new BroadcastChannel('oee-session-v1'):null;
+function endLocalSession(message='',broadcast=false,userKey=sessionUserKey()){
+ if(broadcast&&userKey)sessionChannel?.postMessage({type:'logout',user_key:userKey,ts:Date.now()});
+ token='';user=null;sessionStorage.removeItem('oee-token');if(typeof login==='function')login();if(message)toast(message);
+}
+sessionChannel?.addEventListener('message',event=>{const data=event.data||{},key=sessionUserKey();if(data.type!=='logout'||!key||String(data.user_key||'')!==key)return;endLocalSession('Sesi akun ini ditutup dari tab lain.',false,key);});
+async function api(path,method='GET',data){if(!base)throw Error('Backend Cloudflare belum terhubung.');const r=await fetch(base.replace(/\/$/,'')+'/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined});let v;try{v=await r.json();}catch{throw Error('Respons backend bukan JSON.');}if(!r.ok){if(r.status===401&&user)endLocalSession('',false);throw Error(v.error||'Permintaan gagal');}return v;}
 let dialogReturnFocus=null;
 function dialog(title,content){const opening=!modal.open;if(opening)dialogReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;modal.innerHTML=`<div class="dialoghead"><h2 id="modalTitle" style="margin:0">${esc(title)}</h2><button id="closeDialog" aria-label="Tutup dialog">×</button></div><div class="dialogbody">${content}</div>`;modal.setAttribute('aria-labelledby','modalTitle');$('#closeDialog').onclick=()=>modal.close();if(opening){modal.showModal();queueMicrotask(()=>{const target=modal.querySelector('[autofocus],.dialogbody input:not([disabled]),.dialogbody select:not([disabled]),.dialogbody textarea:not([disabled]),.dialogbody button:not([disabled]),#closeDialog');target?.focus({preventScroll:true});});}}
 modal.addEventListener('close',()=>{const target=dialogReturnFocus;dialogReturnFocus=null;if(target?.isConnected)queueMicrotask(()=>target.focus({preventScroll:true}));});
