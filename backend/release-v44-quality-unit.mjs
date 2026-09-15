@@ -18,12 +18,13 @@ async function ensureQualityUnit(db){
  if(!schemaPromise)schemaPromise=(async()=>{const info=(await db.prepare("PRAGMA table_info('quality_events')").all()).results||[];if(info.some(x=>x.name==='unit'))return;try{await db.prepare('ALTER TABLE quality_events ADD COLUMN unit TEXT').run();}catch(e){if(!/duplicate column/i.test(String(e?.message||e)))throw e;}})().catch(e=>{schemaPromise=null;throw e;});
  return schemaPromise;
 }
-function unitOf(v){return clean(v).toLowerCase().replace(/\s+/g,' ').slice(0,24);}
+const QUALITY_UNITS=new Set(['sheet','pcs','kg','unit','meter','set','roll']);
+function unitOf(v){const x=clean(v).toLowerCase().replace(/\s+/g,' '),aliases={sheets:'sheet',lembar:'sheet',piece:'pcs',pieces:'pcs',buah:'pcs',kgs:'kg',kilogram:'kg',units:'unit',metre:'meter',meters:'meter',metres:'meter',sets:'set',rolls:'roll'};return aliases[x]||x;}
 const metric=(key,label,value,unit='',source='HMI Quality',note='')=>({key,label,value:value===undefined?null:value,unit,source,note});
 async function qualityPost(req,env,u){
  if(!allow(u,'QC','create')&&!allow(u,'PROD','create'))return out(req,env,{error:'Tidak memiliki izin input quality event'},403);
  let b;try{b=await req.json();}catch{return out(req,env,{error:'Payload Quality Event tidak valid'},400);}
- const unit=unitOf(b.unit);if(!unit)return out(req,env,{error:'Satuan Quality Event wajib diisi'},400);if(!/^[a-z0-9._/ -]+$/.test(unit))return out(req,env,{error:'Satuan Quality Event tidak valid'},400);
+ const unit=unitOf(b.unit);if(!QUALITY_UNITS.has(unit))return out(req,env,{error:'Satuan wajib dipilih: sheet, pcs, kg, unit, meter, set, atau roll'},400);
  const r=await one(env.DB,'SELECT * FROM production_runs WHERE id=?',b.run_id||'');if(!r)return out(req,env,{error:'PRO tidak ditemukan'},404);
  const sample=Number(b.sample_qty||0),good=Number(b.good_qty||0),reject=Number(b.reject_qty||0);if([sample,good,reject].some(x=>!Number.isFinite(x)||x<0)||good+reject>sample)return out(req,env,{error:'Qty sampling tidak valid'},400);
  const event=clean(b.event_type||'NG').toUpperCase(),decision=clean(b.decision).toUpperCase();if(!['NG','QC_SAMPLE','RECHECK'].includes(event))return out(req,env,{error:'Jenis Quality Event tidak valid'},400);if(decision&&!['HOLD','RELEASE','REWORK','REJECT'].includes(decision))return out(req,env,{error:'Keputusan Quality Event tidak valid'},400);if(clean(b.note).length>1000)return out(req,env,{error:'Catatan Quality Event terlalu panjang'},400);
