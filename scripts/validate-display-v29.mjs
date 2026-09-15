@@ -24,6 +24,7 @@ const checks=[
  ['projection quality is unit fail-safe',projection.includes('known=rows.filter')&&projection.includes('ambiguous_or_mismatch')&&projection.includes('mismatched_or_missing_unit_events')],
  ['field resolves live business widgets',['quality.reject','maintenance.status','planning.target','production.table'].every(x=>field.includes(x))],
  ['historical widgets remain labelled global',field.includes('snapshot historis/global')&&field.includes('bukan KPI live mesin')],
+ ['historical dashboard calls are throttled and cache tolerant',field.includes('HISTORICAL_MS=300000')&&field.includes('async function historicalDashboard')&&field.includes('Date.now()-dashboardAt<HISTORICAL_MS')&&field.includes('catch{return dashboardCache;}')],
  ['responsive lifecycle controls',css.includes('@media(max-width:820px)')]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, exact-machine projection, ambiguity, and field-safety guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, exact-machine projection, ambiguity, caching, and field-safety guards checked.`);
