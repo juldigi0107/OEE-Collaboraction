@@ -44,26 +44,32 @@ need(workspace.includes("can(user.department,'config')"),'Guard menu Konfigurasi
 const releaseRoutes=[
   ['governance',"view==='governance'",'renderGovernance','data-view="governance"'],
   ['data-governance',"view==='data-governance'",'DG16View?.render','data-view="data-governance"'],
+  ['operational-control',"view==='operational-control'",'OC31View?.render','data-view="operational-control"'],
   ['uat-release',"view==='uat-release'",'UAT17View?.render','data-view="uat-release"'],
-  ['support-recovery',"view==='support-recovery'",'supportRecovery','data-view="support-recovery"']
+  ['support-recovery',"view==='support-recovery'",'supportRecovery','data-view="support-recovery"'],
+  ['approvals',"view==='approvals'",'approvalWorkspace','data-view="approvals"']
 ];
 for(const [view,routeMarker,handlerMarker,menuMarker] of releaseRoutes){
   need(bundle.includes(routeMarker),`Route release-control ${view} tidak ditemukan.`);
   need(bundle.includes(handlerMarker),`Handler release-control ${view} tidak ditemukan.`);
   need(bundle.includes(menuMarker),`Menu release-control ${view} tidak ditemukan.`);
 }
+need(bundle.includes("view==='departments'")&&bundle.includes('departmentHub64')&&bundle.includes("hub.dataset.view='departments'"),'Department Hub route/menu tidak lengkap.');
 need(bundle.includes("user?.role==='superadmin'&&!nav.querySelector('[data-view=\"governance\"]')"),'Tata Kelola & Readiness tidak dijaga untuk Superadmin.');
 need(bundle.includes("if(user?.role!=='superadmin')return")&&bundle.includes('data-view="support-recovery"'),'Support & Recovery tidak dijaga untuk Superadmin.');
 need(index.includes('role-ux-v7.js'),'Role UX guard tidak dimuat.');
 need(index.includes('asset-repair-v9.js'),'BMJ logo/hero runtime tidak dimuat.');
 need(index.includes('field-display-v8.js'),'Field display runtime tidak dimuat.');
 need(index.includes('data-governance-core-v16.js'),'Data Governance runtime tidak dimuat.');
+need(index.includes('operational-control-core-v31.js'),'Operational Control runtime tidak dimuat.');
 need(index.includes('uat-release-core-v17.js'),'UAT & Go-Live runtime tidak dimuat.');
 need(index.includes('support-recovery-v21.js'),'Support & Recovery runtime tidak dimuat.');
+need(index.includes('form-semantics-v65.js')&&bundle.includes('Arsipkan transaksi')&&bundle.includes('Satuan wajib'),'Form Semantics v65 tidak aktif/lengkap.');
+need(index.includes('page-integrity-v66.js')&&bundle.includes('__RESELECT_REQUIRED__')&&bundle.includes('decorateApprovalHistory'),'Page Integrity v66 tidak aktif/lengkap.');
 
 if(errors.length){
   console.error('Navigation validation FAILED');
   for(const e of errors)console.error('- '+e);
   process.exit(1);
 }
-console.log(`Navigation validation OK — ${Object.keys(handlers).length+1+releaseRoutes.length} routes + critical guards checked across ${active.length} active JS bundles.`);
+console.log(`Navigation validation OK — ${Object.keys(handlers).length+1+releaseRoutes.length+1} routes + critical guards checked across ${active.length} active JS bundles.`);
