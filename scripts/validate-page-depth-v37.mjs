@@ -11,6 +11,7 @@ const hmi60=read('frontend/hmi-operation-safety-v60.js');
 const governanceEdit=read('frontend/data-governance-edit-v16.js');
 const moduleTable=read('frontend/module-table-v25.js');
 const release11=read('backend/release-v11.mjs');
+const attention85=read('backend/release-v85-attention-coverage.mjs');
 const backend=read('backend/release-v35-operational-safety.mjs');
 const governance=read('backend/release-v19-governance.mjs');
 const runtimeSignoff=read('backend/release-v54-runtime-signoff.mjs');
@@ -86,13 +87,19 @@ const checks=[
  ['group rotation is not fabricated',governanceEdit.includes('Group rotation tetap mengikuti planning')&&!calendar62.includes('group=A')&&!calendar62.includes('group_model||')],
  ['attention endpoint is authenticated and role scoped',release11.includes("'/api/attention-center'")&&release11.includes('authorizedUser(req,env)')&&release11.includes("u?.role==='superadmin'")&&release11.includes("u?.role==='admin'")],
  ['attention projection uses authoritative operational tables',release11.includes('downtime_events')&&release11.includes('maintenance_calls')&&release11.includes("approvals WHERE status='PENDING'")&&release11.includes('machine_registry')&&release11.includes('integration_connections')],
- ['attention center is read-only projection',release11.includes('Projection')===false&&release11.includes('async function attentionCenter')&&!release11.includes('INSERT INTO attention')&&!release11.includes('CREATE TABLE attention')],
+ ['attention center is read-only projection',release11.includes('async function attentionCenter')&&!release11.includes('INSERT INTO attention')&&!release11.includes('CREATE TABLE attention')],
  ['topbar attention UI active',ui.includes("api('/attention-center')")&&ui.includes('Pusat Perhatian Operasional')&&ui.includes('data-attention-center')&&ui.includes('attentionTimer')],
  ['attention deep links preserve role workflow',ui.includes('target_module')&&ui.includes('target_view')&&ui.includes('attentionNavigate')],
- ['attention capability fingerprinted',worker.includes('attention-center-v84')],
+ ['attention cache is isolated per user',ui.includes('attentionOwnerKey')&&ui.includes('resetAttentionForUser')&&ui.includes("user.id||user.username")],
+ ['attention v85 uses governed calendar',attention85.includes('WorkCalendarV62.deriveContext')&&attention85.includes('ctx?.runtime_ready&&ctx.work_date')&&attention85.includes('ctx?.runtime_ready&&ctx.local_date')],
+ ['attention v85 covers PPIC deterministically',attention85.includes('Confirmation reversal perlu rekonsiliasi')&&attention85.includes('Planning Released melewati tanggal kerja')&&attention85.includes("module='confirmation'")&&attention85.includes("module='planning'")],
+ ['attention v85 covers PDS without fabricated currency',attention85.includes('Biaya Development tanpa mata uang')&&attention85.includes('Development legacy belum lengkap')&&attention85.includes("module='development'")],
+ ['attention v85 covers Project blocked and overdue',attention85.includes('Project / action plan terhambat')&&attention85.includes('Project melewati due date')&&attention85.includes("module='project'")],
+ ['attention v85 remains projection-only',!attention85.includes('CREATE TABLE')&&!attention85.includes('INSERT INTO')&&!attention85.includes('UPDATE entries')&&!attention85.includes('DELETE FROM')],
+ ['attention capabilities fingerprinted and wired',worker.includes('attention-center-v84')&&worker.includes('attention-coverage-v85')&&worker.includes('handleAttentionCoverageV85')],
  ['work calendar signal name remains intact',worker.includes('workCalendarSignal&&afterWorkCalendarStartV62(workCalendarSignal')&&!worker.includes('workCalendarStartSignal')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([ui,release11,safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62,runtimeSignoff,invariants55].join('\n')))]
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([ui,release11,attention85,safety,page,admin,form,hmi,hmi60,governanceEdit,moduleTable,lifecycle,liveRegister,process59,telemetry61,calendar62,runtimeSignoff,invariants55].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, work-calendar, attention-center, deterministic work-date reconciliation, final-signoff, and storage guards checked.`);
+console.log(`Page depth and lifecycle validation OK — ${checks.length} operational, admin, transaction, process-capability, barcode, telemetry, HMI fail-closed, work-calendar, attention-center, governed attention coverage, deterministic work-date reconciliation, final-signoff, and storage guards checked.`);
