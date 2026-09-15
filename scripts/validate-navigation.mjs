@@ -4,6 +4,8 @@ const index=fs.readFileSync('frontend/index.html','utf8');
 const workspace=fs.readFileSync('frontend/workspace.js','utf8');
 const active=[...index.matchAll(/<script[^>]+src="([^"]+\.js)(?:\?[^\"]*)?"/g)].map(m=>m[1]);
 const bundle=active.map(p=>fs.readFileSync('frontend/'+p,'utf8')).join('\n');
+const displayFront=fs.readFileSync('frontend/display-depth-v42.js','utf8');
+const displayBack=fs.readFileSync('backend/release-v42-display-safety.mjs','utf8');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
 
@@ -68,7 +70,21 @@ need(index.includes('form-semantics-v65.js')&&bundle.includes('Arsipkan transaks
 need(index.includes('page-integrity-v66.js')&&bundle.includes('__RESELECT_REQUIRED__')&&bundle.includes('decorateApprovalHistory'),'Page Integrity v66 tidak aktif/lengkap.');
 need(index.includes('live-page-integrity-v67.js')&&bundle.includes('telemetry_trusted')&&bundle.includes('counter/speed disembunyikan'),'Live Page Integrity v67 tidak aktif/lengkap.');
 need(index.includes('dashboard-role-depth-v68.js')&&bundle.includes('Role Depth v68')&&bundle.includes('Definisi, authority & periode KPI'),'Dashboard Role Depth v68 tidak aktif/lengkap.');
-need(bundle.includes('Machine assignment harus memakai canonical machine')&&bundle.includes('Canonical machine'),'Display publish canonical-machine guard tidak lengkap.');
+need(
+  displayFront.includes('function machineAuthority')&&
+  displayFront.includes('machineCanonical')&&
+  displayFront.includes("ready:!!name&&!!machine&&authority.canonical")&&
+  displayBack.includes('canonicalMachineProblem')&&
+  displayBack.includes('Machine assignment harus memakai canonical machine yang sudah disahkan pada Data Governance'),
+  'Display publish canonical-machine guard tidak lengkap.'
+);
+need(
+  index.includes('integration-safety-v69.js')&&
+  bundle.includes('PRODUCTION CONNECTION POLICY')&&
+  bundle.includes('Worker Secret')&&
+  bundle.includes('private/link-local address'),
+  'Integration Safety v69 tidak aktif/lengkap.'
+);
 
 if(errors.length){
   console.error('Navigation validation FAILED');
