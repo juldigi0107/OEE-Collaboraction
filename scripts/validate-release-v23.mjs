@@ -34,7 +34,7 @@ const checks=[
  ['support page uses business-facing labels',support.includes('Dukungan & Pemulihan')&&support.includes('Belum diuji')&&support.includes('Terhubung')&&!support.includes('<span>Support & Recovery</span>')],
  ['responsive v23 styling present',css.includes('@media(max-width:680px)')&&css.includes('.rp23-field')],
  ['field display uses exact-machine projection only',field.includes("api('/field-display/machine?machine='")&&!field.includes("api('/realtime/overview')")&&!field.includes("api('/telemetry-status')")],
- ['field projection has no first-machine fallback',field82.includes('canonicalMachine')&&field82.includes("status:'machine_not_found'")&&!field82.includes('[0]')],
+ ['field projection has no first-machine fallback',field82.includes("WHERE upper(replace(replace(replace(r.code")&&field82.includes("=? AND r.active=1")&&field82.includes("if(!m)return json")&&!field82.includes("ORDER BY r.code LIMIT 1")],
  ['field projection uses telemetry authority',field82.includes("trusted:hb.fresh&&externalSource")&&field82.includes('counter_start_trusted')&&field82.includes('auto_counter_ready')],
  ['field display withholds untrusted counter output',field.includes('Counter ditahan · telemetry/start counter belum authoritative')&&field.includes('Aktual dari counter authoritative')&&field.includes('run.auto_counter_ready')],
  ['field display labels dashboard KPI as historical global',field.includes('Snapshot dashboard historis/global · bukan KPI live mesin')],
