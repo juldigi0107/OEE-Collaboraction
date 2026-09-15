@@ -39,6 +39,13 @@ async function pdsCurrencyCoverage(db){
   return {total:Number(totals.total||0),with_cost:Number(totals.with_cost||0),cost_missing_currency:Number(totals.cost_missing_currency||0),currencies:currencies.map(x=>({currency:x.currency,records:Number(x.records||0)})),policy:'Biaya hanya diagregasi di dalam currency yang sama; currency legacy tidak diasumsikan.'};
  }catch{return {total:null,with_cost:null,cost_missing_currency:null,currencies:[],policy:'Coverage currency PDS belum dapat diverifikasi.'};}
 }
+async function energyCoverage(db){
+ try{
+  const t=await one(db,"SELECT COUNT(*) total,SUM(CASE WHEN json_extract(payload,'$.date') IS NOT NULL AND trim(json_extract(payload,'$.date'))<>'' AND date(json_extract(payload,'$.date')) IS NOT NULL THEN 1 ELSE 0 END) valid_date,SUM(CASE WHEN json_extract(payload,'$.kwh') IS NOT NULL AND trim(CAST(json_extract(payload,'$.kwh') AS TEXT))<>'' AND CAST(json_extract(payload,'$.kwh') AS REAL)>=0 THEN 1 ELSE 0 END) valid_kwh,MIN(CASE WHEN date(json_extract(payload,'$.date')) IS NOT NULL THEN date(json_extract(payload,'$.date')) END) first_date,MAX(CASE WHEN date(json_extract(payload,'$.date')) IS NOT NULL THEN date(json_extract(payload,'$.date')) END) last_date FROM entries WHERE module='energy' AND deleted=0")||{};
+  const total=Number(t.total||0),validDate=Number(t.valid_date||0),validKwh=Number(t.valid_kwh||0);
+  return {total,valid_date:validDate,valid_kwh:validKwh,undated_or_invalid_date:Math.max(0,total-validDate),first_date:t.first_date||null,last_date:t.last_date||null,policy:'Energy 30 hari hanya memakai field tanggal transaksi yang valid dan nilai kWh non-negatif. ENPI tidak dihitung sebelum denominator output/capacity dan satuan output disahkan.'};
+ }catch{return {total:null,valid_date:null,valid_kwh:null,undated_or_invalid_date:null,first_date:null,last_date:null,policy:'Coverage Energy belum dapat diverifikasi.'};}
+}
 async function mediaCoverage(db){
  try{
   const total=Number((await one(db,'SELECT COUNT(*) n FROM asset_catalog'))?.n||0),parents=Number((await one(db,'SELECT COUNT(DISTINCT parent) n FROM asset_catalog'))?.n||0),web=Number((await one(db,"SELECT COUNT(*) n FROM asset_catalog WHERE lower(path) LIKE '%.png' OR lower(path) LIKE '%.jpg' OR lower(path) LIKE '%.jpeg' OR lower(path) LIKE '%.gif' OR lower(path) LIKE '%.webp' OR lower(path) LIKE '%.svg'"))?.n||0);
@@ -58,14 +65,14 @@ export async function handleSupportV21(req,env,buildVersion,releaseFingerprint=[
  const operationalControl=settings.filter(x=>x.key.startsWith('OPERATIONAL_CONTROL.')).map(x=>({key:x.key,approved:x.value?.approved===true,item_count:Array.isArray(x.value?.items)?x.value.items.length:0,updated_at:x.value?.updated_at||null}));
  const delivery=settings.find(x=>x.key==='OPERATIONAL_CONTROL.delivery_plan')?.value||{},deliveryOpen=Array.isArray(delivery.items)?delivery.items.filter(x=>!['closed','not_applicable'].includes(String(x.status||'').toLowerCase())).length:0;
  const uat=settings.filter(x=>x.key.startsWith('UAT_RELEASE.')).map(x=>({key:x.key,status:x.value?.status||'not_started',owner:x.value?.owner||'',evidence_present:!!String(x.value?.evidence||'').trim(),updated_at:x.value?.updated_at||null}));
- const [qualityUnitCoverage,productionUnits,pdsCurrencies,embeddedMediaCoverage,counts]=await Promise.all([qualityCoverage(env.DB),productionUnitCoverage(env.DB),pdsCurrencyCoverage(env.DB),mediaCoverage(env.DB),tableCounts(env.DB)]);
+ const [qualityUnitCoverage,productionUnits,pdsCurrencies,energyData,embeddedMediaCoverage,counts]=await Promise.all([qualityCoverage(env.DB),productionUnitCoverage(env.DB),pdsCurrencyCoverage(env.DB),energyCoverage(env.DB),mediaCoverage(env.DB),tableCounts(env.DB)]);
  return out(req,env,{
   manifest_type:'configuration_and_release_manifest',
   disclaimer:'Manifest ini bukan full backup D1 dan tidak dapat menggantikan prosedur export/restore database Cloudflare.',
   generated_at:new Date().toISOString(),service:'OEE Collaboraction',build_version:buildVersion,release_fingerprint:[...releaseFingerprint],storage:'D1-only',r2:false,
   runtime:{database_binding:'DB',schema:'ready',frontend_assets:'Worker assets + GitHub Pages'},
   operational:{pending_approvals:pendingApprovals,open_downtime:openDowntime,open_maintenance_calls:openMaintenance,delivery_open_actions:deliveryOpen},
-  data_coverage:{quality_units:qualityUnitCoverage,production_units:productionUnits,pds_currency:pdsCurrencies,embedded_media:embeddedMediaCoverage},
+  data_coverage:{quality_units:qualityUnitCoverage,production_units:productionUnits,pds_currency:pdsCurrencies,energy:energyData,embedded_media:embeddedMediaCoverage},
   table_counts:counts,governance,operational_control:operationalControl,uat,active_users:activeUsers,integrations,sources,settings
  });
 }
