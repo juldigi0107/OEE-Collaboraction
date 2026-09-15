@@ -17,7 +17,7 @@ function validateGovernance(key,v){
  }
  if(key.endsWith('machine_aliases')){
   if(!Array.isArray(v.items)||!v.items.length)return 'Minimal satu canonical machine wajib ditetapkan sebelum mapping disahkan';
-  const used=new Set();for(const row of v.items){if(!clean(row?.canonical))return 'Canonical machine tidak boleh kosong';for(const code of [row.canonical,...(Array.isArray(row.aliases)?row.aliases:[])]){const n=norm(code);if(!n)continue;if(used.has(n))return `Kode/alias mesin ganda: ${code}`;used.add(n);}}
+  const used=new Set();for(const row of v.items){if(!clean(row?.canonical))return 'Canonical machine tidak boleh kosong';for(const code of [row.canonical,...(Array.isArray(row?.aliases)?row.aliases:[])]){const n=norm(code);if(!n)continue;if(used.has(n))return `Kode/alias mesin ganda: ${code}`;used.add(n);}}
  }
  if(key.endsWith('shift_calendar')){const miss=required(v,['group_model','workday_cutoff','s1_start','s1_end','s2_start','s2_end','s3_start','s3_end']);if(miss)return `Kalender shift belum lengkap: ${miss}`;}
  if(key.endsWith('source_authority')){
@@ -77,6 +77,7 @@ async function validateDependencies(env,key,value){
  if(key==='UAT_RELEASE.signoff'&&value.status==='passed'){
   for(const k of ['kpi_definitions','machine_aliases','shift_calendar','source_authority','join_grain'])if(!await baselineApproved(env,'DATA_GOVERNANCE.'+k))return `Final UAT menunggu Data Governance: ${k}`;
   for(const k of ['cycle_targets','loss_time_classification','machine_triggers','field_ownership'])if(!await baselineApproved(env,'OPERATIONAL_CONTROL.'+k))return `Final UAT menunggu Standar Operasional: ${k}`;
+  for(const k of ['roles','devices','data','display','recovery','integrations']){const gate=await saved(env,'UAT_RELEASE.'+k),status=clean(gate.status);if(!['passed','not_applicable'].includes(status))return `Final UAT menunggu gate UAT: ${k}`;if(!clean(gate.owner)||!clean(gate.evidence))return `Final UAT gate ${k} belum memiliki PIC dan evidence/alasan yang lengkap`;}
  }
  if(key==='OPERATIONAL_CONTROL.delivery_plan'&&value.approved===true){
   const signoff=await saved(env,'UAT_RELEASE.signoff');if(signoff.status!=='passed')return 'Delivery Plan baru dapat dikunci setelah Final UAT berstatus Lulus';
