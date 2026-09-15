@@ -9,6 +9,8 @@ const device=fs.readFileSync('backend/release-v83-display-device.mjs','utf8');
 const realtimeSchema=fs.readFileSync('backend/realtime-schema.sql','utf8');
 const initSchema=fs.readFileSync('backend/init-schema.sql','utf8');
 const worker=fs.readFileSync('backend/worker-production.mjs','utf8');
+const deviceCall=worker.indexOf('const displayDeviceResponse=await handleDisplayDeviceV83');
+const fieldCall=worker.indexOf('const fieldDisplayResponse=await handleFieldDisplayV82');
 const checks=[
  ['display v29 script active',index.includes('display-lifecycle-v29.js')],
  ['display v29 style active',index.includes('display-lifecycle-v29.css')],
@@ -30,7 +32,7 @@ const checks=[
  ['field resolves live business widgets',['quality.reject','maintenance.status','planning.target','production.table'].every(x=>field.includes(x))],
  ['historical widgets remain labelled global',field.includes('snapshot historis/global')&&field.includes('bukan KPI live mesin')],
  ['historical dashboard calls are throttled and cache tolerant',field.includes('HISTORICAL_MS=300000')&&field.includes('async function historicalDashboard')&&field.includes('Date.now()-dashboardAt<HISTORICAL_MS')&&field.includes('catch{return dashboardCache;}')],
- ['paired device module wired and fingerprinted',worker.includes("handleDisplayDeviceV83")&&worker.includes("display-device-pairing-v83")&&worker.indexOf('handleDisplayDeviceV83')<worker.indexOf('handleFieldDisplayV82')],
+ ['paired device module wired and fingerprinted',worker.includes("handleDisplayDeviceV83")&&worker.includes("display-device-pairing-v83")&&deviceCall>=0&&fieldCall>deviceCall],
  ['pairing code is one-time and short-lived',device.includes('10*60*1000')&&device.includes('used_ts IS NULL')&&device.includes('pairingCode()')],
  ['device token is hashed and revocable',device.includes('token_hash')&&device.includes('await sha(token)')&&device.includes("active=0")&&device.includes('/api/display-devices/revoke')],
  ['device scope follows layout and machine',device.includes('device.display_id')&&device.includes('device.machine_code')&&device.includes('Machine assignment layout berubah')],
