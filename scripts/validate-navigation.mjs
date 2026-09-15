@@ -66,6 +66,9 @@ need(index.includes('uat-release-core-v17.js'),'UAT & Go-Live runtime tidak dimu
 need(index.includes('support-recovery-v21.js'),'Support & Recovery runtime tidak dimuat.');
 need(index.includes('form-semantics-v65.js')&&bundle.includes('Arsipkan transaksi')&&bundle.includes('Satuan wajib'),'Form Semantics v65 tidak aktif/lengkap.');
 need(index.includes('page-integrity-v66.js')&&bundle.includes('__RESELECT_REQUIRED__')&&bundle.includes('decorateApprovalHistory'),'Page Integrity v66 tidak aktif/lengkap.');
+need(index.includes('live-page-integrity-v67.js')&&bundle.includes('telemetry_trusted')&&bundle.includes('counter/speed disembunyikan'),'Live Page Integrity v67 tidak aktif/lengkap.');
+need(index.includes('dashboard-role-depth-v68.js')&&bundle.includes('Role Depth v68')&&bundle.includes('Definisi, authority & periode KPI'),'Dashboard Role Depth v68 tidak aktif/lengkap.');
+need(bundle.includes('Machine assignment harus memakai canonical machine')&&bundle.includes('Canonical machine'),'Display publish canonical-machine guard tidak lengkap.');
 
 if(errors.length){
   console.error('Navigation validation FAILED');
