@@ -12,6 +12,11 @@ const quality72=fs.readFileSync('frontend/hmi-quality-v72.js','utf8');
 const qualityBack44=fs.readFileSync('backend/release-v44-quality-unit.mjs','utf8');
 const process73=fs.readFileSync('frontend/process-capability-v73.js','utf8');
 const processBack59=fs.readFileSync('backend/release-v59-process-capability.mjs','utf8');
+const governance19=fs.readFileSync('backend/release-v19-governance.mjs','utf8');
+const uatView=fs.readFileSync('frontend/uat-release-view-v17.js','utf8');
+const uatEdit=fs.readFileSync('frontend/uat-release-edit-v17.js','utf8');
+const entry63=fs.readFileSync('backend/release-v63-entry-semantics.mjs','utf8');
+const form65=fs.readFileSync('frontend/form-semantics-v65.js','utf8');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
 const handlers={dashboard:'dashboard',documents:'documents',quality:'quality',operations:'operations',users:'users',settings:'settings',audit:'audit',import:'importCenter',shopfloor:'shopfloor',live:'liveMachines',integrations:'integrations'};
@@ -35,5 +40,10 @@ need(qualityBack44.includes('Satuan Quality Event wajib diisi')&&qualityBack44.i
 need(index.includes('process-capability-v73.js')&&process73.includes("api('/process-capability")&&process73.includes('ambiguous_specification')&&process73.includes('Data tidak digabungkan lintas unit'),'Process Capability v73 register-driven tidak aktif/lengkap.');
 need(processBack59.includes("path==='/api/process-capability'")&&processBack59.includes('Ppk hanya dihitung untuk satu kombinasi mesin + parameter + satuan')&&processBack59.includes('ambiguous_specification')&&processBack59.includes('LIMIT 5001'),'Backend Process Capability v59 harus fail-safe terhadap unit/spec campuran dan subset terlalu besar.');
 need(source41.includes('Inspeksi baris sumber')&&source41.includes('Reconciliation Register')&&source41.includes('Kolom tambahan · mode lanjutan'),'Source Inspector dan Reconciliation Register harus tetap business-facing.');
+need(governance19.includes("['roles','devices','data','display','recovery','integrations']")&&governance19.includes('Final UAT menunggu gate UAT')&&governance19.includes('PIC dan evidence/alasan'),'Final UAT backend harus menunggu seluruh prerequisite gate beserta evidence.');
+need(uatView.includes('6 prerequisite UAT selesai')&&uatView.includes('Dependency Final Sign-off')&&uatView.includes('Prerequisite lengkap'),'UAT view harus membedakan prerequisite dan final sign-off.');
+need(uatEdit.includes('const prerequisites=')&&uatEdit.includes('Final Sign-off belum dapat diluluskan')&&uatEdit.includes('workflow/mirror consistency'),'UAT editor harus menahan final sign-off sebelum prerequisite selesai.');
+need(['validateProduction','validateDowntime','validateMaintenance','validateChecklist','validateLogbook','validateMaster','validateConfirmation'].every(x=>entry63.includes(x))&&entry63.includes('Confirmation PPIC wajib memiliki')&&entry63.includes('Maintenance selesai/terverifikasi wajib memiliki tindakan korektif'),'Backend entry semantics harus menjaga completeness transaksi baru tanpa mengarang legacy.');
+need(form65.includes('businessCompleteness')&&form65.includes('Wajib transaksi baru')&&form65.includes('Nomor konfirmasi bersama counter')&&form65.includes('Empat keputusan kesiapan harus eksplisit'),'Frontend form semantics harus mencerminkan business completeness backend.');
 if(errors.length){console.error('Navigation validation FAILED');for(const e of errors)console.error('- '+e);process.exit(1);}
 console.log(`Navigation validation OK — ${Object.keys(handlers).length+1+releaseRoutes.length+1} routes + critical guards checked across ${active.length} active JS bundles.`);
