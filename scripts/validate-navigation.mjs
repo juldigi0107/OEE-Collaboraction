@@ -22,6 +22,7 @@ const support21=fs.readFileSync('backend/release-v21-support.mjs','utf8');
 const kpi45=fs.readFileSync('backend/release-v45-kpi-semantics.mjs','utf8');
 const capacity75=fs.readFileSync('frontend/capacity-utilization-v75.js','utf8');
 const capacityBack75=fs.readFileSync('backend/release-v75-capacity-utilization.mjs','utf8');
+const capacity76=fs.readFileSync('frontend/release-capacity-readiness-v76.js','utf8');
 const worker=fs.readFileSync('backend/worker-production.mjs','utf8');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
@@ -47,6 +48,7 @@ need(index.includes('process-capability-v73.js')&&process73.includes("api('/proc
 need(processBack59.includes("path==='/api/process-capability'")&&processBack59.includes('Ppk hanya dihitung untuk satu kombinasi mesin + parameter + satuan')&&processBack59.includes('ambiguous_specification')&&processBack59.includes('LIMIT 5001'),'Backend Process Capability v59 harus fail-safe terhadap unit/spec campuran dan subset terlalu besar.');
 need(source41.includes('Inspeksi baris sumber')&&source41.includes('Reconciliation Register')&&source41.includes('Kolom tambahan · mode lanjutan'),'Source Inspector dan Reconciliation Register harus tetap business-facing.');
 need(governance19.includes("['roles','devices','data','display','recovery','integrations']")&&governance19.includes('Final UAT menunggu gate UAT')&&governance19.includes('PIC dan evidence/alasan'),'Final UAT backend harus menunggu seluruh prerequisite gate beserta evidence.');
+need(governance19.includes('utilizationAligned')&&governance19.includes('Order/Target/Planning dibanding Capacity/Kapasitas')&&governance19.includes('Final UAT menunggu definisi Utilization yang selaras dengan basis Order/Capacity'),'Data Governance dan Final UAT harus mengunci metode Utilization sesuai blueprint Order/Capacity.');
 need(uatView.includes('6 prerequisite UAT selesai')&&uatView.includes('Dependency Final Sign-off')&&uatView.includes('Prerequisite lengkap'),'UAT view harus membedakan prerequisite dan final sign-off.');
 need(uatEdit.includes('const prerequisites=')&&uatEdit.includes('Final Sign-off belum dapat diluluskan')&&uatEdit.includes('workflow/mirror consistency'),'UAT editor harus menahan final sign-off sebelum prerequisite selesai.');
 need(['validateProduction','validateDowntime','validateMaintenance','validateChecklist','validateLogbook','validateMaster','validateConfirmation'].every(x=>entry63.includes(x))&&entry63.includes('Confirmation PPIC wajib memiliki')&&entry63.includes('Maintenance selesai/terverifikasi wajib memiliki tindakan korektif'),'Backend entry semantics harus menjaga completeness transaksi baru tanpa mengarang legacy.');
@@ -56,6 +58,7 @@ need(kpi45.includes('energy_records_30d')&&kpi45.includes('energy_kwh_30d')&&kpi
 need(support21.includes('async function energyCoverage')&&support21.includes('undated_or_invalid_date')&&support21.includes('ENPI tidak dihitung'),'Release manifest harus menyertakan evidence coverage Energy.');
 need(index.includes('capacity-utilization-v75.js')&&capacity75.includes("api('/capacity-utilization")&&capacity75.includes('Tidak ada overall utilization')&&capacity75.includes('Planning dianalisis'),'Capacity Utilization v75 UI tidak aktif/lengkap.');
 need(capacityBack75.includes("url.pathname!=='/api/capacity-utilization'")&&capacityBack75.includes('definitionAligned')&&capacityBack75.includes("IN ('Released','Dimulai')")&&capacityBack75.includes('Agregasi hanya di dalam unit yang sama')&&capacityBack75.includes('Target Order / kapasitas shift'),'Backend Capacity Utilization v75 harus fail-closed, Released/Dimulai only, dan unit-safe.');
+need(index.includes('release-capacity-readiness-v76.js')&&capacity76.includes('Capacity & Utilization Authority')&&capacity76.includes("d.ready===true&&d.authoritative===true")&&capacity76.includes("badge.textContent='Belum final'"),'Release Capacity v76 harus aktif dan menurunkan status release saat authority tidak siap.');
 need(worker.includes('handleCapacityUtilizationV75')&&worker.includes('capacity-utilization-v75'),'Worker harus memuat endpoint dan fingerprint Capacity Utilization v75.');
 need(worker.includes('afterWorkCalendarStartV62(workCalendarSignal')&&!worker.includes('workCalendarStartSignal'),'Work Calendar start signal wiring harus memakai signal yang benar.');
 if(errors.length){console.error('Navigation validation FAILED');for(const e of errors)console.error('- '+e);process.exit(1);}
