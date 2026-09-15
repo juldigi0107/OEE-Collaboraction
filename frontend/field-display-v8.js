@@ -3,7 +3,7 @@
  const params=new URLSearchParams(location.search),displayId=params.get('display');
  if(!displayId)return;
  const REFRESH_MS=15000,LAYOUT_MS=60000,HISTORICAL_MS=300000,DAY=86400000,EXCEL_EPOCH=Date.UTC(1899,11,30),DEVICE_KEY='oee-display-device:'+displayId;
- let timer=0,layoutTimer=0,lastLayout='',refreshing=false,blocked=false,dashboardCache=null,dashboardAt=0,deviceMode=!token,deviceToken='';
+ let timer=0,layoutTimer=0,lastLayout='',refreshing=false,blocked=false,dashboardCache=null,dashboardAt=0,deviceMode=!token,deviceToken='',deviceBootPromise=null;
  const q=s=>document.querySelector(s);
  const safe=v=>{try{return typeof v==='string'?JSON.parse(v):v||{};}catch{return {};}};
  const pct=v=>typeof v==='number'&&Number.isFinite(v)?(v*100).toLocaleString('id-ID',{maximumFractionDigits:1})+'%':'—';
@@ -37,12 +37,12 @@
   card.append(logo,eyebrow,title,intro,scope,form,note);main.append(card);document.body.append(main);if(message){const er=form.querySelector('#displayPairError');er.textContent=message;er.hidden=false;}
   form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button');button.disabled=true;const er=form.querySelector('#displayPairError');er.textContent='';try{const d=Object.fromEntries(new FormData(form));const r=await rawDevice('/display-devices/pair','POST',{display_id:displayId,name:String(d.name||'').trim(),code:String(d.code||'').trim()},false);storeDevice(r.token);deviceToken=r.token;location.reload();}catch(err){er.textContent=err.message;button.disabled=false;}};
  }
- async function bootstrapDevice(){
-  if(!deviceMode)return;if(!deviceToken){pairScreen();return;}api=deviceApi;
-  try{const cfg=await rawDevice('/field-display/config?display='+encodeURIComponent(displayId));catalog=pairedCatalog(cfg.layout);user={id:'display-device',name:cfg.device?.name||'Field Display',role:'user',department:cfg.layout?.department||'PROD',permissions:[]};document.title=(cfg.device?.name||'Field Display')+' · BMJ OEE';renderFieldDisplay(cfg.layout);}
-  catch(err){storeDevice('');deviceToken='';pairScreen(err.message);}
+ function bootstrapDevice(){
+  if(!deviceMode)return Promise.resolve();if(!deviceToken){pairScreen();return Promise.resolve();}if(deviceBootPromise)return deviceBootPromise;
+  deviceBootPromise=(async()=>{api=deviceApi;try{const cfg=await rawDevice('/field-display/config?display='+encodeURIComponent(displayId));catalog=pairedCatalog(cfg.layout);user={id:'display-device',name:cfg.device?.name||'Field Display',role:'user',department:cfg.layout?.department||'PROD',permissions:[]};document.title=(cfg.device?.name||'Field Display')+' · BMJ OEE';renderFieldDisplay(cfg.layout);}catch(err){storeDevice('');deviceToken='';pairScreen(err.message);}})().finally(()=>{if(!deviceToken)deviceBootPromise=null;});
+  return deviceBootPromise;
  }
- function resetDevice(message){if(!deviceMode)return;storeDevice('');deviceToken='';pairScreen(message||'Akses perangkat perlu dipasangkan ulang.');}
+ function resetDevice(message){if(!deviceMode)return;storeDevice('');deviceToken='';deviceBootPromise=null;pairScreen(message||'Akses perangkat perlu dipasangkan ulang.');}
  if(deviceMode)login=()=>bootstrapDevice();
  function currentLayout(){const item=settingFrom(catalog?.settings);if(!item)return null;const layout=safe(item.value);return layout.status==='published'&&String(layout.machine||'').trim()?layout:null;}
  function blockDisplay(message){if(blocked)return;blocked=true;clearInterval(timer);clearInterval(layoutTimer);const host=q('#fieldDisplay');if(!host)return;host.replaceChildren();const card=document.createElement('section');card.className='field-display-blocked';const logo=document.createElement('img');logo.src='assets/logo-bmj.svg';logo.alt='BMJ';const title=document.createElement('h1');title.textContent='Display belum siap ditayangkan';const text=document.createElement('p');text.textContent=message;const code=document.createElement('small');code.textContent='ID display: '+displayId;card.append(logo,title,text,code);host.append(card);}
