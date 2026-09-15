@@ -1,4 +1,5 @@
 import {dashboardProjectionV58} from './release-v58-dashboard-projection.mjs';
+import {fieldDisplayProjectionV82} from './release-v82-field-display.mjs';
 const enc=new TextEncoder();
 const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(String(s||''))));
@@ -34,15 +35,17 @@ async function listDevices(req,env){const displayId=clean(new URL(req.url).searc
 async function revokeDevice(req,env,u){let body={};try{body=await req.json();}catch{}const id=clean(body.id),old=id?await one(env.DB,'SELECT id,display_id,machine_code,name,active FROM display_devices WHERE id=?',id):null;if(!old)return response(req,env,{error:'Display device tidak ditemukan'},404);await env.DB.prepare('UPDATE display_devices SET active=0 WHERE id=?').bind(id).run();await audit(env.DB,u,'display.device_revoke',id,old,{...old,active:0});return response(req,env,{ok:true});}
 async function configForDevice(req,env){const displayId=clean(new URL(req.url).searchParams.get('display')),a=await authorizeDisplayDevice(req,env,displayId);if(!a.ok)return response(req,env,{error:a.error},a.status);return response(req,env,{ok:true,layout:a.layout,device:{id:a.device.id,name:a.device.name,machine_code:a.machine_code,expires_at:new Date(Number(a.device.expires_ts)).toISOString()}});}
 async function dashboardForDevice(req,env){const displayId=clean(new URL(req.url).searchParams.get('display')),a=await authorizeDisplayDevice(req,env,displayId);if(!a.ok)return response(req,env,{error:a.error},a.status);return response(req,env,await dashboardProjectionV58(env));}
+async function machineForDevice(req,env){const url=new URL(req.url),displayId=clean(url.searchParams.get('display')),requested=clean(url.searchParams.get('machine')),a=await authorizeDisplayDevice(req,env,displayId,requested);if(!a.ok)return response(req,env,{error:a.error},a.status);return response(req,env,await fieldDisplayProjectionV82(env,a.machine_code));}
 export async function handleDisplayDeviceV83(req,env){
- const url=new URL(req.url),path=url.pathname,method=req.method,managed=path.startsWith('/api/display-devices')||path==='/api/field-display/config'||path==='/api/field-display/dashboard';if(!managed)return null;await ensureSchema(env.DB);if(method==='OPTIONS')return preflight(req,env);
+ const url=new URL(req.url),path=url.pathname,method=req.method,deviceMachine=path==='/api/field-display/machine'&&(method==='OPTIONS'||!!req.headers.get('X-Display-Token')),managed=path.startsWith('/api/display-devices')||path==='/api/field-display/config'||path==='/api/field-display/dashboard'||deviceMachine;if(!managed)return null;await ensureSchema(env.DB);if(method==='OPTIONS')return preflight(req,env);
  if(path==='/api/display-devices/pair'&&method==='POST')return pairDevice(req,env);
  if(path==='/api/field-display/config'&&method==='GET')return configForDevice(req,env);
  if(path==='/api/field-display/dashboard'&&method==='GET')return dashboardForDevice(req,env);
+ if(path==='/api/field-display/machine'&&method==='GET'&&req.headers.get('X-Display-Token'))return machineForDevice(req,env);
  const {u,error}=await superadmin(req,env);if(error)return error;
  if(path==='/api/display-devices/pair-code'&&method==='POST')return createPairCode(req,env,u);
  if(path==='/api/display-devices'&&method==='GET')return listDevices(req,env);
  if(path==='/api/display-devices/revoke'&&method==='POST')return revokeDevice(req,env,u);
  return response(req,env,{error:'Endpoint display device tidak ditemukan'},404);
 }
-export const DisplayDeviceV83={ensureSchema,layoutFor};
+export const DisplayDeviceV83={ensureSchema,layoutFor,authorizeDisplayDevice};
