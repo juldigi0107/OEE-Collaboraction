@@ -1,0 +1,90 @@
+/* OEE Collaboraction Flagship Depth v90 — deepest states, kiosk, feedback and confirmations. */
+:root{--f90-dark:#061321;--f90-dark2:#0a263d;--f90-blue:#0a88ff;--f90-cyan:#28c9e8;--f90-line:rgba(121,155,184,.18);--f90-shadow:0 30px 90px rgba(4,24,44,.24)}
+
+/* Feedback: toast, runtime health, loading, empty, retry. */
+body.flagship-v89 #toast{position:fixed;z-index:12000;right:22px;bottom:22px;display:none;max-width:min(420px,calc(100vw - 28px));padding:13px 16px 13px 44px;border:1px solid rgba(85,159,211,.26);border-radius:14px;background:rgba(7,28,48,.94);color:#eaf7ff;font-size:11px;font-weight:650;line-height:1.5;box-shadow:0 22px 58px rgba(4,23,42,.28);backdrop-filter:blur(18px) saturate(135%)}
+body.flagship-v89 #toast::before{content:"";position:absolute;left:15px;top:50%;width:14px;height:14px;border:2px solid rgba(89,201,255,.35);border-top-color:#64d6ff;border-radius:50%;transform:translateY(-50%);animation:f90ToastSpin 1.6s linear infinite}
+body.flagship-v89 .runtime-status{padding:5px 9px;border:1px solid #cceadc;border-radius:999px;background:#effaf5;color:#277355;font-size:9px;font-weight:760;letter-spacing:.04em}
+body.flagship-v89 .runtime-status::before{content:"";display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:#25b777;box-shadow:0 0 0 3px rgba(37,183,119,.1)}
+body.flagship-v89 .runtime-status.offline{border-color:#efc8cb;background:#fff4f4;color:#9a4249}
+body.flagship-v89 .runtime-status.offline::before{background:#df626a;box-shadow:0 0 0 3px rgba(223,98,106,.1)}
+body.flagship-v89 .loading-panel,body.flagship-v89 .runtime-empty-state,body.flagship-v89 .empty-state-card,body.flagship-v89 .release-empty{min-height:144px;display:flex;align-items:center;justify-content:center;gap:15px;padding:25px;border:1px dashed rgba(105,151,188,.28);border-radius:16px;background:linear-gradient(145deg,rgba(251,253,255,.94),rgba(243,249,253,.78));color:#657d92;text-align:left}
+body.flagship-v89 .loading-panel strong,body.flagship-v89 .runtime-empty-state strong,body.flagship-v89 .empty-state-card strong{display:block;color:#27455f;font-size:13px;margin-bottom:3px}
+body.flagship-v89 .loading-panel small,body.flagship-v89 .runtime-empty-state small,body.flagship-v89 .empty-state-card span{color:#8192a2;font-size:10px;line-height:1.55}
+body.flagship-v89 .runtime-state-spinner{width:28px;height:28px;flex:0 0 auto;border:3px solid #dceaf5;border-top-color:#168ee9;border-right-color:#31c2df;border-radius:50%;animation:f90Spin .9s linear infinite;box-shadow:0 0 18px rgba(22,142,233,.10)}
+body.flagship-v89 .errorbox[data-runtime-state="error"],body.flagship-v89 .errorbox{padding:15px 17px;border-radius:14px}
+body.flagship-v89 .errorbox strong{display:block;margin-bottom:3px;font-size:12px}
+body.flagship-v89 .errorbox span{font-size:10px;line-height:1.55}
+body.flagship-v89 .runtime-retry{margin-top:10px}
+body.flagship-v89 .toTop{width:42px;height:42px;border:1px solid rgba(107,151,187,.20);border-radius:13px;background:rgba(8,33,55,.88);color:#dff4ff;box-shadow:0 14px 36px rgba(6,30,51,.17);backdrop-filter:blur(12px)}
+body.flagship-v89 .toTop:hover{background:#0b3c61;color:#fff}
+
+/* Pagination and dense navigation. */
+body.flagship-v89 .pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 2px 1px;color:#74879a}
+body.flagship-v89 .pagination small{font-size:10px;font-weight:650}
+body.flagship-v89 .pagination .row{display:flex;gap:7px}
+body.flagship-v89 .pagination button{min-height:34px;padding:7px 11px;font-size:10px}
+body.flagship-v89 details{border:1px solid rgba(121,153,183,.14);border-radius:12px;background:rgba(252,254,255,.72);overflow:hidden;margin:7px 0}
+body.flagship-v89 details>summary{min-height:40px;display:flex;align-items:center;gap:8px;padding:9px 12px;color:#405d77;font-size:10px;font-weight:700;cursor:pointer;list-style:none;transition:background .15s ease,color .15s ease}
+body.flagship-v89 details>summary::-webkit-details-marker{display:none}
+body.flagship-v89 details>summary::before{content:"+";width:19px;height:19px;display:grid;place-items:center;border-radius:6px;background:#eef6fc;color:#3283c0;font-size:13px;font-weight:500;transition:transform .16s ease,background .16s ease}
+body.flagship-v89 details[open]>summary{background:#f5f9fc;color:#244761;border-bottom:1px solid #e9f0f5}
+body.flagship-v89 details[open]>summary::before{content:"−";background:#e2f2ff;color:#167fc9}
+body.flagship-v89 details>pre,body.flagship-v89 details>.grid,body.flagship-v89 details>p,body.flagship-v89 details>div:not(.row){margin:0;padding:13px}
+body.flagship-v89 pre{max-width:100%;overflow:auto;border:1px solid #e5edf4;border-radius:10px;background:#f7fafc;color:#40576c;padding:12px;font:10px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* Source preview and attachment deepest layer. */
+body.flagship-v89 .source-image-preview{padding:6px}
+body.flagship-v89 .source-image-preview img{max-height:72vh!important;border:1px solid rgba(114,147,175,.18);border-radius:16px;background:#f3f6f9;box-shadow:0 22px 56px rgba(5,31,56,.14)!important}
+body.flagship-v89 .source-image-preview .formactions{display:flex;justify-content:flex-end}
+body.flagship-v89 .source-image-preview a{display:inline-flex;align-items:center;min-height:38px;padding:8px 13px;border:1px solid #d8e5ef;border-radius:10px;background:#fff;color:#286993;text-decoration:none;font-size:10px;font-weight:720}
+body.flagship-v89 dialog iframe{min-height:68vh;border:1px solid rgba(111,148,180,.16)!important;border-radius:16px!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}
+
+/* Profile, attention, approval and security dialogs. */
+body.flagship-v89 .attention-dialog-summary,body.flagship-v89 .profile-summary,body.flagship-v89 .approval-kpis{border-radius:16px!important}
+body.flagship-v89 .attention-dialog-summary{padding:14px;border:1px solid #dae7f1;background:linear-gradient(125deg,#f6fbff,#fff)}
+body.flagship-v89 .attention-item{border:1px solid rgba(118,150,180,.16)!important;border-radius:13px!important;background:linear-gradient(145deg,#fff,#f9fbfd)!important;box-shadow:0 7px 20px rgba(28,72,112,.04)}
+body.flagship-v89 .attention-item[data-severity="critical"]{box-shadow:inset 3px 0 #dc626a,0 7px 20px rgba(120,38,44,.04)}
+body.flagship-v89 .attention-item[data-severity="warning"]{box-shadow:inset 3px 0 #e9a539,0 7px 20px rgba(130,88,18,.04)}
+body.flagship-v89 .approval-kpis>div{border-radius:13px;background:linear-gradient(145deg,#fff,#f8fbfe);border:1px solid rgba(118,150,180,.15)}
+body.flagship-v89 .v37-approval-aging{border:1px solid rgba(118,150,180,.14);background:rgba(249,252,254,.85)}
+body.flagship-v89 .checkrow{padding:10px;border:1px solid #e2ebf2;border-radius:12px;background:#f9fbfd}
+body.flagship-v89 .checkrow label{padding:5px 7px;border-radius:8px;background:#fff;border:1px solid #ebf1f5}
+
+/* Custom confirmation replacing browser-native visual interruption. */
+dialog.flagship-confirm-v90{width:min(470px,calc(100vw - 28px));border:1px solid rgba(125,157,184,.18);border-radius:22px;padding:0;background:rgba(255,255,255,.98);box-shadow:0 40px 110px rgba(3,24,44,.32);overflow:hidden;backdrop-filter:blur(20px)}
+dialog.flagship-confirm-v90::backdrop{background:rgba(3,17,31,.62);backdrop-filter:blur(12px)}
+.flagship-confirm-v90 .f90-confirm-top{padding:22px 22px 12px;display:flex;gap:14px;align-items:flex-start}
+.flagship-confirm-v90 .f90-confirm-icon{width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;border-radius:13px;background:#fff1f2;color:#b7464f;font-size:20px;box-shadow:inset 0 0 0 1px #f1d1d4}
+.flagship-confirm-v90 h2{margin:1px 0 5px;font-size:17px;letter-spacing:-.02em;color:#18324a}
+.flagship-confirm-v90 p{margin:0;color:#718397;font-size:11px;line-height:1.6}
+.flagship-confirm-v90 .f90-confirm-actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px}
+.flagship-confirm-v90 button{min-height:39px;padding:8px 14px;border-radius:11px;border:1px solid #dbe5ed;background:#fff;color:#405b73;font-weight:700}
+.flagship-confirm-v90 .f90-confirm-danger{border-color:#d9505a;background:linear-gradient(135deg,#de5962,#c9444e);color:#fff;box-shadow:0 9px 22px rgba(198,68,78,.18)}
+
+/* Field Display / kiosk — same flagship DNA even without application shell. */
+body.flagship-v89:has(#fieldDisplay),body.display-pairing-mode{background:#05111d!important}
+#fieldDisplay{background:radial-gradient(circle at 72% 0,rgba(26,188,225,.15),transparent 34rem),radial-gradient(circle at 18% 18%,rgba(15,118,232,.16),transparent 30rem),linear-gradient(145deg,#06131f,#091d2d 54%,#05111c)!important}
+#fieldDisplay::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(90,174,220,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(90,174,220,.045) 1px,transparent 1px);background-size:46px 46px;mask-image:radial-gradient(circle at 50% 45%,#000,transparent 92%)}
+#fieldDisplay .display-widget,#fieldDisplay .de5-widget{border:1px solid rgba(128,199,235,.16)!important;border-radius:18px!important;background:linear-gradient(145deg,rgba(11,39,59,.92),rgba(7,27,42,.88))!important;box-shadow:0 22px 58px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.045)!important;backdrop-filter:blur(14px)}
+#fieldDisplay .display-widget::before,#fieldDisplay .de5-widget::before{content:"";position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(66,207,255,.38),transparent)}
+#fieldDisplay .display-widget-title,#fieldDisplay .de5-widget-title{color:#87aabe!important;font-size:clamp(10px,1vw,14px)!important;letter-spacing:.09em!important;text-transform:uppercase;font-weight:760!important}
+#fieldDisplay .display-widget-value,#fieldDisplay .de5-widget-body strong{color:#f1faff!important;text-shadow:0 0 28px rgba(57,194,242,.10);font-weight:760!important}
+.field-display-live{right:18px!important;top:16px!important;padding:8px 12px!important;border-color:rgba(92,216,172,.25)!important;background:rgba(4,24,38,.78)!important;box-shadow:0 13px 32px rgba(0,0,0,.20)!important}
+.display-pairing-mode{background:radial-gradient(circle at 75% 5%,rgba(31,196,229,.16),transparent 29rem),radial-gradient(circle at 20% 25%,rgba(18,121,230,.17),transparent 26rem),linear-gradient(145deg,#06131f,#0a2032 55%,#05111c)!important}
+.display-pairing{position:relative;overflow:hidden}
+.display-pairing::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(91,174,219,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(91,174,219,.045) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle at 50% 50%,#000,transparent 90%)}
+.display-pairing-card{position:relative;z-index:1;width:min(560px,100%)!important;padding:38px!important;border:1px solid rgba(126,204,239,.18)!important;border-radius:26px!important;background:linear-gradient(145deg,rgba(8,31,47,.93),rgba(7,25,39,.88))!important;box-shadow:0 40px 100px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.045)!important}
+.display-pairing-card::before{content:"";position:absolute;left:30px;right:30px;top:0;height:1px;background:linear-gradient(90deg,transparent,#41cff4,transparent)}
+.display-pairing-card>img{border-radius:14px!important;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.display-pairing-card input{border-color:rgba(139,207,237,.19)!important;border-radius:13px!important;background:rgba(5,24,38,.9)!important}
+.display-pairing-card button.primary{border-radius:13px!important;background:linear-gradient(135deg,#088aff,#10a3dc)!important;box-shadow:0 13px 28px rgba(4,121,218,.23)}
+
+/* Standalone failure/password/bootstrap cards. */
+body.flagship-v89 .splash>.login-card,body.flagship-v89 .splash>.panel{border-radius:22px!important;border-color:rgba(115,151,181,.18)!important;background:rgba(255,255,255,.94)!important;box-shadow:0 30px 85px rgba(7,37,66,.15)!important}
+body.flagship-v89 .splash>.login-card::before,body.flagship-v89 .splash>.panel::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#0788ff,#28c9e8,#31c994)}
+
+@keyframes f90Spin{to{transform:rotate(360deg)}}
+@keyframes f90ToastSpin{to{transform:translateY(-50%) rotate(360deg)}}
+@media(max-width:700px){body.flagship-v89 #toast{right:8px;left:8px;bottom:max(8px,env(safe-area-inset-bottom));max-width:none}.display-pairing-card{padding:26px 20px!important;border-radius:20px!important}.flagship-confirm-v90 .f90-confirm-actions{display:grid;grid-template-columns:1fr 1fr}.flagship-confirm-v90 button{width:100%}}
+@media(prefers-reduced-motion:reduce){body.flagship-v89 #toast::before,body.flagship-v89 .runtime-state-spinner{animation:none!important}}
