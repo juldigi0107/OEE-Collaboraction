@@ -4,14 +4,29 @@ body.reference-release *,body.reference-release *::before,body.reference-release
 body.reference-release img,body.reference-release svg{max-width:100%}
 body.reference-release button:focus-visible,body.reference-release a:focus-visible,body.reference-release input:focus-visible,body.reference-release select:focus-visible,body.reference-release textarea:focus-visible,body.reference-release summary:focus-visible{outline:3px solid rgba(8,127,245,.22);outline-offset:2px}
 body.reference-release button:disabled{opacity:.55;cursor:not-allowed}
-body.reference-release .tablewrap{max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
-body.reference-release .tablewrap table{min-width:680px}
+body.reference-release input,body.reference-release select,body.reference-release textarea{max-width:100%;font:inherit}
+body.reference-release input:not([type=checkbox]):not([type=radio]),body.reference-release select,body.reference-release textarea{min-height:40px;border:1px solid #d7e1ec;border-radius:8px;background:#fff;color:#17283c;padding:9px 11px;transition:border-color .15s ease,box-shadow .15s ease}
+body.reference-release textarea{min-height:96px;resize:vertical}
+body.reference-release input:not([type=checkbox]):not([type=radio]):focus,body.reference-release select:focus,body.reference-release textarea:focus{border-color:#78b9fa;box-shadow:0 0 0 3px rgba(8,127,245,.08)}
+body.reference-release input::placeholder,body.reference-release textarea::placeholder{color:#8493a5}
+body.reference-release label{color:#33475d;font-weight:600}
+body.reference-release .tablewrap{max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;border:1px solid #e2e9f1;border-radius:10px;background:#fff}
+body.reference-release .tablewrap table{min-width:680px;border-collapse:collapse}
 body.reference-release td,body.reference-release th{overflow-wrap:normal;word-break:normal}
+body.reference-release th{font-size:11px;letter-spacing:.035em;text-transform:uppercase;color:#607287;background:#f7f9fc}
+body.reference-release th,body.reference-release td{padding:11px 13px;border-bottom:1px solid #edf1f5;vertical-align:middle}
+body.reference-release tbody tr:last-child td{border-bottom:0}
+body.reference-release tbody tr:hover td{background:#f9fbfe}
 body.reference-release .panel,body.reference-release .card,body.reference-release .ref-kpi,body.reference-release .ref-depts>article{min-width:0}
 body.reference-release .ref-kpi strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 body.reference-release .ref-head>*,body.reference-release .top-left,body.reference-release .user,body.reference-release .ref-title>*{min-width:0}
 body.reference-release .ref-head h1,body.reference-release .context-title strong,body.reference-release .user strong{overflow:hidden;text-overflow:ellipsis}
-body.reference-release .ref-empty,body.reference-release .ref-machine-empty{max-width:100%}
+body.reference-release .ref-empty,body.reference-release .ref-machine-empty,body.reference-release .empty-state{max-width:100%;border:1px dashed #cfdae6;border-radius:10px;background:#fafcff;color:#617286;padding:24px;text-align:center}
+body.reference-release .error,body.reference-release .error-state,body.reference-release [role=alert]{border-radius:8px}
+body.reference-release .toolbar,body.reference-release .filters{gap:10px}
+body.reference-release .toolbar button,body.reference-release .filters button{min-height:38px}
+body.reference-release dialog{border:0;border-radius:14px;box-shadow:0 24px 70px rgba(19,38,61,.22)}
+body.reference-release dialog::backdrop{background:rgba(17,32,51,.42);backdrop-filter:blur(2px)}
 body.reference-release.reference-menu-open{overflow:hidden}
 body.reference-release .ref-backdrop{display:none}
 @media (max-width:1180px){
@@ -60,6 +75,9 @@ body.reference-release .ref-backdrop{display:none}
  body.reference-release .panel{padding:14px}
  body.reference-release .toolbar,body.reference-release .filters{display:flex;flex-direction:column;align-items:stretch;gap:8px}
  body.reference-release .toolbar>*,body.reference-release .filters>*{width:100%;max-width:none}
+ body.reference-release .tablewrap{border-radius:8px}
+ body.reference-release .tablewrap table{min-width:620px}
+ body.reference-release th,body.reference-release td{padding:10px 11px}
  body.reference-release .ref-footer{margin:0 12px;gap:10px}
  body.reference-release .ref-footer span{white-space:normal}
 }
