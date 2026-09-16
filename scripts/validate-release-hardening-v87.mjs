@@ -10,11 +10,17 @@ const page66=read('frontend/page-integrity-v66.js');
 const live71=read('frontend/live-monitoring-v71.js');
 const gate87=read('frontend/release-runtime-gate-v87.js');
 const dash88=read('frontend/premium-dashboard-integrity-v88.js');
+const flagshipCss=read('frontend/flagship-v89.css');
+const flagshipJs=read('frontend/flagship-v89.js');
 const scriptTags=[...index.matchAll(/<script\b([^>]*)\bsrc="([^"]+)"([^>]*)><\/script>/g)].map(m=>({attrs:(m[1]+' '+m[3]),src:m[2]}));
-const order=['config.js','app-core.js','workspace.js','reference-release-v85.js','release-runtime-gate-v87.js','premium-dashboard-integrity-v88.js'].map(name=>index.indexOf(name));
+const order=['config.js','app-core.js','workspace.js','reference-release-v85.js','release-runtime-gate-v87.js','premium-dashboard-integrity-v88.js','flagship-v89.js'].map(name=>index.indexOf(name));
+const cssOrder=['reference-release-v85.css','release-hardening-v86.css','flagship-v89.css'].map(name=>index.indexOf(name));
+const hasAll=(text,items)=>items.every(x=>text.includes(x));
 const checks=[
  ['runtime gate v87 active',index.includes('release-runtime-gate-v87.js')],
  ['premium dashboard integrity v88 active',index.includes('premium-dashboard-integrity-v88.js?v=20260916-1')],
+ ['flagship visual v89 active and cache-busted',index.includes('flagship-v89.css?v=20260917-1')&&index.includes('flagship-v89.js?v=20260917-1')&&index.includes('flagship-v89')],
+ ['flagship loads after reference hardening',cssOrder.every(x=>x>=0)&&cssOrder.every((x,i)=>i===0||x>cssOrder[i-1])&&order.every(x=>x>=0)&&order.every((x,i)=>i===0||x>order[i-1])],
  ['current hardened bundles cache-busted',index.includes('app-ui.js?v=20260916-1')&&index.includes('role-dashboard-v12.js?v=20260916-1')&&index.includes('hmi-operation-safety-v60.js?v=20260916-1')&&index.includes('page-integrity-v66.js?v=20260916-2')&&index.includes('live-monitoring-v71.js?v=20260916-1')],
  ['static security headers declared',headers.includes('X-Content-Type-Options: nosniff')&&headers.includes('X-Frame-Options: DENY')&&headers.includes('Referrer-Policy: strict-origin-when-cross-origin')],
  ['all active classic scripts use defer',scriptTags.length>20&&scriptTags.every(s=>/\bdefer\b/.test(s.attrs))],
@@ -40,8 +46,19 @@ const checks=[
  ['premium dashboard fallback also uses source period',dash88.includes('applyFallbackPeriod')&&dash88.includes('Trend OEE harian')&&dash88.includes('Snapshot sumber · ${period.label}')&&dash88.includes('periode berasal dari cell tanggal sumber')],
  ['fallback quality guidance follows governance',dash88.includes('applyFallbackGovernance')&&dash88.includes('Definisi KPI authoritative:')&&dash88.includes('Definisi KPI belum final:')&&dash88.includes('Definisi KPI belum dapat diverifikasi:')&&!dash88.includes('gunakan definisi Good tanpa NC')],
  ['premium dashboard exposes KPI authority',dash88.includes("api('/oee-governance')")&&dash88.includes('KPI authoritative')&&dash88.includes('KPI belum authoritative')&&dash88.includes('Authority belum terverifikasi')&&dash88.includes('authorityState')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([core,ui,role,hmi60,page66,live71,gate87,dash88].join('\n')))]
+ ['flagship shell and command rail covered',hasAll(flagshipCss,['.sidebar{','.topbar{','.nav.active','--f89-navy','backdrop-filter:blur(22px)'])],
+ ['flagship login and splash covered',hasAll(flagshipCss,['.auth{','.auth-story','.login-card','.splash-v4'])],
+ ['flagship dashboard and workspace covered',hasAll(flagshipCss,['.ref-hero','.ref-kpis','.ref-grid','.ref-depts'])],
+ ['flagship dense data tables covered',hasAll(flagshipCss,['.tablewrap{','thead th{','tbody tr:hover','flagship-table-wrap'])],
+ ['flagship operational cockpit covered',hasAll(flagshipCss,['data-ui-view="live"','data-ui-view="shopfloor"','.machine-live-card','.run-hero','.v40-event-context'])],
+ ['flagship governance and release control covered',hasAll(flagshipCss,['data-ui-view="data-governance"','data-ui-view="operational-control"','data-ui-view="uat-release"','.oc31-banner'])],
+ ['flagship display editor covered',hasAll(flagshipCss,['#displayEditorRoot','.de5-stage','.de5-widget','.v42-display-readiness'])],
+ ['flagship modal system covered through deepest layer',hasAll(flagshipCss,['dialog[data-flagship-dialog="wide"]','dialog[data-flagship-dialog="media"]','dialog[data-flagship-dialog="operational"]','.dialoghead','.dialogbody','.formactions'])],
+ ['flagship mobile and reduced-motion covered',hasAll(flagshipCss,['@media (max-width:980px)','@media (max-width:680px)','prefers-reduced-motion'])],
+ ['flagship runtime classifies page panels tables forms and dialogs',hasAll(flagshipJs,['viewGroup','classifyPanels','classifyTables','classifyForms','dialogKind','flagship-dialog-context','MutationObserver'])],
+ ['flagship runtime leaves backend authority untouched',!(/\b(fetch\(|api\(|localStorage|sessionStorage|\/api\/)/.test(flagshipJs))],
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([core,ui,role,hmi60,page66,live71,gate87,dash88,flagshipCss,flagshipJs].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, client-session recovery, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release recovery, KPI-authority, source-period fallback, governance-aware quality guidance, and source-date trend guards checked.`);
+console.log(`Release hardening v89 validation OK — ${checks.length} runtime, data-integrity, flagship visual, responsive, modal, and production-readiness guards checked.`);
