@@ -15,6 +15,8 @@ const allowedOrigin=(req,env)=>{const origin=req.headers.get('Origin')||'';const
 const out=(req,env,value,status=200)=>{const origin=allowedOrigin(req,env);return new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{})}});};
 async function auth(req,env){const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');if(!token)return null;return one(env.DB,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.active=1',await sha(token),Date.now());}
 async function workCalendarHealth(env){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.shift_calendar'");return WorkCalendarV62.deriveContext(parse(row?.value,{}));}
+const releaseDependencies=new Set(['DATA_GOVERNANCE.kpi_definitions','DATA_GOVERNANCE.machine_aliases','DATA_GOVERNANCE.shift_calendar','DATA_GOVERNANCE.source_authority','DATA_GOVERNANCE.join_grain','OPERATIONAL_CONTROL.cycle_targets','OPERATIONAL_CONTROL.loss_time_classification','OPERATIONAL_CONTROL.machine_triggers','OPERATIONAL_CONTROL.field_ownership','UAT_RELEASE.roles','UAT_RELEASE.devices','UAT_RELEASE.data','UAT_RELEASE.display','UAT_RELEASE.recovery','UAT_RELEASE.integrations']);
+const departments=new Set(['MTC','QC','PROD','PPIC','PDS','PROJECT']);
 const compactWorkflow=v=>({ready:v?.ready===true,checked_runs:Number(v?.checked_runs||0),linked_runs:Number(v?.linked_runs||0),lineage_mismatches:Number(v?.lineage_mismatches||0),orphaned_plan_links:Number(v?.orphaned_plan_links||0),pending_production_verification:Number(v?.pending_production_verification||0),multi_run_plans:Number(v?.multi_run_plans||0)});
 const compactMirror=v=>({ready:v?.ready===true,issues:Number(v?.issues||0),missing_mirrors:Number(v?.missing_mirrors||0),stale_mirrors:Number(v?.stale_mirrors||0),by_type:v?.by_type||{}});
 const compactInvariant=v=>({ready:v?.ready===true,issues:Number(v?.issues||0),duplicate_running_runs:Number(v?.duplicate_running_runs||0),duplicate_open_downtime:Number(v?.duplicate_open_downtime||0),duplicate_active_maintenance_calls:Number(v?.duplicate_active_maintenance_calls||0),run_state_mismatches:Number(v?.run_state_mismatches||0),downtime_state_mismatches:Number(v?.downtime_state_mismatches||0),orphan_hmi_states:Number(v?.orphan_hmi_states||0),missing_work_date_lineage:Number(v?.missing_work_date_lineage||0)});
@@ -31,13 +33,26 @@ async function runtimeSnapshot(env){
  if(telemetry?.ready!==true)blockers.push(`Telemetry: ${Number(telemetry?.issues||0)} PRO aktif tidak memiliki heartbeat fresh dari source external`);
  return {ready:blockers.length===0,blockers,workflow:compactWorkflow(workflow),mirror:compactMirror(mirror),runtime_invariants:compactInvariant(invariants),work_calendar:compactCalendar(workCalendar),storage:compactStorage(storage),telemetry:compactTelemetry(telemetry)};
 }
+async function invalidateIfSigned(req,env,u,key,body){
+ if(!releaseDependencies.has(key))return null;const signoffKey='UAT_RELEASE.signoff',signoffRow=await one(env.DB,'SELECT * FROM settings WHERE key=?',signoffKey),signoff=parse(signoffRow?.value);if(clean(signoff.status)!=='passed')return null;
+ const old=await one(env.DB,'SELECT * FROM settings WHERE key=?',key),dept=clean(body?.department||old?.department||'PROJECT').toUpperCase();if(!departments.has(dept))return out(req,env,{error:'Department konfigurasi tidak valid'},400);const value=parse(body?.value),stamp=new Date().toISOString(),nextSignoff={...signoff,status:'in_progress',previous_signoff_status:'passed',stale_at:stamp,stale_reason:`Baseline ${key} berubah setelah Final Sign-off; verifikasi dan sign-off ulang wajib dilakukan.`,updated_at:stamp};
+ await env.DB.batch([
+  env.DB.prepare('INSERT INTO settings(key,value,department) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(key,JSON.stringify(value),dept),
+  env.DB.prepare('INSERT INTO audit(id,user_id,action,entity_id,before_json,after_json) VALUES(?,?,?,?,?,?)').bind(uid(),u.id,'config.save',key,old?JSON.stringify(old):null,JSON.stringify(value)),
+  env.DB.prepare("INSERT INTO settings(key,value,department) VALUES(?,?,'PROJECT') ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(signoffKey,JSON.stringify(nextSignoff)),
+  env.DB.prepare('INSERT INTO audit(id,user_id,action,entity_id,before_json,after_json) VALUES(?,?,?,?,?,?)').bind(uid(),u.id,'release.signoff.invalidated',signoffKey,signoffRow?JSON.stringify(signoffRow):null,JSON.stringify(nextSignoff))
+ ]);
+ return out(req,env,{ok:true,signoff_invalidated:true,stale_at:stamp,stale_reason:nextSignoff.stale_reason});
+}
 export async function handleRuntimeSignoffV54(req,env,buildVersion='',releaseFingerprint=[]){
  const url=new URL(req.url);if(req.method!=='PUT'||url.pathname!=='/api/settings')return null;const origin=req.headers.get('Origin')||'';if(origin&&!allowedOrigin(req,env))return out(req,env,{error:'Origin tidak diizinkan'},403);
  let body;try{body=await req.clone().json();}catch{return null;}const key=clean(body?.key);
  if(key==='UAT_RELEASE.runtime_snapshot'){const u=await auth(req,env);return out(req,env,{error:u?'Runtime snapshot adalah evidence system-managed dan tidak dapat diubah manual':'Silakan login kembali'},u?403:401);}
+ const u=releaseDependencies.has(key)||key==='UAT_RELEASE.signoff'?await auth(req,env):null;
+ if(releaseDependencies.has(key)){if(!u)return out(req,env,{error:'Silakan login kembali'},401);if(u.role!=='superadmin')return out(req,env,{error:'Baseline release hanya dapat diubah oleh Superadmin'},403);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);const invalidated=await invalidateIfSigned(req,env,u,key,body);if(invalidated)return invalidated;return null;}
  if(key!=='UAT_RELEASE.signoff')return null;
- const value=typeof body.value==='string'?(()=>{try{return JSON.parse(body.value)}catch{return {}}})():body.value||{};if(clean(value.status)!=='passed')return null;
- const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);if(u.role!=='superadmin')return out(req,env,{error:'Final sign-off hanya dapat disahkan oleh Superadmin'},403);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
+ const value=typeof body.value==='string'?parse(body.value):body.value||{};if(clean(value.status)!=='passed')return null;
+ if(!u)return out(req,env,{error:'Silakan login kembali'},401);if(u.role!=='superadmin')return out(req,env,{error:'Final sign-off hanya dapat disahkan oleh Superadmin'},403);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
  try{
   const health=await runtimeSnapshot(env);if(!health.ready)return out(req,env,{error:'Final UAT belum dapat dinyatakan Lulus karena runtime consistency belum hijau',blockers:health.blockers,workflow_health:health.workflow,mirror_health:health.mirror,runtime_invariants:health.runtime_invariants,work_calendar:health.work_calendar,storage_health:health.storage,active_telemetry:health.telemetry},409);
   const capturedAt=new Date().toISOString(),snapshot={captured_at:capturedAt,signoff_status:'passed',signed_by:{id:u.id,name:u.name,username:u.username},build:{version:clean(buildVersion)||null,release_fingerprint:Array.isArray(releaseFingerprint)?releaseFingerprint:[]},ready:true,blockers:[],workflow:health.workflow,mirror:health.mirror,runtime_invariants:health.runtime_invariants,work_calendar:health.work_calendar,storage:health.storage,telemetry:health.telemetry},signoffKey='UAT_RELEASE.signoff',snapshotKey='UAT_RELEASE.runtime_snapshot',oldSignoff=await one(env.DB,'SELECT * FROM settings WHERE key=?',signoffKey),oldSnapshot=await one(env.DB,'SELECT * FROM settings WHERE key=?',snapshotKey);
@@ -50,4 +65,4 @@ export async function handleRuntimeSignoffV54(req,env,buildVersion='',releaseFin
   return out(req,env,{ok:true,runtime_ready:true,snapshot_key:snapshotKey,captured_at:capturedAt,build_version:snapshot.build.version});
  }catch(error){return out(req,env,{error:'Final UAT tidak dapat disahkan karena runtime consistency/evidence tidak dapat diverifikasi atau disimpan',detail:clean(error?.message||error)},503);}
 }
-export const RuntimeSignoffV54={runtimeSnapshot};
+export const RuntimeSignoffV54={runtimeSnapshot,releaseDependencies};
