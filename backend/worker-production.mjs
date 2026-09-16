@@ -58,9 +58,9 @@ export default {
   const machineGovernanceResponse=await handleMachineGovernanceV20(req,env);if(machineGovernanceResponse){if(machineGovernanceResponse.ok){await settleCritical('start-lineage',[telemetryStartSignal&&afterTelemetryStartV61(telemetryStartSignal,machineGovernanceResponse.clone(),env),workCalendarSignal&&afterWorkCalendarStartV62(workCalendarSignal,machineGovernanceResponse.clone(),env)]);if(workflowSignal)ctx.waitUntil(afterWorkflowLineageV50(workflowSignal,machineGovernanceResponse.clone(),env));}return machineGovernanceResponse;}
   const operationalSafetyResponse=await handleOperationalSafetyV35(req,env);if(operationalSafetyResponse)return operationalSafetyResponse;
   const displaySafetyResponse=await handleDisplaySafetyV42(req,env);if(displaySafetyResponse)return displaySafetyResponse;
-  const runtimeSignoffResponse=await handleRuntimeSignoffV54(req,env);if(runtimeSignoffResponse)return runtimeSignoffResponse;
   const governanceResponse=await handleGovernanceV19(req,env);if(governanceResponse)return governanceResponse;
   const securityResponse=await handleSecurityV15(req,env);if(securityResponse)return securityResponse;
+  const runtimeSignoffResponse=await handleRuntimeSignoffV54(req,env,BUILD_VERSION,RELEASE_FINGERPRINT);if(runtimeSignoffResponse)return runtimeSignoffResponse;
   const integrationSafetyResponse=await handleIntegrationSafetyV69(req,env);if(integrationSafetyResponse)return integrationSafetyResponse;
   const barcodeResponse=await handleBarcodeResolverV77(req,env);if(barcodeResponse)return barcodeResponse;
   const capacityResponse=await handleCapacityUtilizationV75(req,env);if(capacityResponse)return capacityResponse;
