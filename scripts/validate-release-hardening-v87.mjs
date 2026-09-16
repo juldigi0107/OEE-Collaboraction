@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(p,'utf8');
 const index=read('frontend/index.html');
+const headers=read('frontend/_headers');
 const ui=read('frontend/app-ui.js');
 const role=read('frontend/role-dashboard-v12.js');
 const hmi60=read('frontend/hmi-operation-safety-v60.js');
@@ -12,6 +13,7 @@ const checks=[
  ['runtime gate v87 active',index.includes('release-runtime-gate-v87.js')],
  ['premium dashboard integrity v88 active',index.includes('premium-dashboard-integrity-v88.js?v=20260916-1')],
  ['current hardened bundles cache-busted',index.includes('app-ui.js?v=20260916-1')&&index.includes('role-dashboard-v12.js?v=20260916-1')&&index.includes('hmi-operation-safety-v60.js?v=20260916-1')&&index.includes('page-integrity-v66.js?v=20260916-2')&&index.includes('live-monitoring-v71.js?v=20260916-1')],
+ ['static security headers declared',headers.includes('X-Content-Type-Options: nosniff')&&headers.includes('X-Frame-Options: DENY')&&headers.includes('Referrer-Policy: strict-origin-when-cross-origin')],
  ['role KPI failure is visible and retryable',role.includes('KPI operasional belum dapat dimuat.')&&role.includes('retryRoleKpi')&&role.includes('Coba lagi')],
  ['downtime master fallback failure is visible',role.includes('downtime-master-unavailable')&&role.includes('Input downtime tetap tersedia')],
  ['HMI initial multi-machine ambiguity fails closed in v60',hmi60.includes('multipleMachineChoices')&&hmi60.includes('ambiguousInitial')&&hmi60.includes('Pilih mesin secara eksplisit')],
@@ -29,4 +31,4 @@ const checks=[
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release hardening v88 validation OK — ${checks.length} stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release, and source-date trend guards checked.`);
+console.log(`Release hardening v88 validation OK — ${checks.length} security-header, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release, and source-date trend guards checked.`);
