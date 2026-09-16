@@ -5,6 +5,7 @@ const css=fs.readFileSync('frontend/display-lifecycle-v29.css','utf8');
 const field=fs.readFileSync('frontend/field-display-v8.js','utf8');
 const depth=fs.readFileSync('frontend/display-depth-v42.js','utf8');
 const capacityUi=fs.readFileSync('frontend/storage-capacity-v56.js','utf8');
+const displaySafety=fs.readFileSync('backend/release-v42-display-safety.mjs','utf8');
 const lifecycle=fs.readFileSync('backend/release-v46-data-lifecycle.mjs','utf8');
 const projection=fs.readFileSync('backend/release-v82-field-display.mjs','utf8');
 const device=fs.readFileSync('backend/release-v83-display-device.mjs','utf8');
@@ -23,6 +24,11 @@ const checks=[
  ['layout persistence uses settings api',js.includes("api('/settings','PUT'")&&js.includes('DISPLAY_LAYOUT.')],
  ['field link requires published and machine',js.includes("layout.status!=='published'")&&js.includes('assignment mesin')],
  ['field display publish guard remains active',field.includes("layout.status==='published'")||field.includes("layout.status!=='published'")],
+ ['display mutation is server authoritative',displaySafety.includes("key.startsWith('DISPLAY_LAYOUT.')")&&displaySafety.includes("u.role!=='superadmin'")&&displaySafety.includes('passwordBlocked')],
+ ['display id cannot diverge from settings key',displaySafety.includes("clean(value.id)!==key.slice('DISPLAY_LAYOUT.'.length)")],
+ ['draft-only edits do not invalidate active signoff',displaySafety.includes("oldLayout.status==='published'||value.status==='published'")],
+ ['published display changes invalidate signoff',displaySafety.includes('Published Field Display')&&displaySafety.includes('UAT Field Display dan sign-off ulang wajib diverifikasi')],
+ ['display save and signoff invalidation are atomic',displaySafety.includes('env.DB.batch(statements)')&&displaySafety.includes("'release.signoff.invalidated'")&&displaySafety.includes("'config.save'")],
  ['v82 exact-machine route wired',worker.includes('handleFieldDisplayV82')&&worker.includes('field-display-projection-v82')&&worker.includes("'/api/field-display/machine'")],
  ['field display consumes v82 projection',field.includes("api('/field-display/machine?machine='")&&!field.includes("api('/realtime/overview')")&&!field.includes("api('/telemetry-status')")],
  ['projection is auth protected and canonical',projection.includes('Silakan login kembali')&&projection.includes('canonicalMachine')&&projection.includes("status:'machine_not_found'")],
@@ -49,4 +55,4 @@ const checks=[
  ['storage center surfaces paired display health',capacityUi.includes('Field Display Devices')&&capacityUi.includes('Device aktif')&&capacityUi.includes('Device revoked')&&capacityUi.includes('Pairing code expired')],
  ['responsive lifecycle controls',css.includes('@media(max-width:820px)')]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, exact-machine, paired-device, caching, housekeeping, and field-safety guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, release-change-control, exact-machine, paired-device, caching, housekeeping, and field-safety guards checked.`);
