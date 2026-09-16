@@ -29,12 +29,14 @@ const checks=[
  ['attention center never treats refresh failure as all-clear',ui.includes('attentionLastSuccess')&&ui.includes('attentionError')&&ui.includes('Pembaruan Pusat Perhatian tertunda.')&&ui.includes('tidak dianggap sebagai kondisi terbaru')],
  ['operational-ready requires runtime verification',gate87.includes("'/workflow-health'")&&gate87.includes("'/mirror-health'")&&gate87.includes("'/runtime-invariants'")&&gate87.includes("'/work-calendar/context'")&&gate87.includes('Verifikasi runtime…')&&gate87.includes('runtimeVerified')],
  ['runtime endpoint failure remains blocker',gate87.includes('available:false')&&gate87.includes('tidak dapat diverifikasi')],
+ ['runtime gate can recover without page reload',gate87.includes('staticReadyOf')&&gate87.includes('Verifikasi ulang runtime')&&gate87.includes("dataset.staticReady==='true'")&&gate87.includes('lastResults')],
  ['premium dashboard empty state is independently verified',gate87.includes('verifyDashboardProjection')&&gate87.includes("user.role==='superadmin'?'/audit':'/attention-center'")&&gate87.includes('Kondisi ini tidak berarti tidak ada')],
  ['premium trend derives period from source cell dates',dash88.includes('r.cells?.A?.v')&&dash88.includes('sourceDate')&&dash88.includes('periodOf(groups)')&&dash88.includes('periode berasal dari cell tanggal sumber')],
  ['premium trend never guesses period when source date is absent',dash88.includes('Periode trend belum dapat ditentukan dari cell tanggal sumber')&&dash88.includes('tidak menebak periode dari nama file atau posisi baris')],
  ['premium trend expresses data gaps instead of connecting long gaps',dash88.includes('p.date-prev>DAY*4')&&dash88.includes('flush()')],
+ ['premium dashboard exposes KPI authority',dash88.includes("api('/oee-governance')")&&dash88.includes('KPI authoritative')&&dash88.includes('KPI belum authoritative')&&dash88.includes('Authority belum terverifikasi')&&dash88.includes('authorityState')],
  ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([ui,role,hmi60,page66,live71,gate87,dash88].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release, and source-date trend guards checked.`);
+console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release recovery, KPI-authority, and source-date trend guards checked.`);
