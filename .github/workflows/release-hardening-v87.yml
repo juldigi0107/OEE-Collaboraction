@@ -23,6 +23,7 @@ jobs:
           ready=0
           for attempt in $(seq 1 24); do
             html=$(curl --silent --show-error --location --max-time 20 "$base/" || true)
+            response_headers=$(curl --silent --show-error --location --max-time 20 -D - -o /dev/null "$base/" || true)
             gate=$(curl --silent --show-error --location --max-time 20 "$base/release-runtime-gate-v87.js" || true)
             dash=$(curl --silent --show-error --location --max-time 20 "$base/premium-dashboard-integrity-v88.js" || true)
             page=$(curl --silent --show-error --location --max-time 20 "$base/page-integrity-v66.js" || true)
@@ -41,8 +42,11 @@ jobs:
             printf '%s' "$live" | grep -Fq 'Pembaruan realtime terputus.' || ok=0
             printf '%s' "$role" | grep -Fq 'KPI operasional belum dapat dimuat.' || ok=0
             printf '%s' "$ui" | grep -Fq 'Pembaruan Pusat Perhatian tertunda.' || ok=0
+            printf '%s' "$response_headers" | grep -Fiq 'x-content-type-options: nosniff' || ok=0
+            printf '%s' "$response_headers" | grep -Fiq 'x-frame-options: DENY' || ok=0
+            printf '%s' "$response_headers" | grep -Fiq 'referrer-policy: strict-origin-when-cross-origin' || ok=0
             if [ "$ok" = '1' ]; then
-              echo "Production Worker converged with release hardening v88 on attempt $attempt"
+              echo "Production Worker converged with release hardening v88 and static security headers on attempt $attempt"
               ready=1
               break
             fi
