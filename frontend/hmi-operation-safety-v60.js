@@ -15,11 +15,14 @@
   if(view!=='shopfloor')return;hmiMachine=SENTINEL;
   document.querySelectorAll('[data-machine]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false');});
   const headingEl=document.querySelector('#content .heading');let notice=document.querySelector('.v60-machine-reselect');if(!notice){notice=document.createElement('div');notice.className='notice v60-machine-reselect';headingEl?.insertAdjacentElement('afterend',notice);}
-  notice.textContent=`Mesin ${requested||'yang dipilih'} tidak lagi tersedia pada overview. ${fallback?`Data fallback ${fallback} hanya ditampilkan untuk konteks dan tidak boleh dipakai untuk transaksi. `:''}Pilih mesin secara eksplisit sebelum menjalankan Start PRO, Downtime, Quality, Maintenance, atau Finish.`;
+  const noExplicit=!requested||requested===SENTINEL||requested==='belum dipilih';
+  const lead=noExplicit?'Identitas mesin belum dipilih secara eksplisit.':`Mesin ${requested} tidak lagi tersedia pada overview.`;
+  notice.textContent=`${lead} ${fallback?`Data fallback ${fallback} hanya ditampilkan untuk konteks dan tidak boleh dipakai untuk transaksi. `:''}Pilih mesin secara eksplisit sebelum menjalankan Start PRO, Downtime, Quality, Maintenance, atau Finish.`;
   document.querySelectorAll('#startRun input,#startRun select,#startRun button,.hmi-actions button,#stopDown,#callMtc,#ackMtc').forEach(el=>{el.disabled=true;el.setAttribute('aria-disabled','true');});
   const main=document.querySelector('.hmi-main');if(main)main.setAttribute('data-operation-locked','machine-reselect');
  }
  function machineExists(code){const key=norm(code);return !!key&&[...document.querySelectorAll('[data-machine]')].some(b=>norm(b.dataset.machine)===key);}
+ function multipleMachineChoices(){return [...document.querySelectorAll('[data-machine]')].filter(b=>norm(b.dataset.machine)).length>1;}
  function freshnessText(s){if(!s)return 'Telemetry machine belum terdaftar';if(!s.heartbeat_at)return `Heartbeat belum tersedia · source ${s.source_type||'belum diketahui'}`;const age=Number(s.heartbeat_age_seconds);return `${s.telemetry_trusted?'Telemetry fresh':'Telemetry tidak authoritative'} · ${Number.isFinite(age)?age+' detik sejak heartbeat':'umur heartbeat tidak tersedia'} · ${s.source_type||'source belum diketahui'}`;}
  function bindPlanningCalendarGate(plans){
   const form=$('#startRun'),choice=$('#planChoice');if(!form||!choice||choice.dataset.v62Gate)return;choice.dataset.v62Gate='1';choice.required=true;const shift=form.elements.shift,group=form.elements.group,start=form.querySelector('.hmi-start');let gate=document.querySelector('.v62-plan-calendar-gate');if(!gate){gate=document.createElement('div');gate.className='notice v62-plan-calendar-gate';const checklist=form.querySelector('.checklist-gate');checklist?.insertAdjacentElement('beforebegin',gate);}
@@ -53,8 +56,15 @@
  if(typeof bindHmiActions==='function'){const baseBindV60=bindHmiActions;bindHmiActions=function(active,m,down,call,plans){latestPlans=Array.isArray(plans)?plans:[];return baseBindV60(active,m,down,call,plans);};}
  if(typeof shopfloor==='function'){
   const baseShopfloorV60=shopfloor;
-  shopfloor=async function(...args){const requested=String(hmiMachine||''),explicitBefore=!!requested&&requested!==SENTINEL,out=await baseShopfloorV60(...args),fallback=String(hmiMachine||'');await Promise.all([loadTelemetry(),loadWorkCalendar()]);if(requested===SENTINEL||explicitBefore&&!machineExists(requested)||explicitBefore&&norm(fallback)!==norm(requested))blockForReselect(requested===SENTINEL?'mesin sebelumnya':requested,fallback===SENTINEL?'':fallback);else maskSelectedTelemetry();paintWorkCalendar();bindPlanningCalendarGate(latestPlans);return out;};
+  shopfloor=async function(...args){
+   const requested=String(hmiMachine||''),explicitBefore=!!requested&&requested!==SENTINEL,out=await baseShopfloorV60(...args),fallback=String(hmiMachine||'');
+   await Promise.all([loadTelemetry(),loadWorkCalendar()]);
+   const ambiguousInitial=!requested&&multipleMachineChoices();
+   if(requested===SENTINEL||ambiguousInitial||explicitBefore&&!machineExists(requested)||explicitBefore&&norm(fallback)!==norm(requested))blockForReselect(ambiguousInitial?'belum dipilih':requested===SENTINEL?'mesin sebelumnya':requested,fallback===SENTINEL?'':fallback);
+   else maskSelectedTelemetry();
+   paintWorkCalendar();bindPlanningCalendarGate(latestPlans);return out;
+  };
  }
  if(typeof liveMachines==='function'){const baseLiveV60=liveMachines;liveMachines=async function(...args){const out=await baseLiveV60(...args);await loadTelemetry();maskMachineWall();return out;};}
- window.HMIOperationSafetyV60={blockForReselect,machineExists,loadTelemetry,loadWorkCalendar,bindPlanningCalendarGate,paintWorkCalendar,paintOperationalClock,formatOperationalDateTime,maskSelectedTelemetry,maskMachineWall,get telemetry(){return telemetry;},get workCalendar(){return workCalendar;}};
+ window.HMIOperationSafetyV60={blockForReselect,machineExists,multipleMachineChoices,loadTelemetry,loadWorkCalendar,bindPlanningCalendarGate,paintWorkCalendar,paintOperationalClock,formatOperationalDateTime,maskSelectedTelemetry,maskMachineWall,get telemetry(){return telemetry;},get workCalendar(){return workCalendar;}};
 })();
