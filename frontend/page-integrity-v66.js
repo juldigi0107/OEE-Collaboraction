@@ -16,10 +16,16 @@
    return out;
   };
  }
+ function approvalMetadataNotice(message){
+  if(view!=='approvals')return;const root=$('#content');if(!root)return;let box=root.querySelector('.v66-approval-metadata-warning');if(!box){box=document.createElement('div');box.className='errorbox v66-approval-metadata-warning';const history=root.querySelector('.approval-history');history?.insertAdjacentElement('beforebegin',box);if(!box.isConnected)root.prepend(box);}box.replaceChildren();const strong=document.createElement('strong'),span=document.createElement('span'),button=document.createElement('button');strong.textContent='Metadata audit keputusan belum dapat diverifikasi.';span.textContent=' Tabel keputusan utama tetap ditampilkan, tetapi reviewer, waktu keputusan, atau catatan tambahan mungkin belum lengkap. '+String(message||'');button.type='button';button.className='primary';button.textContent='Coba muat metadata';button.onclick=()=>{box.remove();const table=document.querySelector('.approval-history tbody');if(table)delete table.dataset.v66;decorateApprovalHistory();};box.append(strong,span,button);
+ }
  async function decorateApprovalHistory(){
-  if(view!=='approvals')return;const table=document.querySelector('.approval-history tbody');if(!table||table.dataset.v66)return;table.dataset.v66='1';let data;try{data=await api('/approvals');}catch{return;}const history=(data.rows||[]).filter(x=>x.status!=='PENDING').slice(0,100),trs=[...table.querySelectorAll('tr')];trs.forEach((tr,i)=>{const a=history[i];if(!a)return;const requester=tr.children[4],status=tr.children[5];if(requester&&!requester.querySelector('.v66-decision-owner')){const meta=document.createElement('small');meta.className='v66-decision-owner';meta.textContent=`Keputusan: ${a.decided_by_name||'System / reviewer'} · ${fmtTime(a.decided_ts)}`;requester.append(meta);}if(status&&a.note&&!status.querySelector('.v66-decision-note')){const note=document.createElement('small');note.className='v66-decision-note';note.textContent='Catatan: '+String(a.note);status.append(note);}});
+  if(view!=='approvals')return;const table=document.querySelector('.approval-history tbody');if(!table||table.dataset.v66)return;table.dataset.v66='loading';let data;
+  try{data=await api('/approvals');}
+  catch(err){delete table.dataset.v66;approvalMetadataNotice(err?.message||'Endpoint approval belum dapat dibaca.');return;}
+  document.querySelector('.v66-approval-metadata-warning')?.remove();table.dataset.v66='1';const history=(data.rows||[]).filter(x=>x.status!=='PENDING').slice(0,100),trs=[...table.querySelectorAll('tr')];trs.forEach((tr,i)=>{const a=history[i];if(!a)return;const requester=tr.children[4],status=tr.children[5];if(requester&&!requester.querySelector('.v66-decision-owner')){const meta=document.createElement('small');meta.className='v66-decision-owner';meta.textContent=`Keputusan: ${a.decided_by_name||'System / reviewer'} · ${fmtTime(a.decided_ts)}`;requester.append(meta);}if(status&&a.note&&!status.querySelector('.v66-decision-note')){const note=document.createElement('small');note.className='v66-decision-note';note.textContent='Catatan: '+String(a.note);status.append(note);}});
  }
  const baseRenderV66=typeof render==='function'?render:null;
- if(baseRenderV66){render=async function(...args){const out=await baseRenderV66(...args);if(view==='approvals')queueMicrotask(()=>decorateApprovalHistory().catch(()=>{}));return out;};}
- window.PageIntegrityV66={decorateApprovalHistory};
+ if(baseRenderV66){render=async function(...args){const out=await baseRenderV66(...args);if(view==='approvals')queueMicrotask(()=>decorateApprovalHistory().catch(err=>approvalMetadataNotice(err?.message)));return out;};}
+ window.PageIntegrityV66={decorateApprovalHistory,approvalMetadataNotice};
 })();
