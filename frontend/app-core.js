@@ -18,7 +18,15 @@ function endLocalSession(message='',broadcast=false,userKey=sessionUserKey()){
  if(broadcast)broadcastSessionEnd(userKey);token='';user=null;sessionStorage.removeItem('oee-token');if(typeof login==='function')login();if(message)toast(message);
 }
 sessionChannel?.addEventListener('message',event=>{const data=event.data||{},key=sessionUserKey();if(data.type!=='logout'||!key||String(data.user_key||'')!==key)return;endLocalSession('Sesi akun ini ditutup dari tab lain.',false,key);});
-async function api(path,method='GET',data){if(!base)throw Error('Backend Cloudflare belum terhubung.');const requestUserKey=sessionUserKey(),r=await fetch(base.replace(/\/$/,'')+'/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined});let v;try{v=await r.json();}catch{throw Error('Respons backend bukan JSON.');}if(!r.ok){if(r.status===401&&user)endLocalSession('',false);throw Error(v.error||'Permintaan gagal');}if((path==='/logout'&&method==='POST')||(path==='/password'&&method==='PUT'))broadcastSessionEnd(requestUserKey);return v;}
+async function api(path,method='GET',data){
+ if(!base)throw Error('Backend Cloudflare belum terhubung.');
+ const requestUserKey=sessionUserKey(),url=base.replace(/\/$/,'')+'/api'+path;let r;
+ try{r=await fetch(url,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined});}
+ catch(error){if(typeof navigator!=='undefined'&&navigator.onLine===false)throw Error('Perangkat sedang offline. Sambungkan jaringan lalu coba lagi.');throw Error('Tidak dapat terhubung ke server OEE. Periksa jaringan atau koneksi Cloudflare lalu coba lagi.');}
+ let v;try{v=await r.json();}catch{throw Error(r.ok?'Respons server tidak dapat dibaca. Coba lagi.':`Server mengembalikan respons tidak valid (HTTP ${r.status}).`);}
+ if(!r.ok){if(r.status===401&&user){endLocalSession('Sesi berakhir. Silakan login kembali.',false,requestUserKey);throw Error('Sesi berakhir. Silakan login kembali.');}throw Error(v.error||`Permintaan gagal (HTTP ${r.status})`);}
+ if((path==='/logout'&&method==='POST')||(path==='/password'&&method==='PUT'))broadcastSessionEnd(requestUserKey);return v;
+}
 let dialogReturnFocus=null;
 function dialog(title,content){const opening=!modal.open;if(opening)dialogReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;modal.innerHTML=`<div class="dialoghead"><h2 id="modalTitle" style="margin:0">${esc(title)}</h2><button id="closeDialog" aria-label="Tutup dialog">×</button></div><div class="dialogbody">${content}</div>`;modal.setAttribute('aria-labelledby','modalTitle');$('#closeDialog').onclick=()=>modal.close();if(opening){modal.showModal();queueMicrotask(()=>{const target=modal.querySelector('[autofocus],.dialogbody input:not([disabled]),.dialogbody select:not([disabled]),.dialogbody textarea:not([disabled]),.dialogbody button:not([disabled]),#closeDialog');target?.focus({preventScroll:true});});}}
 modal.addEventListener('close',()=>{const target=dialogReturnFocus;dialogReturnFocus=null;if(target?.isConnected)queueMicrotask(()=>target.focus({preventScroll:true}));});
