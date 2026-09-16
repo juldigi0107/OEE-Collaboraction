@@ -50,6 +50,8 @@ const checks=[
  ['user bearer token remains session storage architecture',field.includes('deviceMode=!token')&&!field.includes("localStorage.setItem('oee-token'")],
  ['field URL uses canonical Worker origin and display id only',depth.includes('canonicalFieldUrl')&&depth.includes('window.OEE_CONFIG?.apiBase')&&depth.includes("searchParams.set('display',layoutId)")&&!depth.includes('deviceToken')&&!depth.includes('X-Display-Token')],
  ['configuration exposes canonical machine picker',depth.includes('v42CanonicalMachines')&&depth.includes('Pilih canonical machine')&&depth.includes('data-v42-machine-pick')],
+ ['field configuration diagnostics cover projection and telemetry',depth.includes('openDiagnostics')&&depth.includes('Exact-machine projection')&&depth.includes('Telemetry authority')&&depth.includes('v42Diagnostics')],
+ ['stale pairing after machine reassignment is visible',depth.includes('Perlu pairing ulang')&&depth.includes('token aktif terikat ke machine lama')&&depth.includes("norm(x.machine_code)!==norm(expected)")],
  ['field link can be tested before pairing',depth.includes('v42TestField')&&depth.includes("window.open(fieldUrl,'_blank'")],
  ['superadmin can pair list and revoke devices',depth.includes('Pasangkan perangkat')&&depth.includes("api('/display-devices/pair-code'")&&depth.includes("api('/display-devices?display='")&&depth.includes("api('/display-devices/revoke'")],
  ['fresh schemas include pairing tables',[realtimeSchema,initSchema].every(x=>x.includes('display_pair_codes')&&x.includes('display_devices')&&x.includes('display_devices_layout'))],
@@ -57,4 +59,4 @@ const checks=[
  ['storage center surfaces paired display health',capacityUi.includes('Field Display Devices')&&capacityUi.includes('Device aktif')&&capacityUi.includes('Device revoked')&&capacityUi.includes('Pairing code expired')],
  ['responsive lifecycle controls',css.includes('@media(max-width:820px)')]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, release-change-control, exact-machine, canonical-link, paired-device, caching, housekeeping, and field-safety guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, release-change-control, exact-machine, canonical-link, diagnostics, paired-device, caching, housekeeping, and field-safety guards checked.`);
