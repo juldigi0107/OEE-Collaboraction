@@ -12,15 +12,18 @@ const gate87=read('frontend/release-runtime-gate-v87.js');
 const dash88=read('frontend/premium-dashboard-integrity-v88.js');
 const flagshipCss=read('frontend/flagship-v89.css');
 const flagshipJs=read('frontend/flagship-v89.js');
+const depthCss=read('frontend/flagship-depth-v90.css');
+const depthJs=read('frontend/flagship-depth-v90.js');
 const scriptTags=[...index.matchAll(/<script\b([^>]*)\bsrc="([^"]+)"([^>]*)><\/script>/g)].map(m=>({attrs:(m[1]+' '+m[3]),src:m[2]}));
-const order=['config.js','app-core.js','workspace.js','reference-release-v85.js','release-runtime-gate-v87.js','premium-dashboard-integrity-v88.js','flagship-v89.js'].map(name=>index.indexOf(name));
-const cssOrder=['reference-release-v85.css','release-hardening-v86.css','flagship-v89.css'].map(name=>index.indexOf(name));
+const order=['config.js','app-core.js','workspace.js','reference-release-v85.js','release-runtime-gate-v87.js','premium-dashboard-integrity-v88.js','flagship-v89.js','flagship-depth-v90.js'].map(name=>index.indexOf(name));
+const cssOrder=['reference-release-v85.css','release-hardening-v86.css','flagship-v89.css','flagship-depth-v90.css'].map(name=>index.indexOf(name));
 const hasAll=(text,items)=>items.every(x=>text.includes(x));
 const checks=[
  ['runtime gate v87 active',index.includes('release-runtime-gate-v87.js')],
  ['premium dashboard integrity v88 active',index.includes('premium-dashboard-integrity-v88.js?v=20260916-1')],
  ['flagship visual v89 active and cache-busted',index.includes('flagship-v89.css?v=20260917-1')&&index.includes('flagship-v89.js?v=20260917-1')&&index.includes('flagship-v89')],
- ['flagship loads after reference hardening',cssOrder.every(x=>x>=0)&&cssOrder.every((x,i)=>i===0||x>cssOrder[i-1])&&order.every(x=>x>=0)&&order.every((x,i)=>i===0||x>order[i-1])],
+ ['flagship depth v90 active and cache-busted',index.includes('flagship-depth-v90.css?v=20260917-1')&&index.includes('flagship-depth-v90.js?v=20260917-1')&&index.includes('flagship-depth-v90')],
+ ['flagship layers are final visual/runtime authority',cssOrder.every(x=>x>=0)&&cssOrder.every((x,i)=>i===0||x>cssOrder[i-1])&&order.every(x=>x>=0)&&order.every((x,i)=>i===0||x>order[i-1])],
  ['current hardened bundles cache-busted',index.includes('app-ui.js?v=20260916-1')&&index.includes('role-dashboard-v12.js?v=20260916-1')&&index.includes('hmi-operation-safety-v60.js?v=20260916-1')&&index.includes('page-integrity-v66.js?v=20260916-2')&&index.includes('live-monitoring-v71.js?v=20260916-1')],
  ['static security headers declared',headers.includes('X-Content-Type-Options: nosniff')&&headers.includes('X-Frame-Options: DENY')&&headers.includes('Referrer-Policy: strict-origin-when-cross-origin')],
  ['all active classic scripts use defer',scriptTags.length>20&&scriptTags.every(s=>/\bdefer\b/.test(s.attrs))],
@@ -57,8 +60,14 @@ const checks=[
  ['flagship mobile and reduced-motion covered',hasAll(flagshipCss,['@media (max-width:980px)','@media (max-width:680px)','prefers-reduced-motion'])],
  ['flagship runtime classifies page panels tables forms and dialogs',hasAll(flagshipJs,['viewGroup','classifyPanels','classifyTables','classifyForms','dialogKind','flagship-dialog-context','MutationObserver'])],
  ['flagship runtime leaves backend authority untouched',!(/\b(fetch\(|api\(|localStorage|sessionStorage|\/api\/)/.test(flagshipJs))],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([core,ui,role,hmi60,page66,live71,gate87,dash88,flagshipCss,flagshipJs].join('\n')))]
+ ['deep feedback states covered',hasAll(depthCss,['#toast','.runtime-status','.loading-panel','.runtime-state-spinner','.runtime-empty-state','.errorbox','.toTop'])],
+ ['deep pagination accordions and source preview covered',hasAll(depthCss,['.pagination','details>summary','.source-image-preview','dialog iframe'])],
+ ['field display and pairing are in flagship DNA',hasAll(depthCss,['#fieldDisplay','.field-display-live','.display-pairing-mode','.display-pairing-card'])],
+ ['premium destructive confirmation implemented',hasAll(depthCss,['dialog.flagship-confirm-v90','.f90-confirm-danger'])&&hasAll(depthJs,['confirmDialog','runLegacyConfirmed','#deleteRow','#delEntry','stopImmediatePropagation'])],
+ ['confirmation adapter restores native confirm before async completion',depthJs.includes('result=handler.call(button)')&&depthJs.includes('finally{window.confirm=original;}')&&depthJs.includes('await result')],
+ ['deep runtime is presentation only',!(/\b(fetch\(|api\(|localStorage|sessionStorage|\/api\/)/.test(depthJs))],
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([core,ui,role,hmi60,page66,live71,gate87,dash88,flagshipCss,flagshipJs,depthCss,depthJs].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release hardening v89 validation OK — ${checks.length} runtime, data-integrity, flagship visual, responsive, modal, and production-readiness guards checked.`);
+console.log(`Release hardening v90 validation OK — ${checks.length} runtime, data-integrity, flagship visual, kiosk, feedback, confirmation, responsive, modal, and production-readiness guards checked.`);
