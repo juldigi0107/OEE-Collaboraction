@@ -2,6 +2,7 @@ import fs from 'node:fs';
 const read=p=>fs.readFileSync(p,'utf8');
 const index=read('frontend/index.html');
 const headers=read('frontend/_headers');
+const core=read('frontend/app-core.js');
 const ui=read('frontend/app-ui.js');
 const role=read('frontend/role-dashboard-v12.js');
 const hmi60=read('frontend/hmi-operation-safety-v60.js');
@@ -20,6 +21,8 @@ const checks=[
  ['no active script uses async ordering',scriptTags.every(s=>!/\basync\b/.test(s.attrs))],
  ['bootstrap and wrapper authority order preserved',order.every(x=>x>=0)&&order.every((x,i)=>i===0||x>order[i-1])],
  ['critical auth imagery preloaded',index.includes('rel="preload" href="assets/logo-bmj-source.webp"')&&index.includes('rel="preload" href="assets/hero-bmj-photo.jpg"')&&index.includes('fetchpriority="high"')],
+ ['session expiry is visible',core.includes('Sesi berakhir. Silakan login kembali.')&&core.includes("if(r.status===401&&user)")&&core.includes('endLocalSession')],
+ ['network/offline failure is recoverable',core.includes('Perangkat sedang offline. Sambungkan jaringan lalu coba lagi.')&&core.includes('Tidak dapat terhubung ke server OEE. Periksa jaringan atau koneksi Cloudflare lalu coba lagi.')],
  ['role KPI failure is visible and retryable',role.includes('KPI operasional belum dapat dimuat.')&&role.includes('retryRoleKpi')&&role.includes('Coba lagi')],
  ['downtime master fallback failure is visible',role.includes('downtime-master-unavailable')&&role.includes('Input downtime tetap tersedia')],
  ['HMI initial multi-machine ambiguity fails closed in v60',hmi60.includes('multipleMachineChoices')&&hmi60.includes('ambiguousInitial')&&hmi60.includes('Pilih mesin secara eksplisit')],
@@ -35,8 +38,8 @@ const checks=[
  ['premium trend never guesses period when source date is absent',dash88.includes('Periode trend belum dapat ditentukan dari cell tanggal sumber')&&dash88.includes('tidak menebak periode dari nama file atau posisi baris')],
  ['premium trend expresses data gaps instead of connecting long gaps',dash88.includes('p.date-prev>DAY*4')&&dash88.includes('flush()')],
  ['premium dashboard exposes KPI authority',dash88.includes("api('/oee-governance')")&&dash88.includes('KPI authoritative')&&dash88.includes('KPI belum authoritative')&&dash88.includes('Authority belum terverifikasi')&&dash88.includes('authorityState')],
- ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([ui,role,hmi60,page66,live71,gate87,dash88].join('\n')))]
+ ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([core,ui,role,hmi60,page66,live71,gate87,dash88].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release recovery, KPI-authority, and source-date trend guards checked.`);
+console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, client-session recovery, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release recovery, KPI-authority, and source-date trend guards checked.`);
