@@ -13,6 +13,7 @@ const workflow50=read('backend/release-v50-workflow-lineage.mjs');
 const planAuthority=read('backend/release-v53-plan-authority.mjs');
 const runtimeSignoff=read('backend/release-v54-runtime-signoff.mjs');
 const invariants=read('backend/release-v55-runtime-invariants.mjs');
+const telemetry61=read('backend/release-v61-telemetry-freshness.mjs');
 const errors=[];
 const need=(ok,msg)=>{if(!ok)errors.push(msg);};
 const callPos=needle=>production.indexOf(needle);
@@ -49,8 +50,8 @@ need(production.includes('plan-authority-v53'),'Release fingerprint belum memuat
 for(const rule of [
  ['PRO pada request tidak sama dengan Planning Released','Start PRO belum mengunci PRO ke planning Released.'],
  ['Mesin pada request tidak sama dengan canonical machine Planning Released','Start PRO belum mengunci canonical machine ke planning Released.'],
- ['Material pada request tidak sama dengan Material Planning Released','Start PRO belum mengunci material ke planning Released.'],
- ['Target Qty pada request tidak sama dengan Target Qty Planning Released','Start PRO belum mengunci target qty ke planning Released.'],
+ ['Material pada request tidak sama dengan Material Planning Released','Start PRO belum mengunci material ke Planning Released.'],
+ ['Target Qty pada request tidak sama dengan Target Qty Planning Released','Start PRO belum mengunci target qty ke Planning Released.'],
  ['Shift pada request tidak sama dengan Shift Planning Released','Shift terjadwal belum dikunci ke Planning Released.'],
  ['Group pada request tidak sama dengan Group Planning Released','Group terjadwal belum dikunci ke Planning Released.'],
  ['DATA_GOVERNANCE.machine_aliases','Planning authority belum memakai canonical machine governance.']
@@ -64,17 +65,25 @@ for(const rule of [
 ]) need(machine20.includes(rule[0]),rule[1]);
 
 need(production.includes("import {handleRuntimeSignoffV54} from './release-v54-runtime-signoff.mjs'"),'Runtime signoff v54 belum di-wire ke Worker production.');
-const signoffCall=callPos('const runtimeSignoffResponse=await handleRuntimeSignoffV54'),governanceCall=callPos('const governanceResponse=await handleGovernanceV19');
-need(signoffCall>=0&&governanceCall>signoffCall,'Runtime signoff gate harus berjalan sebelum governance settings disimpan.');
+const governanceCall=callPos('const governanceResponse=await handleGovernanceV19'),securityCall=callPos('const securityResponse=await handleSecurityV15'),signoffCall=callPos('const runtimeSignoffResponse=await handleRuntimeSignoffV54');
+need(governanceCall>=0&&securityCall>governanceCall&&signoffCall>securityCall,'Urutan final sign-off harus Governance → Security → Runtime Health/Evidence sebelum settings disimpan.');
+need(production.includes('handleRuntimeSignoffV54(req,env,BUILD_VERSION,RELEASE_FINGERPRINT)'),'Runtime signoff belum menerima build version dan release fingerprint authoritative.');
 need(production.includes('runtime-signoff-v54'),'Release fingerprint belum memuat runtime-signoff-v54.');
 for(const rule of [
  ['workflowHealthV51','Final UAT belum memeriksa Workflow Health.'],
  ['mirrorHealthV52','Final UAT belum memeriksa Mirror Health.'],
  ['runtimeInvariantHealthV55','Final UAT belum memeriksa Shopfloor Invariants.'],
+ ['storageHealthV46','Final UAT belum memeriksa D1 Capacity Health.'],
+ ['telemetryHealthV61','Final UAT belum memeriksa active telemetry health.'],
  ['Final UAT belum dapat dinyatakan Lulus karena runtime consistency belum hijau','Final UAT belum fail-closed saat runtime inconsistent.'],
- ['Final UAT tidak dapat disahkan karena runtime consistency tidak dapat diverifikasi','Final UAT belum fail-closed saat health unavailable.'],
- ["u.role!=='superadmin'",'Runtime signoff gate belum dibatasi ke jalur Superadmin.']
+ ['runtime consistency/evidence tidak dapat diverifikasi atau disimpan','Final UAT belum fail-closed saat health/evidence unavailable.'],
+ ["u.role!=='superadmin'",'Runtime signoff gate belum dibatasi ke jalur Superadmin.'],
+ ['UAT_RELEASE.runtime_snapshot','Final UAT belum menyimpan runtime evidence snapshot.'],
+ ['release.signoff.snapshot','Audit trail belum menyimpan event snapshot Final UAT.'],
+ ['Runtime snapshot adalah evidence system-managed','Runtime snapshot belum dilindungi dari perubahan manual.'],
+ ['env.DB.batch','Sign-off dan evidence belum disimpan atomik.']
 ]) need(runtimeSignoff.includes(rule[0]),rule[1]);
+need(telemetry61.includes('export async function telemetryHealthV61'),'Telemetry release health belum mempunyai single source of truth backend.');
 
 need(production.includes("import {handleRuntimeInvariantsV55,reconcileRuntimeInvariantsV55} from './release-v55-runtime-invariants.mjs'"),'Runtime Invariants v55 belum di-wire ke Worker.');
 need(production.includes('runtime-invariants-v55'),'Release fingerprint belum memuat runtime-invariants-v55.');
@@ -93,7 +102,7 @@ for(const rule of [
 ]) need(invariants.includes(rule[0]),rule[1]);
 need(production.includes('afterReleaseV11(approvalSignal,invariantResponse.clone()')&&production.includes('afterLiveRegisterV49(liveSignal,invariantResponse.clone()')&&production.includes('afterWorkflowLineageV50(workflowSignal,invariantResponse.clone()'),'Early runtime handler belum mempertahankan approval/mirror/lineage side effects.');
 need(production.includes('reconcileRuntimeInvariantsV55(env,100)'),'Cron belum menjalankan safe runtime state reconciliation.');
-need(lifecycle46.includes('runtime_invariants=invariants')&&lifecycle46.includes('body.runtime_ready=workflow.ready===true&&mirror.ready===true&&invariants.ready===true'),'Release Manifest belum menyatukan tiga runtime health.');
+need(lifecycle46.includes('body.runtime_invariants=invariants')&&lifecycle46.includes('body.work_calendar=workCalendar')&&lifecycle46.includes('body.telemetry_health=telemetry')&&lifecycle46.includes("blockers.push('d1_capacity')")&&lifecycle46.includes("blockers.push('active_telemetry')")&&lifecycle46.includes('body.runtime_ready=blockers.length===0'),'Release Manifest belum menyatukan seluruh runtime health yang menjadi Final UAT gate.');
 need(workflow50.includes("WHERE id=? AND status='ACKNOWLEDGED'")&&workflow50.includes('Maintenance Call sudah ditutup atau diproses oleh request lain'),'Maintenance Close belum atomic/idempotent.');
 
 need(v6.includes("if(user.role!=='superadmin')return json({error:'Khusus superadmin'},403)"),'Import data v6 tidak dibatasi superadmin.');
@@ -110,4 +119,4 @@ const cases=[
 for(const [name,ok] of cases)need(Boolean(ok),`Authorization model gagal: ${name}`);
 
 if(errors.length){console.error('Authorization validation FAILED');for(const e of errors)console.error('- '+e);process.exit(1);}
-console.log(`Authorization validation OK — RBAC + Planning authority + runtime signoff/invariants + ${cases.length} behavioral cases checked.`);
+console.log(`Authorization validation OK — RBAC + Planning authority + atomic Final UAT evidence + runtime signoff/invariants + ${cases.length} behavioral cases checked.`);
