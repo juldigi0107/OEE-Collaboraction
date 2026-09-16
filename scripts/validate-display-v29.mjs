@@ -48,11 +48,13 @@ const checks=[
  ['device API is read-only allowlisted in browser',field.includes("DEVICE_KEY='oee-display-device:'")&&field.includes("'X-Display-Token':deviceToken")&&field.includes('Display device hanya memiliki akses read-only')],
  ['paired display bootstrap is idempotent',field.includes('deviceBootPromise=null')&&field.includes('if(deviceBootPromise)return deviceBootPromise')&&field.includes('return deviceBootPromise')],
  ['user bearer token remains session storage architecture',field.includes('deviceMode=!token')&&!field.includes("localStorage.setItem('oee-token'")],
- ['field URL contains display id only',depth.includes('?display=${encodeURIComponent(layoutId)}')&&!depth.includes('deviceToken')&&!depth.includes('X-Display-Token')],
+ ['field URL uses canonical Worker origin and display id only',depth.includes('canonicalFieldUrl')&&depth.includes('window.OEE_CONFIG?.apiBase')&&depth.includes("searchParams.set('display',layoutId)")&&!depth.includes('deviceToken')&&!depth.includes('X-Display-Token')],
+ ['configuration exposes canonical machine picker',depth.includes('v42CanonicalMachines')&&depth.includes('Pilih canonical machine')&&depth.includes('data-v42-machine-pick')],
+ ['field link can be tested before pairing',depth.includes('v42TestField')&&depth.includes("window.open(fieldUrl,'_blank'")],
  ['superadmin can pair list and revoke devices',depth.includes('Pasangkan perangkat')&&depth.includes("api('/display-devices/pair-code'")&&depth.includes("api('/display-devices?display='")&&depth.includes("api('/display-devices/revoke'")],
  ['fresh schemas include pairing tables',[realtimeSchema,initSchema].every(x=>x.includes('display_pair_codes')&&x.includes('display_devices')&&x.includes('display_devices_layout'))],
  ['pair code housekeeping preserves device audit rows',lifecycle.includes('DELETE FROM display_pair_codes')&&!lifecycle.includes('DELETE FROM display_devices')&&lifecycle.includes('display_pair_codes:{')&&lifecycle.includes('display_devices:{')],
  ['storage center surfaces paired display health',capacityUi.includes('Field Display Devices')&&capacityUi.includes('Device aktif')&&capacityUi.includes('Device revoked')&&capacityUi.includes('Pairing code expired')],
  ['responsive lifecycle controls',css.includes('@media(max-width:820px)')]
 ];
-const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, release-change-control, exact-machine, paired-device, caching, housekeeping, and field-safety guards checked.`);
+const failed=checks.filter(([,ok])=>!ok);if(failed.length){for(const [n] of failed)console.error('FAIL:',n);process.exit(1);}console.log(`Display validation OK — ${checks.length} lifecycle, release-change-control, exact-machine, canonical-link, paired-device, caching, housekeeping, and field-safety guards checked.`);
