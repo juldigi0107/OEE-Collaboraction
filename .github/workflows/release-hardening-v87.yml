@@ -24,6 +24,7 @@ jobs:
           for attempt in $(seq 1 24); do
             html=$(curl --silent --show-error --location --max-time 20 "$base/" || true)
             response_headers=$(curl --silent --show-error --location --max-time 20 -D - -o /dev/null "$base/" || true)
+            core=$(curl --silent --show-error --location --max-time 20 "$base/app-core.js" || true)
             gate=$(curl --silent --show-error --location --max-time 20 "$base/release-runtime-gate-v87.js" || true)
             dash=$(curl --silent --show-error --location --max-time 20 "$base/premium-dashboard-integrity-v88.js" || true)
             page=$(curl --silent --show-error --location --max-time 20 "$base/page-integrity-v66.js" || true)
@@ -37,10 +38,16 @@ jobs:
             printf '%s' "$html" | grep -Fq 'release-runtime-gate-v87.js?v=20260916-1' || ok=0
             printf '%s' "$html" | grep -Fq 'premium-dashboard-integrity-v88.js?v=20260916-1' || ok=0
             printf '%s' "$html" | grep -Fq 'page-integrity-v66.js?v=20260916-2' || ok=0
+            printf '%s' "$core" | grep -Fq 'Sesi berakhir. Silakan login kembali.' || ok=0
+            printf '%s' "$core" | grep -Fq 'Perangkat sedang offline. Sambungkan jaringan lalu coba lagi.' || ok=0
+            printf '%s' "$core" | grep -Fq 'Tidak dapat terhubung ke server OEE.' || ok=0
             printf '%s' "$gate" | grep -Fq 'Verifikasi runtime…' || ok=0
+            printf '%s' "$gate" | grep -Fq 'Verifikasi ulang runtime' || ok=0
             printf '%s' "$gate" | grep -Fq 'verifyDashboardProjection' || ok=0
             printf '%s' "$dash" | grep -Fq 'periode berasal dari cell tanggal sumber' || ok=0
             printf '%s' "$dash" | grep -Fq 'tidak menebak periode dari nama file atau posisi baris' || ok=0
+            printf '%s' "$dash" | grep -Fq 'KPI authoritative' || ok=0
+            printf '%s' "$dash" | grep -Fq 'KPI belum authoritative' || ok=0
             printf '%s' "$page" | grep -Fq 'Metadata audit keputusan belum dapat diverifikasi.' || ok=0
             printf '%s' "$live" | grep -Fq 'Pembaruan realtime terputus.' || ok=0
             printf '%s' "$role" | grep -Fq 'KPI operasional belum dapat dimuat.' || ok=0
