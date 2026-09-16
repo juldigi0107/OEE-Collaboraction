@@ -7,11 +7,13 @@ body.reference-release button:disabled{opacity:.55;cursor:not-allowed}
 body.reference-release .tablewrap{max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
 body.reference-release .tablewrap table{min-width:680px}
 body.reference-release td,body.reference-release th{overflow-wrap:normal;word-break:normal}
-body.reference-release .panel,body.reference-release .card,body.reference-release .ref-kpi,body.reference-release .ref-depts>article{contain:layout paint}
+body.reference-release .panel,body.reference-release .card,body.reference-release .ref-kpi,body.reference-release .ref-depts>article{min-width:0}
 body.reference-release .ref-kpi strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 body.reference-release .ref-head>*,body.reference-release .top-left,body.reference-release .user,body.reference-release .ref-title>*{min-width:0}
 body.reference-release .ref-head h1,body.reference-release .context-title strong,body.reference-release .user strong{overflow:hidden;text-overflow:ellipsis}
 body.reference-release .ref-empty,body.reference-release .ref-machine-empty{max-width:100%}
+body.reference-release.reference-menu-open{overflow:hidden}
+body.reference-release .ref-backdrop{display:none}
 @media (max-width:1180px){
  body.reference-release .ref-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
  body.reference-release .ref-grid>.panel:last-child{grid-column:1/-1}
@@ -21,8 +23,10 @@ body.reference-release .ref-empty,body.reference-release .ref-machine-empty{max-
 }
 @media (max-width:860px){
  body.reference-release .shell{display:block;min-height:100vh}
- body.reference-release .sidebar{position:fixed;inset:0 auto 0 0;width:min(286px,86vw);height:100dvh;transform:translateX(-105%);transition:transform .2s ease;box-shadow:12px 0 36px rgba(22,41,67,.14);z-index:100}
+ body.reference-release .sidebar{position:fixed;inset:0 auto 0 0;width:min(286px,86vw);height:100dvh;transform:translateX(-105%);transition:transform .2s ease;box-shadow:12px 0 36px rgba(22,41,67,.14);z-index:102}
  body.reference-release .sidebar.open,body.reference-release .sidebar.is-open,body.reference-release .shell.nav-open .sidebar{transform:translateX(0)}
+ body.reference-release .ref-backdrop{position:fixed;inset:0;border:0;background:rgba(17,32,51,.38);z-index:101;cursor:default}
+ body.reference-release.reference-menu-open .ref-backdrop{display:block}
  body.reference-release .topbar{position:sticky;top:0;height:64px;min-height:64px;padding:10px 16px}
  body.reference-release .ref-mobile-logo{display:block}
  body.reference-release .global-search{max-width:none;min-width:0;flex:1}
