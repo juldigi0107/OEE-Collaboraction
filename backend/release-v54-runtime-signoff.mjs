@@ -32,11 +32,12 @@ async function runtimeSnapshot(env){
  return {ready:blockers.length===0,blockers,workflow:compactWorkflow(workflow),mirror:compactMirror(mirror),runtime_invariants:compactInvariant(invariants),work_calendar:compactCalendar(workCalendar),storage:compactStorage(storage),telemetry:compactTelemetry(telemetry)};
 }
 export async function handleRuntimeSignoffV54(req,env,buildVersion='',releaseFingerprint=[]){
- const url=new URL(req.url);if(req.method!=='PUT'||url.pathname!=='/api/settings')return null;
- let body;try{body=await req.clone().json();}catch{return null;}
- if(clean(body?.key)!=='UAT_RELEASE.signoff')return null;
+ const url=new URL(req.url);if(req.method!=='PUT'||url.pathname!=='/api/settings')return null;const origin=req.headers.get('Origin')||'';if(origin&&!allowedOrigin(req,env))return out(req,env,{error:'Origin tidak diizinkan'},403);
+ let body;try{body=await req.clone().json();}catch{return null;}const key=clean(body?.key);
+ if(key==='UAT_RELEASE.runtime_snapshot'){const u=await auth(req,env);return out(req,env,{error:u?'Runtime snapshot adalah evidence system-managed dan tidak dapat diubah manual':'Silakan login kembali'},u?403:401);}
+ if(key!=='UAT_RELEASE.signoff')return null;
  const value=typeof body.value==='string'?(()=>{try{return JSON.parse(body.value)}catch{return {}}})():body.value||{};if(clean(value.status)!=='passed')return null;
- const u=await auth(req,env);if(!u||u.role!=='superadmin')return null;const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
+ const u=await auth(req,env);if(!u)return out(req,env,{error:'Silakan login kembali'},401);if(u.role!=='superadmin')return out(req,env,{error:'Final sign-off hanya dapat disahkan oleh Superadmin'},403);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,{error:'Ganti password awal terlebih dahulu'},403);
  try{
   const health=await runtimeSnapshot(env);if(!health.ready)return out(req,env,{error:'Final UAT belum dapat dinyatakan Lulus karena runtime consistency belum hijau',blockers:health.blockers,workflow_health:health.workflow,mirror_health:health.mirror,runtime_invariants:health.runtime_invariants,work_calendar:health.work_calendar,storage_health:health.storage,active_telemetry:health.telemetry},409);
   const capturedAt=new Date().toISOString(),snapshot={captured_at:capturedAt,signoff_status:'passed',signed_by:{id:u.id,name:u.name,username:u.username},build:{version:clean(buildVersion)||null,release_fingerprint:Array.isArray(releaseFingerprint)?releaseFingerprint:[]},ready:true,blockers:[],workflow:health.workflow,mirror:health.mirror,runtime_invariants:health.runtime_invariants,work_calendar:health.work_calendar,storage:health.storage,telemetry:health.telemetry},signoffKey='UAT_RELEASE.signoff',snapshotKey='UAT_RELEASE.runtime_snapshot',oldSignoff=await one(env.DB,'SELECT * FROM settings WHERE key=?',signoffKey),oldSnapshot=await one(env.DB,'SELECT * FROM settings WHERE key=?',snapshotKey);
