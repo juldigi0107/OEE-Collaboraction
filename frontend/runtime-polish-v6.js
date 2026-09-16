@@ -5,6 +5,14 @@
   const qa=s=>[...document.querySelectorAll(s)];
   const mobileQuery=matchMedia('(max-width:820px)');
   const isMobile=()=>mobileQuery.matches;
+  function ensureMobileCss(){
+    if(document.querySelector('link[data-mobile-sidebar-v44]'))return;
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='mobile-sidebar-v44.css?v=20260916-1';
+    link.dataset.mobileSidebarV44='1';
+    document.head.appendChild(link);
+  }
   function ensureBackdrop(){
     let b=q('.runtime-sidebar-backdrop');
     if(!b){
@@ -114,6 +122,6 @@
   window.addEventListener('online',()=>{updateConnection();schedule();});window.addEventListener('offline',()=>{updateConnection();schedule();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&q('.sidebar.open'))closeMenu();});
   document.addEventListener('click',e=>{if(!isMobile()||!q('.sidebar.open'))return;const t=e.target;if(t instanceof Element&&t.closest('.workspace')&&!t.closest('.mobilemenu'))closeMenu();});
-  const boot=()=>{viewportSync();enhanceShell();const app=q('#app');if(app)new MutationObserver(schedule).observe(app,{childList:true,subtree:true});};
+  const boot=()=>{ensureMobileCss();viewportSync();enhanceShell();const app=q('#app');if(app)new MutationObserver(schedule).observe(app,{childList:true,subtree:true});};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
