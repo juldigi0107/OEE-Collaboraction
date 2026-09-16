@@ -9,11 +9,17 @@ const page66=read('frontend/page-integrity-v66.js');
 const live71=read('frontend/live-monitoring-v71.js');
 const gate87=read('frontend/release-runtime-gate-v87.js');
 const dash88=read('frontend/premium-dashboard-integrity-v88.js');
+const scriptTags=[...index.matchAll(/<script\b([^>]*)\bsrc="([^"]+)"([^>]*)><\/script>/g)].map(m=>({attrs:(m[1]+' '+m[3]),src:m[2]}));
+const order=['config.js','app-core.js','workspace.js','reference-release-v85.js','release-runtime-gate-v87.js','premium-dashboard-integrity-v88.js'].map(name=>index.indexOf(name));
 const checks=[
  ['runtime gate v87 active',index.includes('release-runtime-gate-v87.js')],
  ['premium dashboard integrity v88 active',index.includes('premium-dashboard-integrity-v88.js?v=20260916-1')],
  ['current hardened bundles cache-busted',index.includes('app-ui.js?v=20260916-1')&&index.includes('role-dashboard-v12.js?v=20260916-1')&&index.includes('hmi-operation-safety-v60.js?v=20260916-1')&&index.includes('page-integrity-v66.js?v=20260916-2')&&index.includes('live-monitoring-v71.js?v=20260916-1')],
  ['static security headers declared',headers.includes('X-Content-Type-Options: nosniff')&&headers.includes('X-Frame-Options: DENY')&&headers.includes('Referrer-Policy: strict-origin-when-cross-origin')],
+ ['all active classic scripts use defer',scriptTags.length>20&&scriptTags.every(s=>/\bdefer\b/.test(s.attrs))],
+ ['no active script uses async ordering',scriptTags.every(s=>!/\basync\b/.test(s.attrs))],
+ ['bootstrap and wrapper authority order preserved',order.every(x=>x>=0)&&order.every((x,i)=>i===0||x>order[i-1])],
+ ['critical auth imagery preloaded',index.includes('rel="preload" href="assets/logo-bmj-source.webp"')&&index.includes('rel="preload" href="assets/hero-bmj-photo.jpg"')&&index.includes('fetchpriority="high"')],
  ['role KPI failure is visible and retryable',role.includes('KPI operasional belum dapat dimuat.')&&role.includes('retryRoleKpi')&&role.includes('Coba lagi')],
  ['downtime master fallback failure is visible',role.includes('downtime-master-unavailable')&&role.includes('Input downtime tetap tersedia')],
  ['HMI initial multi-machine ambiguity fails closed in v60',hmi60.includes('multipleMachineChoices')&&hmi60.includes('ambiguousInitial')&&hmi60.includes('Pilih mesin secara eksplisit')],
@@ -31,4 +37,4 @@ const checks=[
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release hardening v88 validation OK — ${checks.length} security-header, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release, and source-date trend guards checked.`);
+console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release, and source-date trend guards checked.`);
