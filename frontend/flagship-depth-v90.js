@@ -17,15 +17,16 @@
  async function runLegacyConfirmed(button,message,title){
   const ok=await confirmDialog(message,{title,confirmLabel:'Hapus',danger:true});if(!ok)return;
   const handler=button.onclick;if(typeof handler!=='function')return;
-  const original=window.confirm;button.dataset.f90Confirmed='1';
-  try{window.confirm=()=>true;await handler.call(button);}finally{window.confirm=original;delete button.dataset.f90Confirmed;}
+  const original=window.confirm;button.dataset.f90Confirmed='1';let result;
+  try{window.confirm=()=>true;result=handler.call(button);}finally{window.confirm=original;}
+  try{await result;}finally{delete button.dataset.f90Confirmed;}
  }
  function wireLegacyConfirmations(){
   const defs=[
    ['#deleteRow','Hapus baris sumber ini dari tampilan aktif? File asli dan jejak audit tetap dipertahankan.','Hapus baris sumber'],
    ['#delEntry','Hapus transaksi ini dari register aktif? Tindakan akan mengikuti audit dan aturan backend yang berlaku.','Hapus transaksi']
   ];
-  for(const [selector,message,title] of defs){const b=document.querySelector(selector);if(!b||b.dataset.f90ConfirmBound)return;b.dataset.f90ConfirmBound='1';b.addEventListener('click',e=>{if(b.dataset.f90Confirmed==='1')return;e.preventDefault();e.stopImmediatePropagation();runLegacyConfirmed(b,message,title).catch(err=>{console.error('Flagship confirmation',err);if(typeof toast==='function')toast('Konfirmasi belum dapat diproses. Coba lagi.');});},true);}
+  for(const [selector,message,title] of defs){const b=document.querySelector(selector);if(!b||b.dataset.f90ConfirmBound)continue;b.dataset.f90ConfirmBound='1';b.addEventListener('click',e=>{if(b.dataset.f90Confirmed==='1')return;e.preventDefault();e.stopImmediatePropagation();runLegacyConfirmed(b,message,title).catch(err=>{console.error('Flagship confirmation',err);if(typeof toast==='function')toast('Konfirmasi belum dapat diproses. Coba lagi.');});},true);}
  }
  function decorateDeep(){
   const body=document.body;body.classList.add('flagship-depth-v90');
