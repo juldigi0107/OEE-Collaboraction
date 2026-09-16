@@ -1,0 +1,63 @@
+/* BMJ OEE production hardening v86 — responsive, accessibility, and dense-data resilience. */
+body.reference-release{overflow-x:hidden}
+body.reference-release *,body.reference-release *::before,body.reference-release *::after{box-sizing:border-box}
+body.reference-release img,body.reference-release svg{max-width:100%}
+body.reference-release button:focus-visible,body.reference-release a:focus-visible,body.reference-release input:focus-visible,body.reference-release select:focus-visible,body.reference-release textarea:focus-visible,body.reference-release summary:focus-visible{outline:3px solid rgba(8,127,245,.22);outline-offset:2px}
+body.reference-release button:disabled{opacity:.55;cursor:not-allowed}
+body.reference-release .tablewrap{max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+body.reference-release .tablewrap table{min-width:680px}
+body.reference-release td,body.reference-release th{overflow-wrap:normal;word-break:normal}
+body.reference-release .panel,body.reference-release .card,body.reference-release .ref-kpi,body.reference-release .ref-depts>article{contain:layout paint}
+body.reference-release .ref-kpi strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+body.reference-release .ref-head>*,body.reference-release .top-left,body.reference-release .user,body.reference-release .ref-title>*{min-width:0}
+body.reference-release .ref-head h1,body.reference-release .context-title strong,body.reference-release .user strong{overflow:hidden;text-overflow:ellipsis}
+body.reference-release .ref-empty,body.reference-release .ref-machine-empty{max-width:100%}
+@media (max-width:1180px){
+ body.reference-release .ref-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.reference-release .ref-grid>.panel:last-child{grid-column:1/-1}
+ body.reference-release .ref-depts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.reference-release .ref-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.reference-release .content{padding:22px}
+}
+@media (max-width:860px){
+ body.reference-release .shell{display:block;min-height:100vh}
+ body.reference-release .sidebar{position:fixed;inset:0 auto 0 0;width:min(286px,86vw);height:100dvh;transform:translateX(-105%);transition:transform .2s ease;box-shadow:12px 0 36px rgba(22,41,67,.14);z-index:100}
+ body.reference-release .sidebar.open,body.reference-release .sidebar.is-open,body.reference-release .shell.nav-open .sidebar{transform:translateX(0)}
+ body.reference-release .topbar{position:sticky;top:0;height:64px;min-height:64px;padding:10px 16px}
+ body.reference-release .ref-mobile-logo{display:block}
+ body.reference-release .global-search{max-width:none;min-width:0;flex:1}
+ body.reference-release .user{padding-left:10px}
+ body.reference-release .user>div:not(.avatar){display:none}
+ body.reference-release .content{padding:18px 16px 26px}
+ body.reference-release .ref-footer{margin:0 16px;flex-wrap:wrap}
+ body.reference-release .ref-hero{height:190px}
+ body.reference-release .ref-hero>div{left:20px;right:20px;bottom:20px}
+ body.reference-release .ref-bottom{grid-template-columns:1fr}
+ body.reference-release dialog{width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto}
+}
+@media (max-width:620px){
+ body.reference-release{font-size:13px}
+ body.reference-release .content{padding:14px 12px 22px}
+ body.reference-release .topbar{padding-inline:12px;gap:8px}
+ body.reference-release .global-search{display:none}
+ body.reference-release .ref-head{align-items:flex-start;flex-direction:column;margin-bottom:14px}
+ body.reference-release .ref-head h1,body.reference-release .heading h1,body.reference-release .page-intro h1{font-size:21px}
+ body.reference-release .ref-date{width:100%}
+ body.reference-release .ref-hero{height:176px;border-radius:7px}
+ body.reference-release .ref-hero h2{font-size:24px}
+ body.reference-release .ref-kpis,body.reference-release .ref-grid,body.reference-release .ref-depts{grid-template-columns:1fr}
+ body.reference-release .ref-grid>.panel:last-child{grid-column:auto}
+ body.reference-release .ref-kpi{padding:15px}
+ body.reference-release .ref-kpi strong{font-size:25px}
+ body.reference-release .ref-depts>article>img{height:116px}
+ body.reference-release .ref-stats{grid-template-columns:1fr}
+ body.reference-release .ref-stats>div{flex-direction:row;justify-content:flex-start;gap:12px;text-align:left;padding:13px}
+ body.reference-release .ref-stats .svg-icon{margin:0}
+ body.reference-release .panel{padding:14px}
+ body.reference-release .toolbar,body.reference-release .filters{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+ body.reference-release .toolbar>*,body.reference-release .filters>*{width:100%;max-width:none}
+ body.reference-release .ref-footer{margin:0 12px;gap:10px}
+ body.reference-release .ref-footer span{white-space:normal}
+}
+@media (prefers-reduced-motion:reduce){body.reference-release *,body.reference-release *::before,body.reference-release *::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media print{body.reference-release .sidebar,body.reference-release .topbar,body.reference-release .ref-footer{display:none!important}body.reference-release .shell{display:block}body.reference-release .content{padding:0;max-width:none}body.reference-release .panel,body.reference-release .card{box-shadow:none;break-inside:avoid}}
