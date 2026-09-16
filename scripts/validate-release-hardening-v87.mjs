@@ -38,9 +38,10 @@ const checks=[
  ['premium trend never guesses period when source date is absent',dash88.includes('Periode trend belum dapat ditentukan dari cell tanggal sumber')&&dash88.includes('tidak menebak periode dari nama file atau posisi baris')],
  ['premium trend expresses data gaps instead of connecting long gaps',dash88.includes('p.date-prev>DAY*4')&&dash88.includes('flush()')],
  ['premium dashboard fallback also uses source period',dash88.includes('applyFallbackPeriod')&&dash88.includes('Trend OEE harian')&&dash88.includes('Snapshot sumber · ${period.label}')&&dash88.includes('periode berasal dari cell tanggal sumber')],
+ ['fallback quality guidance follows governance',dash88.includes('applyFallbackGovernance')&&dash88.includes('Definisi KPI authoritative:')&&dash88.includes('Definisi KPI belum final:')&&dash88.includes('Definisi KPI belum dapat diverifikasi:')&&!dash88.includes('gunakan definisi Good tanpa NC')],
  ['premium dashboard exposes KPI authority',dash88.includes("api('/oee-governance')")&&dash88.includes('KPI authoritative')&&dash88.includes('KPI belum authoritative')&&dash88.includes('Authority belum terverifikasi')&&dash88.includes('authorityState')],
  ['no prototype language',!(/\b(prototype|mockup|dummy|lorem ipsum|data demo)\b/i.test([core,ui,role,hmi60,page66,live71,gate87,dash88].join('\n')))]
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, client-session recovery, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release recovery, KPI-authority, source-period fallback, and source-date trend guards checked.`);
+console.log(`Release hardening v89 validation OK — ${checks.length} deterministic-bootstrap, security-header, client-session recovery, stale-state, HMI identity, approval audit, attention, KPI fallback, dashboard projection, runtime-release recovery, KPI-authority, source-period fallback, governance-aware quality guidance, and source-date trend guards checked.`);
