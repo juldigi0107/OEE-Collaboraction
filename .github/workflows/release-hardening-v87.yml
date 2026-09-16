@@ -1,0 +1,18 @@
+name: Validate Release Hardening v87
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  release-hardening:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate release hardening v87
+        run: node scripts/validate-release-hardening-v87.mjs
