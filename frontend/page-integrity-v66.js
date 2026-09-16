@@ -6,11 +6,12 @@
   const baseShopfloorV66=shopfloor;
   shopfloor=async function(...args){
    if(!hmiMachine){
-    try{const o=await api('/realtime/overview'),machines=Array.isArray(o?.machines)?o.machines:[];if(machines.length>1)hmiMachine=RESELECT;}catch{}
+    try{const o=await api('/realtime/overview'),machines=Array.isArray(o?.machines)?o.machines:[];if(machines.length>1)hmiMachine=RESELECT;}
+    catch{hmiMachine=RESELECT;}
    }
    const out=await baseShopfloorV66(...args);
    if(view==='shopfloor'&&hmiMachine===RESELECT){
-    const strip=document.querySelector('.hmi-machine-strip');if(strip&&!strip.querySelector('.v66-machine-choice')){const n=document.createElement('div');n.className='notice v66-machine-choice';n.textContent='Pilih mesin secara eksplisit sebelum menjalankan aksi produksi. Tidak ada mesin yang dipilih otomatis ketika lebih dari satu mesin tersedia.';strip.insertAdjacentElement('afterend',n);}
+    const strip=document.querySelector('.hmi-machine-strip');if(strip&&!strip.querySelector('.v66-machine-choice')){const n=document.createElement('div');n.className='notice v66-machine-choice';n.textContent='Pilih mesin secara eksplisit sebelum menjalankan aksi produksi. Tidak ada mesin yang dipilih otomatis ketika lebih dari satu mesin tersedia atau verifikasi daftar mesin belum berhasil.';strip.insertAdjacentElement('afterend',n);}
    }
    return out;
   };
