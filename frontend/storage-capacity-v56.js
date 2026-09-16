@@ -1,14 +1,21 @@
 /* BMJ OEE D1 Capacity Guard v56 — release-facing storage headroom without auto-purge. */
 (()=>{
+ const releaseViews=new Set(['support-recovery','governance','dashboard']);
  const baseRenderV56=render;
- render=async function(...args){const out=await baseRenderV56(...args);if(view==='support-recovery')queueMicrotask(()=>paint().catch(()=>{}));return out;};
+ render=async function(...args){const out=await baseRenderV56(...args);if(releaseViews.has(view))queueMicrotask(()=>paint().catch(()=>{}));return out;};
  const mib=v=>Number.isFinite(Number(v))?(Number(v)/1048576).toLocaleString('id-ID',{maximumFractionDigits:1})+' MiB':'—';
  const pctv=v=>Number.isFinite(Number(v))?(Number(v)*100).toLocaleString('id-ID',{maximumFractionDigits:1})+'%':'—';
  const statusLabel=s=>({ok:'Aman',warning:'Perlu perhatian',critical:'Kritis',unknown:'Belum dapat dibaca'}[s]||'Belum dapat dibaca');
  const deviceHealth=data=>{const d=data?.display_devices||{},p=data?.ephemeral?.display_pair_codes||{};return `<div class="release-section-head"><div><h3>Field Display Devices</h3><p>Status akses perangkat TV/mini-PC read-only. Device registration dipertahankan untuk audit; pairing code bersifat ephemeral.</p></div></div><div class="v56-grid"><div><span>Device aktif</span><strong>${fmt(Number(d.active||0))}</strong><small>dari ${fmt(Number(d.total||0))} registration</small></div><div><span>Device expired</span><strong>${fmt(Number(d.expired||0))}</strong><small>perlu pairing ulang</small></div><div><span>Device revoked</span><strong>${fmt(Number(d.revoked||0))}</strong><small>tetap tersimpan untuk audit</small></div><div><span>Pairing code tersimpan</span><strong>${fmt(Number(p.total||0))}</strong><small>${fmt(Number(p.used||0))} sudah dipakai</small></div><div><span>Pairing code expired</span><strong>${fmt(Number(p.expired_unused||0))}</strong><small>dibersihkan setelah ${fmt(Number(p.cleanup_after_days||7))} hari</small></div><div><span>Retention device</span><strong>Preserve</strong><small>tidak dihapus otomatis</small></div></div>`;};
+ function insertReleaseCard(section){const root=$('#content');if(!root)return;const warning=root.querySelector('.release18-warning'),heading=root.querySelector('.heading');(warning||heading)?.insertAdjacentElement('afterend',section);}
  async function paint(){
-  if(view!=='support-recovery')return;const root=$('#content');if(!root||root.querySelector('.v56-capacity'))return;
-  let data;try{data=await api('/storage-health');}catch{return;}const c=data?.capacity||{},section=document.createElement('section');section.className='panel v56-capacity '+(c.status||'unknown');
+  if(!releaseViews.has(view))return;const root=$('#content');if(!root||root.querySelector('.v56-capacity'))return;
+  let data;try{data=await api('/storage-health');}catch{return;}const c=data?.capacity||{},section=document.createElement('section'),compact=view!=='support-recovery';section.className='panel v56-capacity '+(c.status||'unknown')+(compact?' v56-release-capacity':'');
+  if(compact&&c.available===true&&c.status==='ok')return;
+  if(compact){
+   const ratio=Number(c.soft_budget_usage_ratio||0),status=c.available===true?c.status:'unknown',detail=c.available===true?`${mib(c.allocated_bytes)} allocated · ${mib(c.headroom_to_soft_budget_bytes)} headroom terhadap soft budget`:(c.note||'Kapasitas D1 belum dapat diverifikasi dari runtime.');
+   section.innerHTML=`<div class="release-section-head"><div><h2>D1 Capacity Readiness</h2><p>${esc(detail)}</p></div><span class="release-status ${status==='critical'?'danger':'warn'}">${esc(statusLabel(status))}</span></div><div class="v56-note">${status==='critical'?'Final UAT diblokir sampai kapasitas kembali di bawah soft budget aplikasi.':'Verifikasi kapasitas sebelum import besar atau operational sign-off. Final UAT hanya diblokir otomatis bila status menjadi kritis.'}</div>`;insertReleaseCard(section);return;
+  }
   if(c.available!==true){section.innerHTML=`<div class="release-section-head"><div><h2>D1 Capacity Guard</h2><p>Kapasitas database tidak dapat dibaca dari SQLite page metrics pada runtime ini.</p></div><span class="release-status warn">Belum terukur</span></div><div class="v56-note">${esc(c.note||'Pantau kapasitas langsung dari Cloudflare D1 sebelum go-live atau import besar.')}</div>${deviceHealth(data)}`;}
   else{
    const ratio=Number(c.soft_budget_usage_ratio||0),width=Math.max(0,Math.min(100,ratio*100)),headroom=Number(c.headroom_to_soft_budget_bytes||0),active=Number(c.active_page_estimate_bytes||0),allocated=Number(c.allocated_bytes||0),freePages=Number(c.free_pages||0);
