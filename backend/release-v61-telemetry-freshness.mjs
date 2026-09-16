@@ -16,6 +16,10 @@ const fresh=v=>{const t=Date.parse(v||''),age=Date.now()-t;return Number.isFinit
 const externalSource=v=>{const s=clean(v).toLowerCase();return !!s&&!s.startsWith('hmi');};
 const heartbeatAge=v=>{const t=Date.parse(v||'');return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/1000)):null;};
 async function canonicalMachine(env,raw){const row=await one(env.DB,"SELECT value FROM settings WHERE key='DATA_GOVERNANCE.machine_aliases'"),cfg=parse(row?.value,{}),input=matchCode(raw);if(cfg?.approved===true&&input){for(const item of cfg.items||[]){for(const code of [item?.canonical,...(Array.isArray(item?.aliases)?item.aliases:[])])if(matchCode(code)===input)return cleanCode(item.canonical);}}return cleanCode(raw);}
+export async function telemetryHealthV61(env){
+ const rows=await all(env.DB,"SELECT m.id machine_id,m.code,m.heartbeat_at,m.source_type,pr.id run_id,pr.pro,COALESCE(pr.counter_start_trusted,0) counter_start_trusted FROM machine_registry m LEFT JOIN production_runs pr ON pr.machine_id=m.id AND pr.status='RUNNING' WHERE m.active=1 ORDER BY m.code"),machines=rows.map(r=>{const isFresh=fresh(r.heartbeat_at),external=externalSource(r.source_type),trusted=isFresh&&external,startTrusted=Number(r.counter_start_trusted||0)===1;return {machine_id:r.machine_id,code:r.code,heartbeat_at:r.heartbeat_at||null,heartbeat_age_seconds:heartbeatAge(r.heartbeat_at),source_type:r.source_type||'',fresh:isFresh,external_source:external,telemetry_trusted:trusted,run_id:r.run_id||null,pro:r.pro||null,counter_start_trusted:startTrusted,auto_counter_finish_ready:!!r.run_id&&trusted&&startTrusted};}),active=machines.filter(x=>x.run_id),issues=active.filter(x=>!x.telemetry_trusted);
+ return {generated_at:new Date().toISOString(),freshness_seconds:180,ready:issues.length===0,running_runs:active.length,issues:issues.length,machines};
+}
 export async function captureTelemetryStartV61(req,env){
  const path=new URL(req.url).pathname;if(req.method!=='POST'||path!=='/api/shopfloor/start')return null;
  const u=await auth(req,env);if(!u||!allow(u,'PROD','create'))return null;const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return null;
@@ -27,8 +31,7 @@ export async function afterTelemetryStartV61(signal,response,env){
 }
 async function telemetryStatus(req,env){
  const u=await auth(req,env);if(!u)return out(req,env,'Silakan login kembali',401);const flag=await one(env.DB,'SELECT must_change FROM password_flags WHERE user_id=?',u.id);if(flag?.must_change)return out(req,env,'Ganti password awal terlebih dahulu',403);
- const rows=await all(env.DB,"SELECT m.id machine_id,m.code,m.heartbeat_at,m.source_type,pr.id run_id,COALESCE(pr.counter_start_trusted,0) counter_start_trusted FROM machine_registry m LEFT JOIN production_runs pr ON pr.machine_id=m.id AND pr.status='RUNNING' WHERE m.active=1 ORDER BY m.code");
- return json(req,env,{generated_at:new Date().toISOString(),freshness_seconds:180,machines:rows.map(r=>{const isFresh=fresh(r.heartbeat_at),external=externalSource(r.source_type),trusted=isFresh&&external,startTrusted=Number(r.counter_start_trusted||0)===1;return {machine_id:r.machine_id,code:r.code,heartbeat_at:r.heartbeat_at||null,heartbeat_age_seconds:heartbeatAge(r.heartbeat_at),source_type:r.source_type||'',fresh:isFresh,external_source:external,telemetry_trusted:trusted,run_id:r.run_id||null,counter_start_trusted:startTrusted,auto_counter_finish_ready:!!r.run_id&&trusted&&startTrusted};})});
+ return json(req,env,await telemetryHealthV61(env));
 }
 export async function handleTelemetryFreshnessV61(req,env){
  const path=new URL(req.url).pathname;if(req.method==='GET'&&path==='/api/telemetry-status')return telemetryStatus(req,env);if(req.method!=='POST'||path!=='/api/shopfloor/finish')return null;
