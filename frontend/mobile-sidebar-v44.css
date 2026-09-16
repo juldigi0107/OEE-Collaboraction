@@ -56,6 +56,8 @@
   body.runtime-menu-open{overflow:hidden!important;overscroll-behavior:none!important}
   .workspace{width:100%!important;min-width:0!important;overflow-x:hidden}
   .topbar{position:sticky!important;top:0!important;z-index:30!important}
+  .top-left{min-width:0!important}
+  .top-left>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mobilemenu{
     display:grid!important;
     place-items:center;
@@ -69,9 +71,24 @@
     -webkit-tap-highlight-color:transparent;
   }
   .mobilemenu .svg-icon{width:21px;height:21px}
+  .mobile-account-actions{display:none}
 }
-@media(max-width:420px){
+@media(max-width:560px){
   .sidebar{width:min(88vw,304px)!important}
+  .topbar{min-width:0!important;gap:8px!important}
+  .topbar .user{min-width:0!important;flex:0 0 auto!important}
+  .topbar .user .profile-self{display:none!important}
+  .topbar .user>div:not(.avatar){display:none!important}
+  .topbar .user #logout{min-width:0!important;padding:7px 9px!important;font-size:.64rem!important}
+  .mobile-account-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #e4ecf3}
+  .mobile-account-actions button{min-width:0;min-height:34px;padding:7px 5px;font-size:.62rem;border-radius:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mobile-account-actions button[data-mobile-account="attention"][data-state="critical"]{background:#fff4f4;color:#9b3f3f;border-color:#e5c7c7}
+  .mobile-account-actions button[data-mobile-account="attention"][data-state="active"]{background:#fff9ee;color:#805a17;border-color:#ead7ae}
+}
+@media(max-width:380px){
+  .top-left>strong{display:none!important}
+  .topbar .avatar{display:none!important}
+  .topbar .user #logout{font-size:.6rem!important;padding:6px 8px!important}
 }
 @media(prefers-reduced-motion:reduce){
   .sidebar{transition:none!important}
