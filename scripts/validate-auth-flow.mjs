@@ -17,6 +17,10 @@ need(!workspace.includes("localStorage.setItem('oee-token'"),'Session token tida
 need(!workspace.includes('location.search')&&!workspace.includes('URLSearchParams'),'Login frontend tidak boleh menaruh credential/token pada query URL.');
 need(workspace.includes("api('/logout','POST'"),'Logout frontend tidak memakai POST API.');
 need(core.includes("sessionStorage.getItem('oee-token')"),'Startup tidak memulihkan token dari sessionStorage.');
+need(core.includes('Sesi berakhir. Silakan login kembali.'),'Session expiry harus terlihat jelas bagi pengguna.');
+need(core.includes('Perangkat sedang offline. Sambungkan jaringan lalu coba lagi.'),'Offline state belum diterjemahkan menjadi pesan pengguna.');
+need(core.includes('Tidak dapat terhubung ke server OEE. Periksa jaringan atau koneksi Cloudflare lalu coba lagi.'),'Network failure belum memiliki pesan recovery yang jelas.');
+need(core.includes("if(r.status===401&&user)")&&core.includes("endLocalSession('Sesi berakhir. Silakan login kembali.'"),'401 pada session aktif harus membersihkan session lokal dan kembali ke login.');
 
 need(worker.includes("path==='/api/login'&&method==='POST'"),'Backend login POST hilang.');
 need(worker.includes("path==='/api/logout'&&method==='POST'"),'Backend logout POST hilang.');
@@ -31,4 +35,4 @@ if(errors.length){
   for(const e of errors)console.error('- '+e);
   process.exit(1);
 }
-console.log('Auth flow validation OK — POST login/logout, session-only token, hashed sessions, rate limit, dan password rotation guards checked.');
+console.log('Auth flow validation OK — POST login/logout, session-only token, hashed sessions, rate limit, password rotation, visible session expiry, and network-recovery guards checked.');
