@@ -1,0 +1,218 @@
+/* OEE Collaboraction Flagship Spectrum v98 — final contrast, fluid scale and deep-page polish. */
+:root{
+  --v98-ink:#071f32;
+  --v98-text:#183b52;
+  --v98-muted:#607a8d;
+  --v98-subtle:#7d94a4;
+  --v98-accent:#078ff5;
+  --v98-accent-2:#20c8e5;
+  --v98-accent-soft:#e9f6ff;
+  --v98-surface:#ffffff;
+  --v98-surface-2:#f7fbfe;
+  --v98-surface-3:#eef6fb;
+  --v98-line:#d7e5ee;
+  --v98-line-strong:#bfd4e1;
+  --v98-success-bg:#eaf8f0;
+  --v98-success-fg:#17613d;
+  --v98-warning-bg:#fff7e5;
+  --v98-warning-fg:#775116;
+  --v98-danger-bg:#fff0f1;
+  --v98-danger-fg:#8b303a;
+  --v98-info-bg:#edf7fd;
+  --v98-info-fg:#255a76;
+  --v98-dark:#061929;
+  --v98-dark-2:#092a43;
+  --v98-dark-text:#f4fbff;
+  --v98-dark-muted:#c9e2f0;
+  --v98-pad-page:clamp(14px,2vw,34px);
+  --v98-pad-card:clamp(15px,1.35vw,24px);
+  --v98-gap:clamp(10px,1vw,18px);
+  --v98-gap-lg:clamp(16px,1.65vw,28px);
+  --v98-radius:clamp(14px,1vw,20px);
+  --v98-radius-lg:clamp(20px,1.5vw,30px);
+  --v98-control-h:clamp(44px,3vw,50px);
+  --v98-title:clamp(1.6rem,2.45vw,3rem);
+  --v98-section-title:clamp(1.02rem,1.22vw,1.42rem);
+  --v98-body:clamp(.82rem,.82vw,.96rem);
+  --v98-small:clamp(.7rem,.7vw,.82rem);
+  --v98-shadow:0 18px 54px rgba(5,40,68,.075),0 3px 12px rgba(5,40,68,.035);
+  --v98-shadow-hover:0 28px 76px rgba(5,40,68,.12),0 8px 22px rgba(5,40,68,.05)
+}
+
+/* Global geometry: every page inherits a fluid, bounded composition. */
+body.flagship-v97{color:var(--v98-text)!important;background-color:#eef5fa!important}
+body.flagship-v97 .content{width:100%;max-width:1920px;margin-inline:auto;padding-inline:var(--v98-pad-page)!important}
+body.flagship-v97 #content{width:100%;max-width:none;min-width:0}
+body.flagship-v97 #content>:first-child{margin-top:0}
+body.flagship-v97 #content>*{min-width:0}
+body.flagship-v97 :is(.panel,.card,.flagship-panel,.department-card-v4,.machine-card,.integration-card,.doccard,.v96-surface,details){min-width:0}
+body.flagship-v97 :is(.panel,.card,.flagship-panel,.department-card-v4,.machine-card,.integration-card,.doccard){padding:var(--v98-pad-card)!important;border-radius:var(--v98-radius)!important}
+body.flagship-v97 :is(.grid,.cards,.release-kpis,.role-kpi-grid,.department-hub,.docgrid,.live-grid,.integration-grid,.v36-action-grid,.v36-policy-grid,.v36-decision-grid,.v37-display-kpis,.v37-preflight-grid,.v94-kpis){gap:var(--v98-gap)!important}
+body.flagship-v97 :is(.grid,.cards,.release-kpis,.role-kpi-grid,.department-hub,.docgrid,.live-grid,.integration-grid){grid-template-columns:repeat(auto-fit,minmax(min(100%,clamp(220px,19vw,310px)),1fr))!important}
+
+/* Typography hierarchy remains readable at every viewport width. */
+body.flagship-v97{font-size:var(--v98-body)}
+body.flagship-v97 :is(.heading h1,.page-intro h1,.ref-head h1){font-size:var(--v98-title)!important;line-height:1.03!important;letter-spacing:clamp(-.055em,-.045em,-.035em)!important;color:var(--v98-ink)!important}
+body.flagship-v97 :is(.release-section-head h2,.panel>h2,.panel>.row>h2,.surface-head h2){font-size:var(--v98-section-title)!important;line-height:1.16!important;color:var(--v98-ink)!important}
+body.flagship-v97 :is(h3,h4,h5,h6){color:var(--v98-ink)}
+body.flagship-v97 :is(p,li,dd,dt,summary,caption){line-height:1.6}
+body.flagship-v97 :is(.muted,.sheetinfo,.v38-field-hint,.v38-status-hint,.downtime-master-hint){color:var(--v98-muted)!important;font-size:var(--v98-small)!important}
+body.flagship-v97 :is(.eyebrow,.overline){color:#48728c!important;letter-spacing:.09em;font-weight:850}
+body.flagship-v97 a:not(.button){color:#087fcf;text-decoration-color:rgba(8,127,207,.32);text-underline-offset:3px}
+body.flagship-v97 a:not(.button):hover{color:#0567aa;text-decoration-color:currentColor}
+
+/* Explicit light-surface contract prevents inherited white text on pale panels. */
+body.flagship-v97 :is(.panel,.card,.flagship-panel,.dialogbody,.login-card,.auth-panel,.splash-card,.tablewrap,.v96-surface,[data-v97-tone="light"]){color:var(--v98-text)!important}
+body.flagship-v97 :is(.panel,.card,.flagship-panel,.dialogbody,.login-card,.auth-panel,.splash-card,.v96-surface,[data-v97-tone="light"]) :is(h1,h2,h3,h4,h5,h6,strong,label,legend,summary){color:var(--v98-ink)}
+body.flagship-v97 :is(.panel,.card,.flagship-panel,.dialogbody,.login-card,.auth-panel,.splash-card,.v96-surface,[data-v97-tone="light"]) :is(p,small,.muted,.sheetinfo){color:var(--v98-muted)}
+
+/* Explicit dark-surface contract, extended to hero and operational surfaces. */
+body.flagship-v97 :is(.sidebar,.auth-story,.login-hero,.home-hero-v4,.home-hero-copy,.run-hero,.oc31-banner,.de5-stage,.display-pairing-card,#fieldDisplay,.field-display-blocked,.field-display-live,.v94-hero,.flagship-hero,[data-v96-tone="dark"],[data-v97-tone="dark"]){color:var(--v98-dark-text)!important}
+body.flagship-v97 :is(.sidebar,.auth-story,.login-hero,.home-hero-v4,.home-hero-copy,.run-hero,.oc31-banner,.de5-stage,.display-pairing-card,#fieldDisplay,.field-display-blocked,.field-display-live,.v94-hero,.flagship-hero,[data-v96-tone="dark"],[data-v97-tone="dark"]) :is(h1,h2,h3,h4,h5,h6,strong,label,legend,summary){color:#fff!important}
+body.flagship-v97 :is(.sidebar,.auth-story,.login-hero,.home-hero-v4,.home-hero-copy,.run-hero,.oc31-banner,.de5-stage,.display-pairing-card,#fieldDisplay,.field-display-blocked,.field-display-live,.v94-hero,.flagship-hero,[data-v96-tone="dark"],[data-v97-tone="dark"]) :is(p,small,.muted,.sheetinfo,span:not(.release-status):not(.pill)){color:var(--v98-dark-muted)!important}
+body.flagship-v97 .home-hero-v4::before{background:linear-gradient(90deg,rgba(3,17,29,.82) 0%,rgba(3,22,38,.55) 42%,rgba(3,22,38,.15) 70%,rgba(3,22,38,.08) 100%)!important}
+
+/* Secondary controls now have deterministic contrast instead of inherited legacy colors. */
+body.flagship-v97 button:not(.primary):not(.danger),body.flagship-v97 .button:not(.primary):not(.danger){background:linear-gradient(180deg,#fff,#f2f7fb)!important;color:#224a63!important;border:1px solid #c9dce7!important;box-shadow:0 3px 10px rgba(5,42,70,.045)}
+body.flagship-v97 button:not(.primary):not(.danger):hover,body.flagship-v97 .button:not(.primary):not(.danger):hover{background:#edf7fd!important;color:#0d628f!important;border-color:#91c8e6!important;box-shadow:0 8px 20px rgba(5,82,128,.09)}
+body.flagship-v97 :is(button.danger,.button.danger){background:var(--v98-danger-bg)!important;color:var(--v98-danger-fg)!important;border-color:#e7bcc2!important}
+body.flagship-v97 :is(button.danger,.button.danger):hover{background:#ffe5e8!important;color:#75232d!important;border-color:#db9fa8!important}
+body.flagship-v97 button.primary,body.flagship-v97 .button.primary{color:#fff!important}
+body.flagship-v97 button:disabled,body.flagship-v97 .button:disabled{background:#eef3f6!important;color:#7890a0!important;border-color:#d9e4ea!important;opacity:1!important}
+
+/* Tabs/navigation look intentional on dense admin pages. */
+body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs){display:flex;align-items:center;gap:clamp(6px,.55vw,10px);flex-wrap:wrap}
+body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button{min-height:clamp(38px,2.8vw,44px);padding-inline:clamp(12px,1vw,18px)!important}
+body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button.active{background:linear-gradient(135deg,#087fd6,#16b6db)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 20px rgba(5,128,204,.18)}
+
+/* Semantic state palette: text/background pair is fixed, not inherited. */
+body.flagship-v97 :is(.release-status.ok,.oc31-state.ok,.status-ok,.pill.ok){background:var(--v98-success-bg)!important;color:var(--v98-success-fg)!important;border-color:#bee4ce!important}
+body.flagship-v97 :is(.release-status.warn,.release-status.pending,.oc31-state.pending,.status-warn,.pill.warn){background:var(--v98-warning-bg)!important;color:var(--v98-warning-fg)!important;border-color:#ead49a!important}
+body.flagship-v97 :is(.release-status.danger,.release-status.error,.status-danger,.pill.danger){background:var(--v98-danger-bg)!important;color:var(--v98-danger-fg)!important;border-color:#e7bcc2!important}
+body.flagship-v97 :is(.release-status.neutral,.status-neutral,.pill){color:#36596f}
+body.flagship-v97 :is(.notice,.v40-note,.v38-help,.v56-note){background:var(--v98-info-bg)!important;color:var(--v98-info-fg)!important;border-color:#cce3ef!important}
+body.flagship-v97 :is(.notice,.v40-note,.v38-help,.v56-note) :is(strong,span,p,small){color:inherit!important}
+body.flagship-v97 .errorbox{background:var(--v98-danger-bg)!important;color:var(--v98-danger-fg)!important;border-color:#e7bcc2!important}
+body.flagship-v97 .errorbox :is(strong,span,p,small){color:inherit!important}
+
+/* Forms: responsive field geometry, checkbox/radio visibility, readable disabled state. */
+body.flagship-v97 .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,clamp(220px,22vw,320px)),1fr));gap:var(--v98-gap)!important;align-items:start}
+body.flagship-v97 .formgrid>.full{grid-column:1/-1}
+body.flagship-v97 :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-height:var(--v98-control-h)!important;font-size:clamp(.8rem,.79vw,.94rem)!important}
+body.flagship-v97 :is(input,select,textarea):disabled{background:#eef3f6!important;color:#617a8c!important;-webkit-text-fill-color:#617a8c!important;opacity:1!important}
+body.flagship-v97 :is(input[type=checkbox],input[type=radio]){accent-color:var(--v98-accent);inline-size:clamp(18px,1.25vw,22px);block-size:clamp(18px,1.25vw,22px);flex:0 0 auto}
+body.flagship-v97 label:has(>input[type=checkbox]),body.flagship-v97 label:has(>input[type=radio]){display:flex;align-items:center;gap:8px;color:var(--v98-text)!important}
+body.flagship-v97 fieldset{min-width:0;border:1px solid var(--v98-line);border-radius:var(--v98-radius);padding:var(--v98-pad-card)}
+body.flagship-v97 legend{padding-inline:6px;font-weight:850}
+
+/* Tables stay business-readable, and cells never clip labels or values. */
+body.flagship-v97 .tablewrap{width:100%;max-width:100%}
+body.flagship-v97 table{width:100%;font-size:clamp(.7rem,.72vw,.84rem)!important;font-variant-numeric:tabular-nums}
+body.flagship-v97 :is(th,td){min-width:0;overflow-wrap:anywhere;word-break:normal}
+body.flagship-v97 th{line-height:1.28!important}
+body.flagship-v97 td{line-height:1.5!important}
+body.flagship-v97 td :is(strong,span,small,a,code){max-width:100%;overflow-wrap:anywhere}
+body.flagship-v97 table[data-v96-table="cards"] tbody{gap:var(--v98-gap)!important}
+body.flagship-v97 table[data-v96-table="cards"] tr{border-radius:var(--v98-radius)!important;background:linear-gradient(145deg,#fff,#f7fbfe)!important}
+body.flagship-v97 table[data-v96-table="cards"] td::before{color:#58768a!important;font-size:clamp(.62rem,.66vw,.74rem)!important}
+body.flagship-v97 table[data-v96-table="cards"] td[data-label="Aksi"]{background:#f2f8fc!important}
+
+/* Details, accordions and deep governance records. */
+body.flagship-v97 details{border:1px solid var(--v98-line);border-radius:clamp(12px,.9vw,16px);background:rgba(255,255,255,.82);overflow:hidden}
+body.flagship-v97 details>summary{cursor:pointer;padding:clamp(11px,.85vw,14px) clamp(12px,1vw,16px);font-weight:800;color:var(--v98-ink)!important;background:#f7fbfe;list-style-position:inside}
+body.flagship-v97 details[open]>summary{border-bottom:1px solid var(--v98-line);background:#f0f8fd}
+body.flagship-v97 details>:not(summary){margin-inline:clamp(12px,1vw,16px)}
+body.flagship-v97 :is(.oc31-section,.v36-quality-path,.v36-access-model,.v37-display-overview,.v37-import-preflight,.v41-owner-quality,.v42-display-readiness){overflow:hidden}
+body.flagship-v97 :is(.oc31-delivery-meta,.v38-context,.v40-event-context,.v42-display-meta,.v43-row-context,.release-grid){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:var(--v98-gap)!important}
+
+/* Dialogs scale by content and viewport instead of using one desktop size. */
+body.flagship-v97 dialog{width:min(clamp(320px,78vw,1040px),calc(100vw - 2*var(--v98-pad-page)))!important;max-width:1040px!important}
+body.flagship-v97 dialog:has(.tablewrap){width:min(1240px,calc(100vw - 2*var(--v98-pad-page)))!important;max-width:1240px!important}
+body.flagship-v97 .dialoghead{font-size:clamp(.96rem,1vw,1.12rem);font-weight:850}
+body.flagship-v97 .dialogbody{font-size:var(--v98-body)}
+body.flagship-v97 .dialogbody>.v43-file-context:first-child{margin-top:0}
+
+/* HMI / realtime: large enough for floor use without overwhelming ordinary pages. */
+body.flagship-v97 :is(.hmi-side,.run-panel,.machine-card,.machine-live-card,.live-machine-card){min-width:0}
+body.flagship-v97 .run-hero{padding:clamp(18px,1.8vw,32px)!important;border-radius:var(--v98-radius-lg)!important}
+body.flagship-v97 .run-hero :is(h1,h2,strong){font-size:clamp(1.15rem,1.65vw,2rem)}
+body.flagship-v97 :is(.machine-card,.machine-live-card,.live-machine-card){min-height:clamp(130px,10vw,190px);padding:clamp(14px,1.2vw,22px)!important}
+body.flagship-v97 :is(.v40-balance,.v39-release-gate,.oc31-hmi-standard){border-radius:clamp(12px,.9vw,16px)!important}
+
+/* Display editor: controls and canvas remain distinct at every scale. */
+body.flagship-v97 :is(.de5-toolbar,.de5-actions){align-items:center}
+body.flagship-v97 :is(.de5-toolbar,.de5-actions)>*{min-width:0}
+body.flagship-v97 .de5-stage{border-radius:var(--v98-radius-lg)!important;box-shadow:inset 0 0 0 1px rgba(106,207,242,.16),0 22px 62px rgba(2,25,44,.18)!important}
+body.flagship-v97 .de5-widget{min-width:72px;min-height:52px;border-radius:clamp(9px,.7vw,13px)!important}
+body.flagship-v97 .v42-field-link code{flex:1 1 260px;min-width:0;background:#eaf4fa!important;color:#234d67!important;border-color:#ccdee9!important}
+
+/* Sidebar/topbar preserve contrast and compact gracefully. */
+body.flagship-v97 .sidebar :is(.brand,.brand-name,.nav-section-title){color:#eef9ff!important}
+body.flagship-v97 .sidebar :is(.nav-item,.sidebar a,.sidebar button){color:#cce3f1!important}
+body.flagship-v97 .sidebar :is(.nav-item.active,.nav-item:hover,.sidebar a.active){color:#fff!important}
+body.flagship-v97 .topbar{color:var(--v98-text)!important}
+body.flagship-v97 .topbar :is(strong,label,span){color:inherit}
+body.flagship-v97 .topbar .user{min-width:0}
+
+/* Futuristic depth is restrained: accent line, light bloom, no neon wash over content. */
+body.flagship-v97 #content>.heading{position:relative;padding-bottom:clamp(10px,.8vw,14px)}
+body.flagship-v97 #content>.heading::after{content:"";position:absolute;left:0;bottom:0;width:clamp(62px,7vw,118px);height:3px;border-radius:99px;background:linear-gradient(90deg,var(--v98-accent),var(--v98-accent-2),transparent);box-shadow:0 0 20px rgba(21,183,225,.22)}
+body.flagship-v97 :is(.panel,.card,.flagship-panel):focus-within{border-color:rgba(7,143,245,.36)!important;box-shadow:0 20px 58px rgba(5,52,86,.10),0 0 0 3px rgba(7,143,245,.055)!important}
+@media(hover:hover) and (pointer:fine){
+  body.flagship-v97 :is(.panel,.card,.flagship-panel,.department-card-v4,.machine-card,.integration-card,.doccard):hover{transform:translateY(-2px);box-shadow:var(--v98-shadow-hover)!important}
+}
+
+/* Tablet: cards become roomier and toolbars reflow before text collides. */
+@media(max-width:1180px){
+  body.flagship-v97 :is(.release-section-head,.surface-head,.heading){align-items:flex-start!important}
+  body.flagship-v97 :is(.filters,.formactions,.de5-toolbar,.de5-actions,.settings-tabs,.config-tabs){flex-wrap:wrap!important}
+  body.flagship-v97 :is(.filters,.formactions,.de5-toolbar,.de5-actions)>*{flex:1 1 min(100%,220px)}
+  body.flagship-v97 :is(.grid,.cards,.release-kpis,.role-kpi-grid,.department-hub,.docgrid,.live-grid,.integration-grid){grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))!important}
+}
+
+/* Phone: one-column interaction model with safe touch geometry. */
+@media(max-width:720px){
+  :root{--v98-pad-page:max(12px,env(safe-area-inset-left));--v98-pad-card:clamp(13px,4vw,18px);--v98-gap:10px;--v98-title:clamp(1.45rem,8vw,2.1rem)}
+  body.flagship-v97 .content{padding-left:max(12px,env(safe-area-inset-left))!important;padding-right:max(12px,env(safe-area-inset-right))!important}
+  body.flagship-v97 :is(.grid,.cards,.release-kpis,.role-kpi-grid,.department-hub,.docgrid,.live-grid,.integration-grid,.v36-action-grid,.v36-policy-grid,.v36-decision-grid,.v37-display-kpis,.v37-preflight-grid,.v94-kpis){grid-template-columns:1fr!important}
+  body.flagship-v97 .formgrid{grid-template-columns:1fr!important}
+  body.flagship-v97 :is(.release-section-head,.surface-head,.heading,.filters,.formactions,.de5-toolbar,.de5-actions){gap:9px!important}
+  body.flagship-v97 :is(.filters,.formactions,.de5-toolbar,.de5-actions)>*{flex-basis:100%!important;width:100%;max-width:100%}
+  body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button{width:100%;padding-inline:8px!important}
+  body.flagship-v97 dialog,body.flagship-v97 dialog:has(.tablewrap){width:calc(100vw - 12px)!important;max-width:none!important;max-height:calc(100dvh - 12px)!important;border-radius:18px!important}
+  body.flagship-v97 :is(.oc31-delivery-meta,.v38-context,.v40-event-context,.v42-display-meta,.v43-row-context,.release-grid){grid-template-columns:1fr!important}
+  body.flagship-v97 .home-hero-v4{min-height:clamp(250px,66vw,350px)!important}
+  body.flagship-v97 .home-hero-copy{max-width:calc(100% - 30px)!important}
+}
+
+@media(max-width:430px){
+  body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs){grid-template-columns:1fr}
+  body.flagship-v97 :is(button,.button){min-height:46px!important}
+  body.flagship-v97 :is(.release-kpis>div,.role-kpi-grid>article,.ref-kpi,.kpi-v4){min-height:100px!important}
+  body.flagship-v97 .home-hero-copy{left:15px!important;right:15px!important;max-width:none!important}
+}
+
+/* Short laptop/tablet heights: preserve working area rather than oversized decoration. */
+@media(max-height:700px) and (min-width:721px){
+  body.flagship-v97 .content{padding-top:clamp(10px,1vh,16px)!important}
+  body.flagship-v97 .home-hero-v4{height:clamp(220px,35vh,300px)!important}
+  body.flagship-v97 :is(.panel,.card,.flagship-panel){padding:clamp(13px,1vw,18px)!important}
+  body.flagship-v97 dialog{max-height:96dvh!important}
+  body.flagship-v97 .dialogbody{max-height:calc(96dvh - 68px)!important}
+}
+
+/* Coarse pointers receive larger interactive targets. */
+@media(pointer:coarse){
+  body.flagship-v97 :is(button,.button,input:not([type=checkbox]):not([type=radio]),select){min-height:48px!important}
+  body.flagship-v97 :is(.nav-item,.sidebar a){min-height:46px}
+}
+
+@media(min-width:2000px){
+  body.flagship-v97 .content{max-width:1980px!important}
+  body.flagship-v97 :is(.grid,.cards,.release-kpis,.role-kpi-grid,.department-hub,.docgrid,.live-grid,.integration-grid){grid-template-columns:repeat(auto-fit,minmax(280px,1fr))!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  body.flagship-v97 :is(.panel,.card,.flagship-panel,.department-card-v4,.machine-card,.integration-card,.doccard){transform:none!important}
+}
