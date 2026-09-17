@@ -30,6 +30,8 @@ jobs:
         run: |
           node --check frontend/flagship-ultra-v93.js
           node scripts/validate-flagship-pages-v91.mjs
+          grep -Fq 'contrastSentry' frontend/flagship-ultra-v93.js
+          grep -Fq 'contrast(fg,bg)>=4.5' frontend/flagship-ultra-v93.js
       - name: Verify flagship v93 on production Worker
         if: github.event_name == 'push'
         run: |
@@ -50,8 +52,10 @@ jobs:
             printf '%s' "$js" | grep -Fq 'dataset.v93Tone' || ok=0
             printf '%s' "$js" | grep -Fq 'flagship-ultra-v93' || ok=0
             printf '%s' "$js" | grep -Fq "w<700?'compact':w<1180?'medium':'wide'" || ok=0
+            printf '%s' "$js" | grep -Fq 'contrastSentry' || ok=0
+            printf '%s' "$js" | grep -Fq 'contrast(fg,bg)>=4.5' || ok=0
             if [ "$ok" = '1' ]; then
-              echo "Production Worker serves Flagship Ultra v93 on attempt $attempt"
+              echo "Production Worker serves Flagship Ultra v93 with Contrast Sentry on attempt $attempt"
               ready=1
               break
             fi
