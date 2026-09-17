@@ -2,22 +2,25 @@
 body.flagship-v97.reference-release{
   --v98-route:var(--f91-accent,#078ff5);
   --v98-route-2:var(--f91-accent2,#20c8e5);
-  --v98-route-soft:var(--f91-soft,#edf7ff)
+  --v98-route-soft:var(--f91-soft,#edf7ff);
+  --v98-route-ink:color-mix(in srgb,var(--v98-route) 60%,#24475e);
+  --v98-route-action:color-mix(in srgb,var(--v98-route) 60%,#063f70);
+  --v98-route-action-2:color-mix(in srgb,var(--v98-route-2) 52%,#063f70)
 }
 body.flagship-v97.reference-release[data-ui-view="patrol"]{--f91-accent:#167fc0;--f91-accent2:#22bba9;--f91-soft:#eef9f8;--f91-rgb:22,127,192}
 
 /* Route identity survives the final visual authority without sacrificing readable surfaces. */
-body.flagship-v97.reference-release .eyebrow{color:color-mix(in srgb,var(--v98-route) 78%,#24475e)!important}
+body.flagship-v97.reference-release .eyebrow{color:var(--v98-route-ink)!important}
 body.flagship-v97.reference-release #content>.heading::after{background:linear-gradient(90deg,var(--v98-route),var(--v98-route-2),transparent)!important;box-shadow:0 0 20px color-mix(in srgb,var(--v98-route-2) 25%,transparent)}
 body.flagship-v97.reference-release button.primary,
-body.flagship-v97.reference-release .button.primary{background:linear-gradient(135deg,var(--v98-route),color-mix(in srgb,var(--v98-route) 76%,#063f70),var(--v98-route-2))!important;border-color:color-mix(in srgb,var(--v98-route) 70%,#24465d)!important;color:#fff!important;box-shadow:0 10px 26px color-mix(in srgb,var(--v98-route) 20%,transparent)!important}
+body.flagship-v97.reference-release .button.primary{background:linear-gradient(135deg,var(--v98-route-action),color-mix(in srgb,var(--v98-route) 52%,#052d4a),var(--v98-route-action-2))!important;border-color:color-mix(in srgb,var(--v98-route) 48%,#24465d)!important;color:#fff!important;box-shadow:0 10px 26px color-mix(in srgb,var(--v98-route) 20%,transparent)!important}
 body.flagship-v97.reference-release button.primary:hover,
-body.flagship-v97.reference-release .button.primary:hover{filter:saturate(1.06) brightness(.98);box-shadow:0 15px 34px color-mix(in srgb,var(--v98-route) 27%,transparent)!important}
-body.flagship-v97.reference-release :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button.active{background:linear-gradient(135deg,var(--v98-route),var(--v98-route-2))!important;color:#fff!important;box-shadow:0 9px 24px color-mix(in srgb,var(--v98-route) 20%,transparent)!important}
+body.flagship-v97.reference-release .button.primary:hover{filter:saturate(1.05) brightness(.96);box-shadow:0 15px 34px color-mix(in srgb,var(--v98-route) 27%,transparent)!important}
+body.flagship-v97.reference-release :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button.active{background:linear-gradient(135deg,var(--v98-route-action),var(--v98-route-action-2))!important;color:#fff!important;box-shadow:0 9px 24px color-mix(in srgb,var(--v98-route) 20%,transparent)!important}
 body.flagship-v97.reference-release :is(input,select,textarea,button,a):focus-visible{outline:3px solid color-mix(in srgb,var(--v98-route) 25%,transparent)!important;outline-offset:2px}
 body.flagship-v97.reference-release :is(input,select,textarea):focus{border-color:color-mix(in srgb,var(--v98-route) 50%,#bad0de)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--v98-route) 9%,transparent)!important}
 body.flagship-v97.reference-release :is(.panel,.card,.flagship-panel):focus-within{border-color:color-mix(in srgb,var(--v98-route) 33%,#c7d9e4)!important;box-shadow:0 20px 58px rgba(5,52,86,.10),0 0 0 3px color-mix(in srgb,var(--v98-route) 6%,transparent)!important}
-body.flagship-v97.reference-release .flagship-routebar{border-color:color-mix(in srgb,var(--v98-route) 18%,#dbe7ee)!important;background:color-mix(in srgb,var(--v98-route-soft) 72%,#fff)!important;color:color-mix(in srgb,var(--v98-route) 84%,#1d4058)!important}
+body.flagship-v97.reference-release .flagship-routebar{border-color:color-mix(in srgb,var(--v98-route) 18%,#dbe7ee)!important;background:color-mix(in srgb,var(--v98-route-soft) 72%,#fff)!important;color:var(--v98-route-ink)!important}
 body.flagship-v97.reference-release .flagship-routebar::before{background:linear-gradient(135deg,var(--v98-route),var(--v98-route-2))!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--v98-route) 8%,transparent)!important}
 
 /* Deep grids scale continuously instead of waiting for a fixed breakpoint. */
