@@ -1,4 +1,4 @@
-name: Validate Release Hardening v92
+name: Validate Release Hardening v98
 on:
   push:
     branches: [main]
@@ -18,7 +18,9 @@ jobs:
         run: node scripts/validate-release-hardening-v87.mjs
       - name: Validate flagship coverage v91 and final authority v92
         run: node scripts/validate-flagship-pages-v91.mjs
-      - name: Verify v92 hardening on production Worker
+      - name: Validate flagship finish v97 and spectrum v98
+        run: node scripts/validate-flagship-v97.mjs
+      - name: Verify v98 visual authority on production Worker
         if: github.event_name == 'push'
         run: |
           base='https://oee-collaboraction.offsetbmj.workers.dev'
@@ -37,6 +39,9 @@ jobs:
             pages_css=$(curl --silent --show-error --location --max-time 20 "$base/flagship-pages-v91.css?v=20260917-1" || true)
             final_css=$(curl --silent --show-error --location --max-time 20 "$base/flagship-final-v92.css?v=20260917-1" || true)
             final_js=$(curl --silent --show-error --location --max-time 20 "$base/flagship-final-v92.js?v=20260917-1" || true)
+            finish_css=$(curl --silent --show-error --location --max-time 20 "$base/flagship-finish-v97.css?v=20260917-1" || true)
+            finish_js=$(curl --silent --show-error --location --max-time 20 "$base/flagship-finish-v97.js?v=20260917-1" || true)
+            spectrum_css=$(curl --silent --show-error --location --max-time 20 "$base/flagship-spectrum-v98.css?v=20260917-1" || true)
             page=$(curl --silent --show-error --location --max-time 20 "$base/page-integrity-v66.js" || true)
             live=$(curl --silent --show-error --location --max-time 20 "$base/live-monitoring-v71.js" || true)
             role=$(curl --silent --show-error --location --max-time 20 "$base/role-dashboard-v12.js" || true)
@@ -55,6 +60,9 @@ jobs:
             printf '%s' "$html" | grep -Fq 'flagship-pages-v91.js?v=20260917-1' || ok=0
             printf '%s' "$html" | grep -Fq 'flagship-final-v92.css?v=20260917-1' || ok=0
             printf '%s' "$html" | grep -Fq 'flagship-final-v92.js?v=20260917-1' || ok=0
+            printf '%s' "$html" | grep -Fq 'flagship-finish-v97.css?v=20260917-1' || ok=0
+            printf '%s' "$html" | grep -Fq 'flagship-finish-v97.js?v=20260917-1' || ok=0
+            printf '%s' "$html" | grep -Fq 'flagship-spectrum-v98.css?v=20260917-1' || ok=0
             printf '%s' "$html" | grep -Fq 'page-integrity-v66.js?v=20260916-2' || ok=0
             printf '%s' "$core" | grep -Fq 'Sesi berakhir. Silakan login kembali.' || ok=0
             printf '%s' "$core" | grep -Fq 'Perangkat sedang offline. Sambungkan jaringan lalu coba lagi.' || ok=0
@@ -95,6 +103,17 @@ jobs:
             printf '%s' "$final_css" | grep -Fq 'content:attr(data-label)' || ok=0
             printf '%s' "$final_js" | grep -Fq 'v92-responsive-table' || ok=0
             printf '%s' "$final_js" | grep -Fq 'dataset.label' || ok=0
+            printf '%s' "$finish_css" | grep -Fq -- '--v97-control:clamp(44px,3.35vw,50px)' || ok=0
+            printf '%s' "$finish_css" | grep -Fq '[data-v97-tone="dark"]' || ok=0
+            printf '%s' "$finish_js" | grep -Fq 'function gradientTone' || ok=0
+            printf '%s' "$finish_js" | grep -Fq 'collisionGuard' || ok=0
+            printf '%s' "$finish_js" | grep -Fq '.home-hero-v4' || ok=0
+            printf '%s' "$spectrum_css" | grep -Fq -- '--v98-title:clamp(' || ok=0
+            printf '%s' "$spectrum_css" | grep -Fq 'Explicit light-surface contract' || ok=0
+            printf '%s' "$spectrum_css" | grep -Fq 'Explicit dark-surface contract' || ok=0
+            printf '%s' "$spectrum_css" | grep -Fq '.sidebar button.nav.active' || ok=0
+            printf '%s' "$spectrum_css" | grep -Fq '@media(pointer:coarse)' || ok=0
+            printf '%s' "$spectrum_css" | grep -Fq 'dialog:has(.tablewrap)' || ok=0
             printf '%s' "$page" | grep -Fq 'Metadata audit keputusan belum dapat diverifikasi.' || ok=0
             printf '%s' "$live" | grep -Fq 'Pembaruan realtime terputus.' || ok=0
             printf '%s' "$role" | grep -Fq 'KPI operasional belum dapat dimuat.' || ok=0
@@ -103,7 +122,7 @@ jobs:
             printf '%s' "$response_headers" | grep -Fiq 'x-frame-options: DENY' || ok=0
             printf '%s' "$response_headers" | grep -Fiq 'referrer-policy: strict-origin-when-cross-origin' || ok=0
             if [ "$ok" = '1' ]; then
-              echo "Production Worker converged with flagship final v92 on attempt $attempt"
+              echo "Production Worker converged with flagship spectrum v98 on attempt $attempt"
               ready=1
               break
             fi
