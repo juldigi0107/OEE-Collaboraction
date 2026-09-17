@@ -8,11 +8,14 @@ const worker=read('backend/worker-production.mjs');
 const hasAll=(text,needles)=>needles.every(x=>text.includes(x));
 const checks=[
  ['v94 frontend active',index.includes('patrol-v94.js')&&index.includes('patrol-v94.css')],
- ['v94 production handler wired',worker.includes("handlePatrolV94")&&worker.includes("patrol-abnormality-v94")],
+ ['v94 production handler wired',worker.includes('handlePatrolV94')&&worker.includes('patrol-abnormality-v94')],
  ['additive patrol schema',hasAll(backend,['CREATE TABLE IF NOT EXISTS patrol_events','patrol_status_due','patrol_owner_date','maintenance_call_id'])],
  ['controlled lifecycle',hasAll(backend,['RECORDED_NORMAL','OPEN','IN_PROGRESS','WAITING_VERIFICATION','VERIFIED_CLOSED'])],
  ['abnormality requires ownership and due date',hasAll(backend,['Temuan abnormal wajib dijelaskan','Owner abnormality harus Produksi, Maintenance, atau Quality Control','Due date abnormality wajib valid'])],
  ['least privilege mutation',hasAll(backend,['canCreate','canMutate','canVerify',"permissions(u).includes('update')"])],
+ ['department row visibility enforced',hasAll(backend,['visibleTo','scopedWhere',"(created_department=? OR owner_department=?)","scope:u.role==='superadmin'?'ALL':clean(u.department).toUpperCase()"]),
+ ['unrelated mutation hides record existence',backend.includes("if(!old||!visibleTo(u,old))return json(req,env,{error:'Patrol tidak ditemukan'},404)")],
+ ['scoped summary uses same visibility',backend.includes('FROM patrol_events WHERE ${scopeSql}`,...scopeArgs')],
  ['verified closure requires action and evidence',hasAll(backend,['Tindakan penyelesaian dan evidence wajib diisi sebelum verifikasi','Tindakan dan evidence belum lengkap','verified_by','verified_ts'])],
  ['maintenance escalation is linked not cosmetic',hasAll(backend,['ESCALATE_MAINTENANCE','maintenance_calls','machine_registry','patrol.escalate_maintenance','maintenance_call_id'])],
  ['maintenance escalation does not auto close patrol',backend.includes("nextStatus=old.status==='OPEN'?'IN_PROGRESS':old.status")&&!backend.includes("ESCALATE_MAINTENANCE')status='VERIFIED_CLOSED")],
@@ -27,4 +30,4 @@ const checks=[
 ];
 const failed=checks.filter(([,ok])=>!ok);
 if(failed.length){for(const [name] of failed)console.error('FAIL:',name);process.exit(1);}
-console.log(`Patrol v94 validation OK — ${checks.length} workflow, security, semantic, and presentation guards checked.`);
+console.log(`Patrol v94 validation OK — ${checks.length} workflow, security, semantic, scope, and presentation guards checked.`);
