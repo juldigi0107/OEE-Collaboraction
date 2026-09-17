@@ -36,6 +36,7 @@ jobs:
             pages_js=$(curl --silent --show-error --location --max-time 20 "$base/flagship-pages-v91.js?v=20260917-1" || true)
             pages_css=$(curl --silent --show-error --location --max-time 20 "$base/flagship-pages-v91.css?v=20260917-1" || true)
             final_css=$(curl --silent --show-error --location --max-time 20 "$base/flagship-final-v92.css?v=20260917-1" || true)
+            final_js=$(curl --silent --show-error --location --max-time 20 "$base/flagship-final-v92.js?v=20260917-1" || true)
             page=$(curl --silent --show-error --location --max-time 20 "$base/page-integrity-v66.js" || true)
             live=$(curl --silent --show-error --location --max-time 20 "$base/live-monitoring-v71.js" || true)
             role=$(curl --silent --show-error --location --max-time 20 "$base/role-dashboard-v12.js" || true)
@@ -53,6 +54,7 @@ jobs:
             printf '%s' "$html" | grep -Fq 'flagship-pages-v91.css?v=20260917-1' || ok=0
             printf '%s' "$html" | grep -Fq 'flagship-pages-v91.js?v=20260917-1' || ok=0
             printf '%s' "$html" | grep -Fq 'flagship-final-v92.css?v=20260917-1' || ok=0
+            printf '%s' "$html" | grep -Fq 'flagship-final-v92.js?v=20260917-1' || ok=0
             printf '%s' "$html" | grep -Fq 'page-integrity-v66.js?v=20260916-2' || ok=0
             printf '%s' "$core" | grep -Fq 'Sesi berakhir. Silakan login kembali.' || ok=0
             printf '%s' "$core" | grep -Fq 'Perangkat sedang offline. Sambungkan jaringan lalu coba lagi.' || ok=0
@@ -89,6 +91,10 @@ jobs:
             printf '%s' "$final_css" | grep -Fq '.barcode-v77-status' || ok=0
             printf '%s' "$final_css" | grep -Fq '.v56-grid' || ok=0
             printf '%s' "$final_css" | grep -Fq '#v81Finish' || ok=0
+            printf '%s' "$final_css" | grep -Fq 'table.v92-responsive-table' || ok=0
+            printf '%s' "$final_css" | grep -Fq 'content:attr(data-label)' || ok=0
+            printf '%s' "$final_js" | grep -Fq 'v92-responsive-table' || ok=0
+            printf '%s' "$final_js" | grep -Fq 'data-label' || ok=0
             printf '%s' "$page" | grep -Fq 'Metadata audit keputusan belum dapat diverifikasi.' || ok=0
             printf '%s' "$live" | grep -Fq 'Pembaruan realtime terputus.' || ok=0
             printf '%s' "$role" | grep -Fq 'KPI operasional belum dapat dimuat.' || ok=0
