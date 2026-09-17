@@ -1,0 +1,98 @@
+/* OEE Collaboraction v96 Intelligence — deepest analytical/governed workflow visual authority. */
+
+/* Shared intelligence surfaces. */
+body.flagship-master-v96 :is(.intelligence-surface,.capacity-utilization-v75,.release-capacity-v76,.support-evidence-v74){
+  position:relative;isolation:isolate;margin:clamp(12px,1.1vw,20px) 0!important;padding:var(--v96-pad)!important;
+  border:1px solid rgba(101,151,185,.18)!important;border-radius:var(--v96-r-lg)!important;
+  background:radial-gradient(circle at 100% 0,rgba(34,199,232,.075),transparent 19rem),linear-gradient(145deg,#fff,#f6fafe)!important;
+  color:var(--v96-text)!important;box-shadow:var(--v96-shadow)!important;overflow:hidden
+}
+body.flagship-master-v96 :is(.intelligence-surface,.capacity-utilization-v75,.release-capacity-v76,.support-evidence-v74)::before{
+  content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,var(--v96-blue),var(--v96-cyan));opacity:.7;pointer-events:none
+}
+body.flagship-master-v96 .surface-head{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:var(--v96-gap-3)!important;margin-bottom:var(--v96-gap-3)!important;flex-wrap:wrap!important}
+body.flagship-master-v96 .surface-head>div{flex:1 1 360px;min-width:0}
+body.flagship-master-v96 .surface-head h2{margin:0 0 5px!important;font-size:clamp(1.02rem,1.15vw,1.32rem)!important;line-height:1.14!important;letter-spacing:-.027em!important;color:var(--v96-ink)!important}
+body.flagship-master-v96 .surface-head p{margin:0!important;max-width:900px;font-size:var(--v96-sm)!important;line-height:1.6!important;color:var(--v96-muted)!important}
+body.flagship-master-v96 .surface-head label{flex:0 1 190px;min-width:min(100%,160px)}
+body.flagship-master-v96 .surface-head select{width:100%;min-height:38px!important}
+
+/* Capacity, utilization and release authority. */
+body.flagship-master-v96 .capacity-utilization-v75 .release-kpis,
+body.flagship-master-v96 .release-capacity-v76 .release18-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr))!important;gap:var(--v96-gap-2)!important;margin:var(--v96-gap-2) 0!important}
+body.flagship-master-v96 .release-capacity-v76 .release18-grid>div,
+body.flagship-master-v96 .capacity-utilization-v75 .release-kpis>div{min-height:112px!important;padding:clamp(13px,1.1vw,18px)!important;border:1px solid var(--v96-line)!important;border-radius:var(--v96-r-sm)!important;background:linear-gradient(145deg,#fff,#f8fbfd)!important;box-shadow:0 7px 20px rgba(6,42,68,.035)!important}
+body.flagship-master-v96 :is(.capacity-utilization-v75,.release-capacity-v76) details.sheetinfo{margin-top:10px!important;padding:10px 12px!important;border:1px solid #d9e5ed!important;border-radius:var(--v96-r-sm)!important;background:#f7fbfd!important;color:var(--v96-text)!important}
+body.flagship-master-v96 :is(.capacity-utilization-v75,.release-capacity-v76) details.sheetinfo summary{cursor:pointer;font-weight:760;color:#31556d!important}
+body.flagship-master-v96 :is(.capacity-utilization-v75,.release-capacity-v76) details.sheetinfo p{color:var(--v96-muted)!important;line-height:1.58!important}
+
+/* Storage and semantic coverage. */
+body.flagship-master-v96 .v56-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))!important;gap:var(--v96-gap-2)!important}
+body.flagship-master-v96 .v56-grid>div{min-height:112px!important;padding:clamp(13px,1.05vw,18px)!important;border-radius:var(--v96-r-sm)!important;border-color:var(--v96-line)!important;background:linear-gradient(145deg,#fff,#f8fbfd)!important;box-shadow:0 8px 22px rgba(6,42,68,.04)!important}
+body.flagship-master-v96 .v56-grid span{font-size:var(--v96-xs)!important;color:#647e90!important}
+body.flagship-master-v96 .v56-grid strong{font-size:clamp(1.25rem,1.8vw,1.9rem)!important;color:#173f5d!important}
+body.flagship-master-v96 .v56-grid small{font-size:var(--v96-xs)!important;color:#748b9b!important}
+body.flagship-master-v96 .v56-meter{height:8px!important;background:#e4edf3!important;box-shadow:inset 0 1px 2px rgba(5,40,67,.08)!important}
+body.flagship-master-v96 .v56-meter span{background:linear-gradient(90deg,var(--v96-blue),var(--v96-cyan))!important}
+body.flagship-master-v96 .support-evidence-v74 .sr21-list{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))!important;gap:var(--v96-gap-2)!important;margin-top:var(--v96-gap-2)!important}
+body.flagship-master-v96 .support-evidence-v74 .sr21-list>div{padding:13px 14px!important;border:1px solid var(--v96-line)!important;border-radius:var(--v96-r-sm)!important;background:#fff!important;color:var(--v96-text)!important}
+body.flagship-master-v96 .support-evidence-v74 .sr21-list span{display:block;font-size:var(--v96-xs)!important;font-weight:800;color:#4b687c!important;margin-bottom:4px}
+body.flagship-master-v96 .support-evidence-v74 .sr21-list small{font-size:var(--v96-sm)!important;line-height:1.5;color:#647d90!important}
+
+/* Process Capability dialog — analytical rather than generic form. */
+body.flagship-master-v96 #pc73Root{display:grid;gap:var(--v96-gap-3)}
+body.flagship-master-v96 #pc73Root>.notice{margin:0!important;border-radius:var(--v96-r)!important;padding:14px 16px!important;background:linear-gradient(145deg,#edf8ff,#f7fcff)!important;border-color:#c8e2f1!important;color:#315b73!important}
+body.flagship-master-v96 #pc73Form{padding:clamp(14px,1.2vw,20px)!important;border:1px solid var(--v96-line)!important;border-radius:var(--v96-r)!important;background:linear-gradient(145deg,#fbfdff,#f5f9fc)!important}
+body.flagship-master-v96 #pc73Coverage{padding:10px 12px!important;border-radius:var(--v96-r-sm)!important;background:#eef5f9!important;border:1px solid #d9e7ef!important;color:#4e6c7f!important}
+body.flagship-master-v96 #pc73Result>.panel{margin-bottom:0!important;background:linear-gradient(145deg,#fff,#f7fbfd)!important}
+body.flagship-master-v96 .pc73-subgroup-field{position:relative}
+body.flagship-master-v96 .pc73-subgroup-field>small:first-of-type{color:#7b8f9e!important;font-weight:600!important}
+
+/* Barcode exact-match workflow. */
+body.flagship-master-v96 .barcode-v77-policy{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;flex-wrap:wrap!important;margin-top:9px!important;padding:11px 13px!important;border:1px solid #cfe4ef!important;border-radius:var(--v96-r-sm)!important;background:linear-gradient(145deg,#eef9ff,#f8fdff)!important;color:#315c74!important;font-size:var(--v96-sm)!important;line-height:1.5!important}
+body.flagship-master-v96 .barcode-v77-focus{min-height:34px!important;border-radius:999px!important;background:#fff!important;border-color:#bcd9e9!important;color:#22668f!important;box-shadow:0 5px 14px rgba(7,86,145,.05)!important}
+body.flagship-master-v96 .barcode-v77-status{display:grid!important;gap:2px!important;margin-top:8px!important;padding:9px 11px!important;border-radius:var(--v96-r-sm)!important;border:1px solid #d8e4eb!important;background:#f7fafc!important;color:#496779!important}
+body.flagship-master-v96 .barcode-v77-status strong{color:inherit!important;font-size:var(--v96-sm)!important}
+body.flagship-master-v96 .barcode-v77-status small{color:inherit!important;opacity:.83;font-size:var(--v96-xs)!important}
+body.flagship-master-v96 .barcode-v77-status.ok{background:#eaf8f1!important;border-color:#bfe2cf!important;color:#12633f!important}
+body.flagship-master-v96 .barcode-v77-status.pending{background:#edf7ff!important;border-color:#bfdbef!important;color:#1f618e!important}
+body.flagship-master-v96 .barcode-v77-status.warn{background:#fff6e4!important;border-color:#e7d19e!important;color:#75510d!important}
+
+/* Governed OEE input and Finish PRO. */
+body.flagship-master-v96 .v80-oee-preview{padding:clamp(14px,1.2vw,20px)!important;border:1px solid #cfe1ec!important;border-radius:var(--v96-r)!important;background:radial-gradient(circle at 100% 0,rgba(7,136,255,.06),transparent 15rem),linear-gradient(145deg,#f8fcff,#fff)!important;box-shadow:0 8px 24px rgba(7,47,75,.04)!important}
+body.flagship-master-v96 .v80-oee-preview .release-kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+body.flagship-master-v96 .v80-oee-preview .release-kpis>div{min-height:88px!important;background:#fff!important}
+body.flagship-master-v96 .v80-oee-preview .release-kpis strong{font-size:clamp(1.2rem,1.8vw,1.85rem)!important;color:#0c517c!important}
+body.flagship-master-v96 .v80-nc-field{border-left:2px solid rgba(7,136,255,.28);padding-left:10px}
+body.flagship-master-v96 .v80-required{background:#e9f5ff!important;color:#0e6aa7!important;border:1px solid #bfdef1!important;border-radius:999px;padding:2px 6px;font-size:.58rem!important}
+body.flagship-master-v96 .v80-stored-rule{padding:9px 11px!important;border-radius:var(--v96-r-sm)!important;background:#f2f7fa!important;border:1px solid #dde7ed!important;color:#587184!important}
+body.flagship-master-v96 #v81Finish .v40-event-context{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))!important}
+body.flagship-master-v96 #v81Finish .v40-balance{padding:12px 14px!important;border-radius:var(--v96-r-sm)!important;border:1px solid #d8e4eb!important;background:#f7fafc!important;color:#476578!important}
+body.flagship-master-v96 #v81Finish .v40-balance.ok{background:#eaf8f1!important;border-color:#c0e2d0!important;color:#146440!important}
+body.flagship-master-v96 #v81Finish .v40-balance.bad{background:#fff1f2!important;border-color:#e6c1c5!important;color:#8e3139!important}
+body.flagship-master-v96 .v81-approval-oee{margin-top:5px!important;padding:4px 7px!important;border-radius:7px;background:#eef5f9;color:#567083!important;font-size:var(--v96-xs)!important;line-height:1.4!important}
+
+/* Attention Center keeps status readable and premium. */
+body.flagship-master-v96 .attention-self{border-radius:999px!important;box-shadow:none!important}
+body.flagship-master-v96 .attention-self[data-state="clear"]{background:#f5f9fc!important;color:#536f81!important;border-color:#d8e4eb!important}
+body.flagship-master-v96 .attention-self[data-state="active"]{background:#fff5e2!important;color:#74500d!important;border-color:#e6d09e!important}
+body.flagship-master-v96 .attention-self[data-state="critical"]{background:#fff0f1!important;color:#8e3139!important;border-color:#e5bdc2!important}
+
+/* Engineering matrices / release grids. */
+body.flagship-master-v96 .release18-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))!important;gap:var(--v96-gap-2)!important}
+body.flagship-master-v96 .release18-grid>div{padding:clamp(12px,1vw,16px)!important;border:1px solid var(--v96-line)!important;border-radius:var(--v96-r-sm)!important;background:linear-gradient(145deg,#fff,#f8fbfd)!important;color:var(--v96-text)!important;box-shadow:0 6px 18px rgba(6,42,68,.035)!important}
+body.flagship-master-v96 .release18-grid>div span{display:block;font-size:var(--v96-xs)!important;color:#687f90!important;margin-bottom:4px}
+body.flagship-master-v96 .release18-grid>div strong{font-size:clamp(1rem,1.25vw,1.35rem)!important;color:#214c69!important}
+body.flagship-master-v96 .release18-grid>div small{display:block;margin-top:4px;font-size:var(--v96-xs)!important;color:#748999!important;line-height:1.42!important}
+
+@media(max-width:820px){
+ body.flagship-master-v96 .surface-head{display:grid!important;grid-template-columns:1fr!important}
+ body.flagship-master-v96 .surface-head label{width:100%;max-width:none!important}
+ body.flagship-master-v96 .v80-oee-preview .release-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:520px){
+ body.flagship-master-v96 .support-evidence-v74 .sr21-list{grid-template-columns:1fr!important}
+ body.flagship-master-v96 .barcode-v77-policy{display:grid!important;grid-template-columns:1fr!important}
+ body.flagship-master-v96 .barcode-v77-focus{width:100%!important}
+ body.flagship-master-v96 .v80-oee-preview .release-kpis{grid-template-columns:1fr!important}
+}
