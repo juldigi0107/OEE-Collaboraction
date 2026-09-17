@@ -23,8 +23,8 @@
  function textContrast(root){
   let fixed=0;root.querySelectorAll(textSelector).forEach(el=>{
    if(!visible(el)||!String(el.textContent||'').trim()||el.closest('button,.release-status,.pill,.oc31-state,[hidden]')||el.matches('input,select,textarea,.svg-icon'))return;
-   const fg=rgb(getComputedStyle(el).color),bg=backgroundFor(el);if(!fg)return;
-   const large=parseFloat(getComputedStyle(el).fontSize)>=18&&['600','700','800','900','bold'].includes(String(getComputedStyle(el).fontWeight));
+   const cs=getComputedStyle(el),fg=rgb(cs.color),bg=backgroundFor(el);if(!fg)return;
+   const weight=parseInt(cs.fontWeight,10)||400,large=parseFloat(cs.fontSize)>=18&&weight>=600;
    const min=large?3:4.5,r=ratio(fg,bg);
    if(r<min){el.dataset.v97ContrastFix=lum(bg)<.42?'light':'dark';fixed++;}else delete el.dataset.v97ContrastFix;
   });
@@ -32,14 +32,14 @@
  }
  function collisionGuard(root){
   root.querySelectorAll(reflowSelector).forEach(el=>{if(!visible(el))return;const overflow=el.scrollWidth>el.clientWidth+3;el.classList.toggle('v97-reflow',overflow);});
-  root.querySelectorAll(textSelector).forEach(el=>{if(!visible(el))return;const cs=getComputedStyle(el),nowrap=cs.whiteSpace==='nowrap',overflow=el.scrollWidth>el.clientWidth+3;if(nowrap&&overflow&&!el.closest('.avatar,.release-status,.pill,.oc31-state'))el.classList.add('v97-text-wrap');else if(!overflow)el.classList.remove('v97-text-wrap');});
+  root.querySelectorAll(textSelector).forEach(el=>{if(!visible(el))return;const cs=getComputedStyle(el),nowrap=cs.whiteSpace==='nowrap',overflow=el.clientWidth>0&&el.scrollWidth>el.clientWidth+3;if(nowrap&&overflow&&!el.closest('.avatar,.release-status,.pill,.oc31-state'))el.classList.add('v97-text-wrap');else if(!overflow)el.classList.remove('v97-text-wrap');});
  }
  function classify(root){
   root.querySelectorAll(surfaceSelector).forEach((el,i)=>{
-   el.classList.add('v97-surface');const bg=backgroundFor(el),dark=lum(bg)<.34;el.dataset.v97Tone=dark?'dark':'light';
+   if(!el.classList.contains('v97-surface'))el.classList.add('v97-surface');const bg=backgroundFor(el),dark=lum(bg)<.34,tone=dark?'dark':'light';if(el.dataset.v97Tone!==tone)el.dataset.v97Tone=tone;
    if(!seen.has(el)){seen.add(el);el.style.setProperty('--v97-index',String(i));if(!matchMedia('(prefers-reduced-motion: reduce)').matches)el.classList.add('v97-enter');}
   });
-  root.querySelectorAll(knownDark).forEach(el=>el.dataset.v97Tone='dark');
+  root.querySelectorAll(knownDark).forEach(el=>{if(el.dataset.v97Tone!=='dark')el.dataset.v97Tone='dark';});
  }
  function viewport(){
   const w=innerWidth,h=innerHeight,coarse=matchMedia('(pointer: coarse)').matches;
@@ -50,8 +50,10 @@
  }
  function deepenTables(root){
   root.querySelectorAll('.tablewrap>table').forEach(table=>{
-   const cols=table.querySelectorAll('thead th').length,rows=table.querySelectorAll('tbody tr').length;
-   table.dataset.v97Density=cols>=12?'ultra':cols>=8?'dense':'normal';table.style.setProperty('--v97-cols',String(cols));table.style.setProperty('--v97-rows',String(rows));
+   const cols=table.querySelectorAll('thead th').length,rows=table.querySelectorAll('tbody tr').length,density=cols>=12?'ultra':cols>=8?'dense':'normal';
+   if(table.dataset.v97Density!==density)table.dataset.v97Density=density;
+   if(table.style.getPropertyValue('--v97-cols')!==String(cols))table.style.setProperty('--v97-cols',String(cols));
+   if(table.style.getPropertyValue('--v97-rows')!==String(rows))table.style.setProperty('--v97-rows',String(rows));
   });
  }
  function dialogState(){document.body.classList.toggle('v97-modal-open',!!document.querySelector('dialog[open]'));}
@@ -62,8 +64,8 @@
  function boot(){
   document.body.classList.add('flagship-master-v96','flagship-v97');schedule(document);
   const app=document.querySelector('#app')||document.body,modal=document.querySelector('#modal');
-  observer=new MutationObserver(records=>{if(records.some(r=>r.addedNodes.length||r.removedNodes.length||r.type==='attributes'))schedule(document);});observer.observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','open','style']});
-  if(modal)observer.observe(modal,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open','style']});
+  observer=new MutationObserver(records=>{if(records.some(r=>r.addedNodes.length||r.removedNodes.length||r.type==='attributes'))schedule(document);});observer.observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','open']});
+  if(modal)observer.observe(modal,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open']});
   resizeObserver=new ResizeObserver(entries=>{if(entries.some(e=>e.contentRect.width||e.contentRect.height))schedule(document);});resizeObserver.observe(app);if(modal)resizeObserver.observe(modal);
   addEventListener('resize',()=>schedule(document),{passive:true});addEventListener('orientationchange',()=>setTimeout(()=>schedule(document),120),{passive:true});
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>schedule(document));
