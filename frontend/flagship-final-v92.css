@@ -1,6 +1,14 @@
 /* OEE Collaboraction Flagship Final v92 — deep-component, contrast, and anti-overlap authority. */
 body.reference-release.flagship-pages-v91{--v92-ink:#0a263d;--v92-text:#17374f;--v92-muted:#647c8f;--v92-line:#d5e3ec;--v92-blue:#0a88ff;--v92-cyan:#25c7e8;--v92-dark:#06192b}
 
+/* Final contrast authority for every dark flagship surface. */
+body.reference-release.flagship-pages-v91 :is(.sidebar,.run-hero,.oc31-banner,.de5-stage,.display-pairing-card,#fieldDisplay,.field-display-blocked){color:#f4fbff!important}
+body.reference-release.flagship-pages-v91 :is(.sidebar,.run-hero,.oc31-banner,.display-pairing-card,.field-display-blocked) :is(h1,h2,h3,h4,strong,label){color:#fff!important}
+body.reference-release.flagship-pages-v91 :is(.run-hero,.oc31-banner,.display-pairing-card,.field-display-blocked) :is(p,small,span:not(.release-status)){color:#d6eaf5!important}
+body.reference-release.flagship-pages-v91 .sidebar :is(.nav,.navgroup,.sidebar-foot span){color:#a8bfd1}
+body.reference-release.flagship-pages-v91 .sidebar .nav.active,body.reference-release.flagship-pages-v91 .sidebar .nav.active *{color:#fff!important}
+body.reference-release.flagship-pages-v91 .de5-stage :is(input,select,textarea){background:#fff!important;color:#102f46!important;border-color:#bfd1dd!important}
+
 /* Prevent text/object collisions in dense operational pages. */
 body.reference-release.flagship-pages-v91 :is(.content,.panel,.card,.grid,.cards,.formgrid,.release-grid,.release-kpis,.role-kpi-grid,.v36-action-grid,.v36-policy-grid,.v36-decision-grid,.v41-file-grid,.v41-embedded-grid,.v56-grid,.v40-event-context)>*{min-width:0}
 body.reference-release.flagship-pages-v91 :is(h1,h2,h3,h4,strong,p,small,span,label,td,th,code,.muted,.sheetinfo){overflow-wrap:anywhere}
