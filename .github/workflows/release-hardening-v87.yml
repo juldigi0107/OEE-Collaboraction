@@ -94,7 +94,7 @@ jobs:
             printf '%s' "$final_css" | grep -Fq 'table.v92-responsive-table' || ok=0
             printf '%s' "$final_css" | grep -Fq 'content:attr(data-label)' || ok=0
             printf '%s' "$final_js" | grep -Fq 'v92-responsive-table' || ok=0
-            printf '%s' "$final_js" | grep -Fq 'data-label' || ok=0
+            printf '%s' "$final_js" | grep -Fq 'dataset.label' || ok=0
             printf '%s' "$page" | grep -Fq 'Metadata audit keputusan belum dapat diverifikasi.' || ok=0
             printf '%s' "$live" | grep -Fq 'Pembaruan realtime terputus.' || ok=0
             printf '%s' "$role" | grep -Fq 'KPI operasional belum dapat dimuat.' || ok=0
