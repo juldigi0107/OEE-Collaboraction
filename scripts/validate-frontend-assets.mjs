@@ -40,9 +40,11 @@ else{
     requireFile(rel,'index.html');
     if(/\.(?:css|js)$/i.test(rel))entryFiles.add(rel);
   }
-  for(const required of ['workspace.css','visual-v4.css','display-editor-v5.css','runtime-polish-v6.css','role-ux-v7.css','field-display-v8.css','experience-v64.css','reference-release-v85.css','app-core.js','visual-v4.js','display-editor-v5.js','runtime-polish-v6.js','role-ux-v7.js','field-display-v8.js','experience-v64.js','reference-release-v85.js']){
+  for(const required of ['workspace.css','visual-v4.css','display-editor-v5.css','runtime-polish-v6.css','role-ux-v7.css','field-display-v8.css','experience-v64.css','reference-release-v85.css','flagship-master-v96.css','app-core.js','visual-v4.js','display-editor-v5.js','runtime-polish-v6.js','role-ux-v7.js','field-display-v8.js','experience-v64.js','reference-release-v85.js','flagship-master-v96.js']){
     if(!html.includes(required))errors.push(`index.html belum memuat ${required}`);
   }
+  if(html.indexOf('flagship-master-v96.css')<html.indexOf('patrol-v94.css'))errors.push('flagship-master-v96.css harus dimuat setelah patrol-v94.css sebagai visual authority terakhir');
+  if(html.indexOf('flagship-master-v96.js')<html.indexOf('patrol-v94.js'))errors.push('flagship-master-v96.js harus dimuat setelah patrol-v94.js');
 }
 
 /* Hanya scan bundle yang benar-benar dimuat index.html. File legacy yang tidak aktif
@@ -107,6 +109,37 @@ else{
   for(const marker of ['.ref-hero','.ref-kpis','.ref-depts','.ref-machine-empty','@media(max-width:820px)'])if(!reference.includes(marker))errors.push(`Reference release v85 style guard hilang: ${marker}`);
 }
 
+/* v96 adalah visual authority terakhir untuk contrast, fluid sizing, dan deepest responsive state. */
+const flagship96Js=path.join(root,'flagship-master-v96.js'),flagship96Css=path.join(root,'flagship-master-v96.css');
+if(!fs.existsSync(flagship96Js))errors.push('flagship-master-v96.js tidak ditemukan');
+else{
+  const v96=fs.readFileSync(flagship96Js,'utf8');
+  const guards=[
+    ['master class runtime',"classList.add('flagship-master-v96')"],
+    ['adaptive density','dataset.v96Density'],
+    ['table semantic labels','td.dataset.label=heads[i]'],
+    ['contrast ratio audit','ratio(fg,bg)>=4.5'],
+    ['overflow audit','overflowAudit']
+  ];
+  for(const [name,marker] of guards)if(!v96.includes(marker))errors.push(`Flagship v96 runtime guard hilang: ${name}`);
+}
+if(!fs.existsSync(flagship96Css))errors.push('flagship-master-v96.css tidak ditemukan');
+else{
+  const v96=fs.readFileSync(flagship96Css,'utf8');
+  const guards=[
+    ['fluid clamp tokens','--v96-r:clamp('],
+    ['light contrast authority','Contrast authority — light surfaces'],
+    ['dark contrast authority','Contrast authority — dark surfaces'],
+    ['dynamic auto-fit grids','repeat(auto-fit,minmax(min(100%,210px),1fr))'],
+    ['compact card tables','No horizontal-scroll data presentation on compact screens'],
+    ['deep dialog styling','Dialogs / deepest states'],
+    ['HMI and display styling','HMI / realtime / field display'],
+    ['deep governance/admin/patrol styling','Governance / admin / UAT / source / patrol depth'],
+    ['reduced motion support','prefers-reduced-motion:reduce']
+  ];
+  for(const [name,marker] of guards)if(!v96.includes(marker))errors.push(`Flagship v96 style guard hilang: ${name}`);
+}
+
 /* v32 interpretation semantics live inside the already-active operational runtime. */
 const runtimePath=path.join(root,'operational-control-runtime-v31.js');
 if(!fs.existsSync(runtimePath))errors.push('operational-control-runtime-v31.js tidak ditemukan');
@@ -139,4 +172,4 @@ if(errors.length){
   for(const e of errors)console.error(`- ${e}`);
   process.exit(1);
 }
-console.log(`Frontend asset validation OK — ${checked.size} active files/references checked + raster signatures + release UX/data guards.`);
+console.log(`Frontend asset validation OK — ${checked.size} active files/references checked + raster signatures + release UX/data/flagship guards.`);
