@@ -80,6 +80,15 @@ body.flagship-v97 :is(button.danger,.button.danger):hover{background:#ffe5e8!imp
 body.flagship-v97 button.primary,body.flagship-v97 .button.primary{color:#fff!important}
 body.flagship-v97 button:disabled,body.flagship-v97 .button:disabled{background:#eef3f6!important;color:#7890a0!important;border-color:#d9e4ea!important;opacity:1!important}
 
+/* Dark shell navigation is intentionally exempt from light secondary-button styling. */
+body.flagship-v97 .sidebar button.nav{background:transparent!important;color:#c8e1ef!important;border:1px solid transparent!important;box-shadow:none!important;text-shadow:none!important}
+body.flagship-v97 .sidebar button.nav .svg-icon{color:#83c8ec!important}
+body.flagship-v97 .sidebar button.nav:hover{background:rgba(80,181,229,.10)!important;color:#fff!important;border-color:rgba(127,205,240,.12)!important;box-shadow:none!important}
+body.flagship-v97 .sidebar button.nav.active{background:linear-gradient(90deg,rgba(22,157,224,.24),rgba(31,201,228,.10))!important;color:#fff!important;border-color:rgba(116,207,241,.20)!important;box-shadow:inset 3px 0 0 #2fc9ea!important}
+body.flagship-v97 .sidebar .navgroup{color:#789db3!important;font-size:clamp(.62rem,.62vw,.7rem)!important;letter-spacing:.09em;font-weight:850}
+body.flagship-v97 .sidebar .sidebar-foot{color:#93b4c6!important}
+body.flagship-v97 .sidebar .brand img{width:clamp(34px,2.35vw,44px);height:auto}
+
 /* Tabs/navigation look intentional on dense admin pages. */
 body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs){display:flex;align-items:center;gap:clamp(6px,.55vw,10px);flex-wrap:wrap}
 body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button{min-height:clamp(38px,2.8vw,44px);padding-inline:clamp(12px,1vw,18px)!important}
@@ -89,7 +98,7 @@ body.flagship-v97 :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button.active{
 body.flagship-v97 :is(.release-status.ok,.oc31-state.ok,.status-ok,.pill.ok){background:var(--v98-success-bg)!important;color:var(--v98-success-fg)!important;border-color:#bee4ce!important}
 body.flagship-v97 :is(.release-status.warn,.release-status.pending,.oc31-state.pending,.status-warn,.pill.warn){background:var(--v98-warning-bg)!important;color:var(--v98-warning-fg)!important;border-color:#ead49a!important}
 body.flagship-v97 :is(.release-status.danger,.release-status.error,.status-danger,.pill.danger){background:var(--v98-danger-bg)!important;color:var(--v98-danger-fg)!important;border-color:#e7bcc2!important}
-body.flagship-v97 :is(.release-status.neutral,.status-neutral,.pill){color:#36596f}
+body.flagship-v97 :is(.release-status.neutral,.status-neutral,.pill:not(.ok):not(.warn):not(.danger)){background:#eef5f9!important;color:#36596f!important;border-color:#d5e3eb!important}
 body.flagship-v97 :is(.notice,.v40-note,.v38-help,.v56-note){background:var(--v98-info-bg)!important;color:var(--v98-info-fg)!important;border-color:#cce3ef!important}
 body.flagship-v97 :is(.notice,.v40-note,.v38-help,.v56-note) :is(strong,span,p,small){color:inherit!important}
 body.flagship-v97 .errorbox{background:var(--v98-danger-bg)!important;color:var(--v98-danger-fg)!important;border-color:#e7bcc2!important}
@@ -116,6 +125,12 @@ body.flagship-v97 table[data-v96-table="cards"] tbody{gap:var(--v98-gap)!importa
 body.flagship-v97 table[data-v96-table="cards"] tr{border-radius:var(--v98-radius)!important;background:linear-gradient(145deg,#fff,#f7fbfe)!important}
 body.flagship-v97 table[data-v96-table="cards"] td::before{color:#58768a!important;font-size:clamp(.62rem,.66vw,.74rem)!important}
 body.flagship-v97 table[data-v96-table="cards"] td[data-label="Aksi"]{background:#f2f8fc!important}
+
+/* Charts/media remain crisp and readable on light surfaces. */
+body.flagship-v97 :is(.chart,svg.chart){display:block;width:100%;height:auto;max-width:100%}
+body.flagship-v97 .chart text{fill:#597487!important;font-size:clamp(10px,.7vw,12px)}
+body.flagship-v97 :is(.source-image-preview img,.media-grid img,.doccard img){max-width:100%;height:auto;border-radius:clamp(10px,.8vw,16px);border:1px solid var(--v98-line);background:#fff}
+body.flagship-v97 .media-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:var(--v98-gap)}
 
 /* Details, accordions and deep governance records. */
 body.flagship-v97 details{border:1px solid var(--v98-line);border-radius:clamp(12px,.9vw,16px);background:rgba(255,255,255,.82);overflow:hidden}
@@ -148,7 +163,7 @@ body.flagship-v97 .v42-field-link code{flex:1 1 260px;min-width:0;background:#ea
 
 /* Sidebar/topbar preserve contrast and compact gracefully. */
 body.flagship-v97 .sidebar :is(.brand,.brand-name,.nav-section-title){color:#eef9ff!important}
-body.flagship-v97 .sidebar :is(.nav-item,.sidebar a,.sidebar button){color:#cce3f1!important}
+body.flagship-v97 .sidebar :is(.nav-item,.sidebar a){color:#cce3f1!important}
 body.flagship-v97 .sidebar :is(.nav-item.active,.nav-item:hover,.sidebar a.active){color:#fff!important}
 body.flagship-v97 .topbar{color:var(--v98-text)!important}
 body.flagship-v97 .topbar :is(strong,label,span){color:inherit}
@@ -205,7 +220,7 @@ body.flagship-v97 :is(.panel,.card,.flagship-panel):focus-within{border-color:rg
 /* Coarse pointers receive larger interactive targets. */
 @media(pointer:coarse){
   body.flagship-v97 :is(button,.button,input:not([type=checkbox]):not([type=radio]),select){min-height:48px!important}
-  body.flagship-v97 :is(.nav-item,.sidebar a){min-height:46px}
+  body.flagship-v97 :is(.nav-item,.sidebar a,.sidebar button.nav){min-height:46px}
 }
 
 @media(min-width:2000px){
