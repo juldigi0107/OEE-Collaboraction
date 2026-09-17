@@ -1,0 +1,39 @@
+/* OEE Collaboraction v96 adaptive density — content-aware tables and control groups. */
+body.flagship-master-v96 table[data-v96-table="cards"]{display:block!important;width:100%!important;background:transparent!important;border:0!important}
+body.flagship-master-v96 table[data-v96-table="cards"] thead{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;border:0!important}
+body.flagship-master-v96 table[data-v96-table="cards"] tbody{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr))!important;gap:clamp(9px,.9vw,14px)!important;width:100%!important}
+body.flagship-master-v96 table[data-v96-table="cards"] tr{display:block!important;min-width:0!important;border:1px solid var(--v96-line)!important;border-radius:var(--v96-r)!important;background:linear-gradient(145deg,#fff,#f9fcfe)!important;box-shadow:0 10px 30px rgba(6,42,68,.055)!important;overflow:hidden!important}
+body.flagship-master-v96 table[data-v96-table="cards"] td{display:grid!important;grid-template-columns:minmax(112px,32%) minmax(0,1fr)!important;gap:clamp(8px,.75vw,12px)!important;align-items:start!important;min-height:42px!important;padding:clamp(9px,.78vw,12px) clamp(10px,.9vw,14px)!important;border-bottom:1px solid #eaf1f5!important;background:transparent!important;white-space:normal!important;max-width:none!important;position:static!important;color:#24485f!important}
+body.flagship-master-v96 table[data-v96-table="cards"] td:last-child{border-bottom:0!important}
+body.flagship-master-v96 table[data-v96-table="cards"] td::before{content:attr(data-label);display:block;font-size:clamp(.58rem,.58vw,.66rem)!important;line-height:1.35;font-weight:800;letter-spacing:.02em;color:#667f90!important;text-transform:none}
+body.flagship-master-v96 table[data-v96-table="cards"] td :is(strong,span,small,code,a){min-width:0;max-width:100%;overflow-wrap:anywhere}
+body.flagship-master-v96 table[data-v96-table="cards"] td button{width:100%;max-width:100%;justify-content:center}
+body.flagship-master-v96 table[data-v96-table="cards"] td[data-label="Aksi"]{grid-template-columns:1fr!important;background:#f5f9fc!important}
+body.flagship-master-v96 table[data-v96-table="cards"] td[data-label="Aksi"]::before{display:none}
+body.flagship-master-v96 table[data-v96-table="cards"].v96-table-ultra tbody{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))!important}
+body.flagship-master-v96 table[data-v96-table="grid"].v96-table-dense{font-size:clamp(.67rem,.7vw,.78rem)!important}
+body.flagship-master-v96 table[data-v96-table="grid"].v96-table-dense :is(th,td){padding-left:clamp(7px,.65vw,11px)!important;padding-right:clamp(7px,.65vw,11px)!important}
+body.flagship-master-v96 table[data-v96-table="grid"].v96-table-ultra{table-layout:fixed!important}
+body.flagship-master-v96 table[data-v96-table="grid"].v96-table-ultra :is(th,td){font-size:clamp(.62rem,.64vw,.72rem)!important}
+
+/* Complex forms reflow by content count, not by hard-coded page. */
+body.flagship-master-v96 form[data-v96-form="dense"] .formgrid,
+body.flagship-master-v96 form[data-v96-form="dense"].formgrid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))!important}
+body.flagship-master-v96 form[data-v96-form="medium"] .formgrid,
+body.flagship-master-v96 form[data-v96-form="medium"].formgrid{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))!important}
+body.flagship-master-v96 [data-v96-complexity="high"] :is(.filters,.row,.formactions,.release-section-head){flex-wrap:wrap!important}
+body.flagship-master-v96 [data-v96-complexity="high"] :is(.filters>*,.formactions>*){min-width:min(100%,150px)}
+
+/* Ultra-wide screens keep content deliberate rather than stretched edge-to-edge. */
+@media(min-width:1920px){
+ body.flagship-master-v96 .content{max-width:1880px!important;margin-inline:auto!important}
+ body.flagship-master-v96 :is(.home-main-grid,.grid,.department-hub,.integration-grid,.live-grid){column-gap:clamp(18px,1.1vw,26px)!important}
+ body.flagship-master-v96 .panel{padding:clamp(20px,1.25vw,28px)!important}
+}
+@media(max-width:900px){
+ body.flagship-master-v96 table[data-v96-table="cards"] tbody{grid-template-columns:1fr!important}
+}
+@media(max-width:520px){
+ body.flagship-master-v96 table[data-v96-table="cards"] td{grid-template-columns:1fr!important;gap:4px!important}
+ body.flagship-master-v96 table[data-v96-table="cards"] td::before{padding-bottom:1px}
+}
