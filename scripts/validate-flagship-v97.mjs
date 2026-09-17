@@ -39,6 +39,7 @@ const checks=[
  ['table density tracked',js.includes('v97Density')&&js.includes("cols>=12?'ultra':cols>=8?'dense':'normal'")],
  ['deep page components covered',spectrum.includes('.oc31-section')&&spectrum.includes('.v37-display-overview')&&spectrum.includes('.v42-display-readiness')&&spectrum.includes('.de5-stage')],
  ['route-aware accent authority',routes.includes('--v98-route:var(--f91-accent')&&routes.includes('button.primary')&&routes.includes('.flagship-routebar')],
+ ['contrast-safe route actions',routes.includes('--v98-route-ink:color-mix(in srgb,var(--v98-route) 60%,#24475e)')&&routes.includes('--v98-route-action:color-mix(in srgb,var(--v98-route) 60%,#063f70)')&&routes.includes('var(--v98-route-action-2)')],
  ['Patrol flagship route identity',pages.includes("patrol:['Field Reliability'")&&routes.includes('[data-ui-view="patrol"]')&&routes.includes('.v94-filters')],
  ['fluid deep-page grids',routes.includes('.v36-dept-summary')&&routes.includes('.v37-approval-aging')&&routes.includes('.ic30-flow')&&routes.includes('repeat(auto-fit,minmax')],
  ['HMI deep responsive guard',routes.includes('[data-ui-view="shopfloor"]')&&routes.includes('.v36-hmi-context')&&routes.includes('overflow-wrap:anywhere')],
