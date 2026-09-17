@@ -1,0 +1,66 @@
+name: Validate Patrol v94
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/patrol-v94.js'
+      - 'frontend/patrol-v94.css'
+      - 'frontend/index.html'
+      - 'backend/release-v94-patrol.mjs'
+      - 'backend/worker-production.mjs'
+      - 'scripts/validate-patrol-v94.mjs'
+      - '.github/workflows/patrol-v94.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/patrol-v94.js'
+      - 'frontend/patrol-v94.css'
+      - 'frontend/index.html'
+      - 'backend/release-v94-patrol.mjs'
+      - 'backend/worker-production.mjs'
+      - 'scripts/validate-patrol-v94.mjs'
+permissions:
+  contents: read
+jobs:
+  patrol-v94:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Patrol source syntax
+        run: |
+          node --check frontend/patrol-v94.js
+          node --check backend/release-v94-patrol.mjs
+      - name: Validate Patrol workflow and semantics
+        run: node scripts/validate-patrol-v94.mjs
+      - name: Verify Patrol v94 on production Worker
+        if: github.event_name == 'push'
+        run: |
+          base='https://oee-collaboraction.offsetbmj.workers.dev'
+          ready=0
+          for attempt in $(seq 1 24); do
+            version=$(curl --silent --show-error --location --max-time 20 "$base/api/version" || true)
+            html=$(curl --silent --show-error --location --max-time 20 "$base/" || true)
+            patrol=$(curl --silent --show-error --location --max-time 20 "$base/patrol-v94.js" || true)
+            ok=1
+            printf '%s' "$version" | grep -Fq 'patrol-abnormality-v94' || ok=0
+            printf '%s' "$html" | grep -Fq 'patrol-v94.js?v=20260917-1' || ok=0
+            printf '%s' "$html" | grep -Fq 'patrol-v94.css?v=20260917-1' || ok=0
+            printf '%s' "$patrol" | grep -Fq 'Patrol & Abnormality' || ok=0
+            printf '%s' "$patrol" | grep -Fq 'Verified closed 30 hari' || ok=0
+            if [ "$ok" = '1' ]; then
+              ready=1
+              echo "Patrol v94 production assets and fingerprint verified on attempt $attempt"
+              break
+            fi
+            echo "Waiting for Patrol v94 production convergence ($attempt/24)"
+            sleep 5
+          done
+          test "$ready" = '1'
+          tmp=$(mktemp)
+          code=$(curl --silent --show-error --location --max-time 20 -o "$tmp" -w '%{http_code}' "$base/api/patrol")
+          cat "$tmp"
+          test "$code" = '401'
+          grep -Fq 'Silakan login kembali' "$tmp"
