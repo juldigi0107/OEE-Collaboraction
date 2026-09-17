@@ -2,21 +2,25 @@
 (()=>{
  'use strict';
  let raf=0,observer,resizeObserver,seen=new WeakSet();
- const textSelector='h1,h2,h3,h4,h5,h6,p,small,strong,label,legend,span,td,th,code,a';
+ const textSelector='h1,h2,h3,h4,h5,h6,p,small,strong,label,legend,span,li,summary,caption,dt,dd,td,th,code,a';
  const reflowSelector='.heading,.release-section-head,.surface-head,.filters,.formactions,.row,.settings-tabs,.config-tabs,.de5-toolbar,.de5-actions,.v42-field-link,.topbar,.topbar .user,.v26-archive-context';
- const surfaceSelector='.panel,.card,.flagship-panel,.ref-kpi,.department-card-v4,.machine-card,.integration-card,.doccard,.dialogbody,.login-card,.auth-panel,.splash-card,.v96-surface';
- const knownDark='.sidebar,.auth-story,.run-hero,.oc31-banner,.de5-stage,.display-pairing-card,#fieldDisplay,.field-display-blocked,.field-display-live';
+ const surfaceSelector='.panel,.card,.flagship-panel,.ref-kpi,.department-card-v4,.machine-card,.integration-card,.doccard,.dialogbody,.login-card,.auth-panel,.splash-card,.v96-surface,.home-hero-v4,.login-hero,.v94-hero,.flagship-hero';
+ const knownDark='.sidebar,.auth-story,.login-hero,.home-hero-v4,.home-hero-copy,.run-hero,.oc31-banner,.de5-stage,.display-pairing-card,#fieldDisplay,.field-display-blocked,.field-display-live,.v94-hero,.flagship-hero';
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const rgb=v=>{const m=String(v||'').match(/rgba?\(\s*([\d.]+)[, ]+\s*([\d.]+)[, ]+\s*([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)/i);return m?[+m[1],+m[2],+m[3],m[4]===undefined?1:+m[4]]:null;};
  const blend=(fg,bg)=>{const a=fg?.[3]??1;if(!fg)return bg;if(a>=.995)return fg;return[fg[0]*a+bg[0]*(1-a),fg[1]*a+bg[1]*(1-a),fg[2]*a+bg[2]*(1-a),1];};
  const lum=c=>{const a=c.slice(0,3).map(v=>{const n=clamp(v,0,255)/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});return .2126*a[0]+.7152*a[1]+.0722*a[2];};
  const ratio=(a,b)=>{const x=lum(a),y=lum(b),hi=Math.max(x,y),lo=Math.min(x,y);return(hi+.05)/(lo+.05);};
+ function gradientTone(image){
+  const matches=String(image||'').match(/rgba?\([^)]*\)/gi)||[],colors=matches.map(rgb).filter(Boolean).filter(c=>(c[3]??1)>.12);if(!colors.length)return null;
+  const total=colors.reduce((a,c)=>[a[0]+c[0],a[1]+c[1],a[2]+c[2]], [0,0,0]);return[total[0]/colors.length,total[1]/colors.length,total[2]/colors.length,1];
+ }
  function backgroundFor(el){
   if(el.closest?.(knownDark+', [data-v96-tone="dark"], [data-v97-tone="dark"]'))return[7,29,48,1];
   const chain=[];let n=el;
   while(n&&n!==document.documentElement){chain.push(n);n=n.parentElement;}
   let out=[248,252,255,1];
-  for(let i=chain.length-1;i>=0;i--){const c=rgb(getComputedStyle(chain[i]).backgroundColor);if(c&&c[3]>0)out=blend(c,out);}
+  for(let i=chain.length-1;i>=0;i--){const style=getComputedStyle(chain[i]),gradient=gradientTone(style.backgroundImage),c=rgb(style.backgroundColor);if(gradient)out=blend(gradient,out);if(c&&c[3]>0)out=blend(c,out);}
   return out;
  }
  function visible(el){const cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity)>.05&&el.getClientRects().length>0;}
