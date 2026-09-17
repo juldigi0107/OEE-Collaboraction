@@ -80,6 +80,21 @@ body.reference-release.flagship-pages-v91 .release-status.ok{color:#11633d!impor
 body.reference-release.flagship-pages-v91 .release-status.warn{color:#7b530a!important;background:#fff6e2!important}
 body.reference-release.flagship-pages-v91 .release-status.danger{color:#923239!important;background:#fff0f1!important}
 
+/* Mobile flagship registers: turn dense tables into labelled record cards. */
+@media(max-width:640px){
+ body.reference-release.flagship-pages-v91 .tablewrap:has(>table.v92-responsive-table){overflow:visible;border:0;background:transparent;box-shadow:none}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table{display:block;width:100%;background:transparent;border:0}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table thead{display:none}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody{display:grid;gap:11px;width:100%}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody tr{display:grid;width:100%;border:1px solid #d6e3eb;border-radius:15px;background:linear-gradient(145deg,#fff,#f7fbfd);box-shadow:0 9px 24px rgba(14,52,81,.055);overflow:hidden}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody tr:hover{transform:none}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody td{position:static!important;display:grid;grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:10px;align-items:start;max-width:none!important;width:100%;padding:10px 12px;text-align:left!important;border:0;border-bottom:1px solid #edf2f5;background:transparent!important;box-shadow:none!important}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody td:last-child{border-bottom:0}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody td::before{content:attr(data-label);font-size:.61rem;line-height:1.35;font-weight:790;letter-spacing:.025em;text-transform:uppercase;color:#6a8192}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody td>button{justify-self:start;max-width:100%}
+ body.reference-release.flagship-pages-v91 table.v92-responsive-table .v25-num{text-align:left!important;font-variant-numeric:tabular-nums}
+}
+@media(max-width:420px){body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody td{grid-template-columns:1fr;gap:4px;padding:10px 11px}body.reference-release.flagship-pages-v91 table.v92-responsive-table tbody td::before{font-size:.58rem}}
 @media(max-width:760px){body.reference-release.flagship-pages-v91 .v56-grid{grid-template-columns:1fr 1fr}body.reference-release.flagship-pages-v91 .barcode-v77-policy{display:grid}body.reference-release.flagship-pages-v91 .barcode-v77-focus{margin-left:0;justify-self:start}body.reference-release.flagship-pages-v91 :is(td,th){overflow-wrap:anywhere}}
 @media(max-width:500px){body.reference-release.flagship-pages-v91 .v56-grid{grid-template-columns:1fr}body.reference-release.flagship-pages-v91 .v41-embedded-grid{grid-template-columns:1fr}body.reference-release.flagship-pages-v91 .v38-context,body.reference-release.flagship-pages-v91 .v38-oee-preview{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){body.reference-release.flagship-pages-v91 .v56-meter span{box-shadow:none}}
