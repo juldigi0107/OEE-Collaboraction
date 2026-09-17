@@ -28,7 +28,7 @@ check('approval decision desk layout',css.includes('data-ui-view="approvals"')&&
 check('governance control center family',['governance','data-governance','operational-control','uat-release','support-recovery'].every(r=>css.includes(`data-ui-view="${r}"`))&&css.includes('.oc31-section'));
 check('admin console family',['settings','users','audit','integrations','import'].every(r=>css.includes(`data-ui-view="${r}"`))&&css.includes('.integration-card')&&css.includes('.ic30-flow'));
 check('route masthead is semantic only',js.includes('flagship-routebar')&&js.includes('replaceChildren')&&!/\b(api\(|fetch\(|localStorage|sessionStorage|\/api\/)/.test(js));
-check('v92 adapter is presentation only',finalJs.includes('data-label')&&finalJs.includes('v92-responsive-table')&&!/\b(api\(|fetch\(|localStorage|sessionStorage|\/api\/)/.test(finalJs));
+check('v92 adapter is presentation only',finalJs.includes('dataset.label')&&finalJs.includes('v92-responsive-table')&&!/\b(api\(|fetch\(|localStorage|sessionStorage|\/api\/)/.test(finalJs));
 check('responsive route layouts',css.includes('@media(max-width:1220px)')&&css.includes('@media(max-width:820px)')&&css.includes('@media(max-width:520px)'));
 check('final CSS uses fluid sizing',finalCss.includes('clamp(')&&finalCss.includes('repeat(auto-fit,minmax('));
 check('final CSS prevents text collisions',finalCss.includes('min-width:0')&&finalCss.includes('overflow-wrap:anywhere')&&finalCss.includes('text-wrap:balance'));
