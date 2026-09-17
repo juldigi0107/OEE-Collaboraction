@@ -11,6 +11,7 @@
   operations:['Operational Register','Transaksi terkontrol dan traceability'],
   live:['Realtime Operations','Status mesin, heartbeat, dan telemetry'],
   shopfloor:['HMI Cockpit','Eksekusi produksi dan event shopfloor'],
+  patrol:['Field Reliability','Patrol, abnormality, evidence, dan closure verification'],
   approvals:['Decision Desk','Approval, verifikasi, dan aging'],
   governance:['Release Governance','Readiness, control, dan keputusan go-live'],
   'data-governance':['Data Authority','Definisi KPI, canonical data, dan source of truth'],
