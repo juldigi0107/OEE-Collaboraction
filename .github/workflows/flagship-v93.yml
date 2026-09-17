@@ -1,0 +1,61 @@
+name: Validate Flagship Ultra v93
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/flagship-ultra-v93.css'
+      - 'frontend/flagship-ultra-v93.js'
+      - 'frontend/index.html'
+      - 'scripts/validate-flagship-pages-v91.mjs'
+      - '.github/workflows/flagship-v93.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/flagship-ultra-v93.css'
+      - 'frontend/flagship-ultra-v93.js'
+      - 'frontend/index.html'
+      - 'scripts/validate-flagship-pages-v91.mjs'
+      - '.github/workflows/flagship-v93.yml'
+permissions:
+  contents: read
+jobs:
+  flagship-v93:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate flagship source authority
+        run: |
+          node --check frontend/flagship-ultra-v93.js
+          node scripts/validate-flagship-pages-v91.mjs
+      - name: Verify flagship v93 on production Worker
+        if: github.event_name == 'push'
+        run: |
+          base='https://oee-collaboraction.offsetbmj.workers.dev'
+          ready=0
+          for attempt in $(seq 1 24); do
+            html=$(curl --silent --show-error --location --max-time 20 "$base/" || true)
+            css=$(curl --silent --show-error --location --max-time 20 "$base/flagship-ultra-v93.css?v=20260917-1" || true)
+            js=$(curl --silent --show-error --location --max-time 20 "$base/flagship-ultra-v93.js?v=20260917-1" || true)
+            ok=1
+            printf '%s' "$html" | grep -Fq 'flagship-ultra-v93.css?v=20260917-1' || ok=0
+            printf '%s' "$html" | grep -Fq 'flagship-ultra-v93.js?v=20260917-1' || ok=0
+            printf '%s' "$css" | grep -Fq 'Flagship Ultra v93' || ok=0
+            printf '%s' "$css" | grep -Fq '[data-v93-tone="dark"]' || ok=0
+            printf '%s' "$css" | grep -Fq 'container-type:inline-size' || ok=0
+            printf '%s' "$css" | grep -Fq '@media(max-width:700px)' || ok=0
+            printf '%s' "$css" | grep -Fq '@media(prefers-reduced-motion:reduce)' || ok=0
+            printf '%s' "$js" | grep -Fq 'dataset.v93Tone' || ok=0
+            printf '%s' "$js" | grep -Fq 'flagship-ultra-v93' || ok=0
+            printf '%s' "$js" | grep -Fq "w<700?'compact':w<1180?'medium':'wide'" || ok=0
+            if [ "$ok" = '1' ]; then
+              echo "Production Worker serves Flagship Ultra v93 on attempt $attempt"
+              ready=1
+              break
+            fi
+            echo "Waiting for v93 production convergence ($attempt/24)"
+            sleep 5
+          done
+          test "$ready" = '1'
