@@ -1,0 +1,75 @@
+/* OEE Collaboraction Flagship Spectrum v98 Routes — route-aware accent and deep-page fluidity. */
+body.flagship-v97.reference-release{
+  --v98-route:var(--f91-accent,#078ff5);
+  --v98-route-2:var(--f91-accent2,#20c8e5);
+  --v98-route-soft:var(--f91-soft,#edf7ff)
+}
+body.flagship-v97.reference-release[data-ui-view="patrol"]{--f91-accent:#167fc0;--f91-accent2:#22bba9;--f91-soft:#eef9f8;--f91-rgb:22,127,192}
+
+/* Route identity survives the final visual authority without sacrificing readable surfaces. */
+body.flagship-v97.reference-release .eyebrow{color:color-mix(in srgb,var(--v98-route) 78%,#24475e)!important}
+body.flagship-v97.reference-release #content>.heading::after{background:linear-gradient(90deg,var(--v98-route),var(--v98-route-2),transparent)!important;box-shadow:0 0 20px color-mix(in srgb,var(--v98-route-2) 25%,transparent)}
+body.flagship-v97.reference-release button.primary,
+body.flagship-v97.reference-release .button.primary{background:linear-gradient(135deg,var(--v98-route),color-mix(in srgb,var(--v98-route) 76%,#063f70),var(--v98-route-2))!important;border-color:color-mix(in srgb,var(--v98-route) 70%,#24465d)!important;color:#fff!important;box-shadow:0 10px 26px color-mix(in srgb,var(--v98-route) 20%,transparent)!important}
+body.flagship-v97.reference-release button.primary:hover,
+body.flagship-v97.reference-release .button.primary:hover{filter:saturate(1.06) brightness(.98);box-shadow:0 15px 34px color-mix(in srgb,var(--v98-route) 27%,transparent)!important}
+body.flagship-v97.reference-release :is(.settings-tabs,.config-tabs,.tabs,.subtabs) button.active{background:linear-gradient(135deg,var(--v98-route),var(--v98-route-2))!important;color:#fff!important;box-shadow:0 9px 24px color-mix(in srgb,var(--v98-route) 20%,transparent)!important}
+body.flagship-v97.reference-release :is(input,select,textarea,button,a):focus-visible{outline:3px solid color-mix(in srgb,var(--v98-route) 25%,transparent)!important;outline-offset:2px}
+body.flagship-v97.reference-release :is(input,select,textarea):focus{border-color:color-mix(in srgb,var(--v98-route) 50%,#bad0de)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--v98-route) 9%,transparent)!important}
+body.flagship-v97.reference-release :is(.panel,.card,.flagship-panel):focus-within{border-color:color-mix(in srgb,var(--v98-route) 33%,#c7d9e4)!important;box-shadow:0 20px 58px rgba(5,52,86,.10),0 0 0 3px color-mix(in srgb,var(--v98-route) 6%,transparent)!important}
+body.flagship-v97.reference-release .flagship-routebar{border-color:color-mix(in srgb,var(--v98-route) 18%,#dbe7ee)!important;background:color-mix(in srgb,var(--v98-route-soft) 72%,#fff)!important;color:color-mix(in srgb,var(--v98-route) 84%,#1d4058)!important}
+body.flagship-v97.reference-release .flagship-routebar::before{background:linear-gradient(135deg,var(--v98-route),var(--v98-route-2))!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--v98-route) 8%,transparent)!important}
+
+/* Deep grids scale continuously instead of waiting for a fixed breakpoint. */
+body.flagship-v97 :is(.v36-dept-summary,.approval-kpis,.v37-approval-aging,.v36-policy-grid,.v36-decision-grid,.v36-action-grid,.v37-settings-summary,.v36-integration-summary,.v94-kpis,.v56-grid){display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,clamp(180px,17vw,250px)),1fr))!important;gap:var(--v98-gap)!important}
+body.flagship-v97 :is(.dg16-grid,.oc31-rule-grid,.uat17-grid,.support-grid,.ic30-grid,.release-grid,.v43-file-grid){display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,clamp(205px,19vw,290px)),1fr))!important;gap:var(--v98-gap)!important}
+body.flagship-v97 .ic30-flow{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))!important;gap:var(--v98-gap)!important}
+body.flagship-v97 .v94-intro{grid-template-columns:minmax(0,1.45fr) minmax(min(100%,240px),.72fr)!important;gap:var(--v98-gap-lg)!important}
+body.flagship-v97 .v94-filters{grid-template-columns:minmax(min(100%,260px),1fr) minmax(160px,.35fr) auto auto!important;gap:var(--v98-gap)!important}
+body.flagship-v97 .v94-detail{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))!important;gap:var(--v98-gap)!important}
+
+/* Department / approval / admin summary blocks remain balanced when labels grow. */
+body.flagship-v97 :is(.v36-dept-summary,.approval-kpis,.v37-approval-aging,.v37-settings-summary,.v36-integration-summary)>div{min-width:0;padding:clamp(11px,1vw,16px)!important}
+body.flagship-v97 :is(.v36-dept-summary,.approval-kpis,.v37-approval-aging,.v37-settings-summary,.v36-integration-summary)>div :is(strong,span,small){overflow-wrap:anywhere}
+body.flagship-v97 .v36-register-meta{display:flex;flex-wrap:wrap;gap:7px!important;justify-content:flex-start!important}
+body.flagship-v97 .v36-register-meta>span{min-width:0;max-width:100%}
+
+/* Sticky operational bars use a shared glass contract and never hide page text on smaller screens. */
+@media(min-width:821px){
+  body.flagship-v97 :is(.v36-live-summary,.v36-hmi-context,.v37-settings-summary,.v36-integration-summary,.v36-audit-filter,.v36-source-filters,.v36-approval-filter){background:rgba(249,252,254,.92)!important;border-color:color-mix(in srgb,var(--v98-route,#078ff5) 16%,#d4e2eb)!important;box-shadow:0 12px 34px rgba(6,43,70,.07)!important;backdrop-filter:blur(18px) saturate(130%)}
+}
+
+/* Patrol gets a field-reliability identity without turning the whole page teal. */
+body.flagship-v97.reference-release[data-ui-view="patrol"] .v94-intro{position:relative;overflow:hidden;border-color:rgba(22,127,192,.20)!important;background:linear-gradient(120deg,#fff,#eef9f8)!important}
+body.flagship-v97.reference-release[data-ui-view="patrol"] .v94-intro::after{content:"";position:absolute;inset:auto -9% -48% auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(34,187,169,.10),transparent 68%);pointer-events:none}
+body.flagship-v97.reference-release[data-ui-view="patrol"] .v94-policy{background:rgba(255,255,255,.76)!important;border-color:#cce4e3!important;color:#234c5e!important}
+body.flagship-v97.reference-release[data-ui-view="patrol"] .v94-form-note{background:#edf9f8!important;color:#285c61!important;border-color:#cce7e2!important}
+body.flagship-v97.reference-release[data-ui-view="patrol"] .v94-table tbody tr:has(.release-status.danger) td:first-child{box-shadow:inset 3px 0 #d75b64}
+body.flagship-v97.reference-release[data-ui-view="patrol"] .v94-table tbody tr:has(.release-status.ok) td:first-child{box-shadow:inset 3px 0 #40a675}
+
+/* Governance/admin pages stay dense but not cramped. */
+body.flagship-v97.reference-release:is([data-ui-view="data-governance"],[data-ui-view="operational-control"],[data-ui-view="uat-release"],[data-ui-view="support-recovery"],[data-ui-view="settings"],[data-ui-view="users"],[data-ui-view="audit"],[data-ui-view="integrations"],[data-ui-view="import"]) .release-section-head{gap:var(--v98-gap)!important}
+body.flagship-v97.reference-release:is([data-ui-view="data-governance"],[data-ui-view="operational-control"],[data-ui-view="uat-release"],[data-ui-view="support-recovery"],[data-ui-view="settings"],[data-ui-view="users"],[data-ui-view="audit"],[data-ui-view="integrations"],[data-ui-view="import"]) .release-section-head>div:first-child{min-width:0;flex:1 1 420px}
+
+/* HMI and realtime cards can enlarge values without colliding with labels. */
+body.flagship-v97.reference-release:is([data-ui-view="live"],[data-ui-view="shopfloor"]) :is(.machine-live-card,.machine-card,.run-hero,.hmi-side>.panel) :is(strong,.value){font-variant-numeric:tabular-nums}
+body.flagship-v97.reference-release:is([data-ui-view="live"],[data-ui-view="shopfloor"]) .machine-live-card strong{font-size:clamp(.98rem,1.15vw,1.35rem);line-height:1.14}
+body.flagship-v97.reference-release[data-ui-view="shopfloor"] .v36-hmi-context>div{min-width:0}
+body.flagship-v97.reference-release[data-ui-view="shopfloor"] .v36-hmi-context :is(strong,span){overflow-wrap:anywhere}
+
+/* Content-heavy desktop and ultrawide pages use space, without stretching reading text. */
+@media(min-width:1500px){
+  body.flagship-v97.reference-release:is([data-ui-view="documents"],[data-ui-view="operations"],[data-ui-view="quality"],[data-ui-view="live"],[data-ui-view="shopfloor"],[data-ui-view="patrol"],[data-ui-view="settings"],[data-ui-view="audit"],[data-ui-view="integrations"]) .content{max-width:1880px!important}
+  body.flagship-v97 .v94-intro>div:first-child>p{max-width:820px}
+}
+
+@media(max-width:900px){
+  body.flagship-v97 .v94-intro{grid-template-columns:1fr!important}
+  body.flagship-v97 .v94-filters{grid-template-columns:1fr 1fr!important}
+  body.flagship-v97 .v94-filters>input{grid-column:1/-1}
+}
+@media(max-width:620px){
+  body.flagship-v97 .v94-filters{grid-template-columns:1fr!important}
+  body.flagship-v97 .v94-filters>input{grid-column:auto}
+  body.flagship-v97 :is(.v36-dept-summary,.approval-kpis,.v37-approval-aging,.v36-policy-grid,.v36-decision-grid,.v36-action-grid,.v37-settings-summary,.v36-integration-summary,.v94-kpis,.v56-grid,.ic30-flow){grid-template-columns:1fr!important}
+}
